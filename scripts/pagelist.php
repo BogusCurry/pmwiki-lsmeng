@@ -59,11 +59,12 @@ SDV($SearchResultsFmt, "<div class='wikisearch'>\$[SearchFor]
   <div class='vspace'></div>\$[SearchFound]</div>");
 SDV($SearchQuery, str_replace('$', '&#036;', 
   PHSC(stripmagic(@$_REQUEST['q']), ENT_NOQUOTES)));
+
 XLSDV('en', array(
   'SearchFor' => 'Results of search for <em>$Needle</em>:',
   'SearchFound' => 
     '$MatchCount pages found out of $MatchSearched pages searched.'));
-
+   
 SDV($PageListArgPattern, '((?:\\$:?)?\\w+)[:=]');
 
 Markup_e('pagelist', 'directives',
@@ -173,9 +174,11 @@ function FmtPageList($outfmt, $pagename, $opt) {
   $opt = array_merge($fmtopt, $opt);
   $out = $fmtfn($pagename, $matches, $opt);
   $FmtV['$MatchCount'] = count($matches);
+   
   if ($outfmt != '$MatchList') 
     { $FmtV['$MatchList'] = $out; $out = FmtPageName($outfmt, $pagename); }
   if ($out[0] == '<') $out = Keep($out);
+  
   return PRR($out);
 }
 
@@ -198,6 +201,7 @@ function MakePageList($pagename, $opt, $retpages = 1) {
   $opt['=phase'] = PAGELIST_PRE; $list=array(); $pn=NULL; $page=NULL;
   foreach($PageListFilters as $fn => $v) {
     if ($v<0) continue;
+    
     $ret = $fn($list, $opt, $pagename, $page);
     if ($ret & PAGELIST_ITEM) $itemfilters[] = $fn;
     if ($ret & PAGELIST_POST) $postfilters[] = $fn;
@@ -209,18 +213,26 @@ function MakePageList($pagename, $opt, $retpages = 1) {
   foreach((array)$list as $pn) {
     $page = array();
     foreach((array)$itemfilters as $fn) 
-      if (!$fn($list, $opt, $pn, $page)) continue 2;
+    if (!$fn($list, $opt, $pn, $page)) continue 2;
+
+/* Meng: Exclude the draft pages! */    
+    if (strpos($pn,'-Draft') !== false) continue;
+    
     $page['pagename'] = $page['name'] = $pn;
     PCache($pn, $page);
     $matches[] = $pn;
   }
   $list = $matches;
+
+/* Meng: If there is only one match, go to the page directly. */
+if (count($matches) == 1) { header('Location: pmwiki.php?n='.$matches[0]); }
+
   StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
 
   $opt['=phase'] = PAGELIST_POST; $pn=NULL; $page=NULL;
   foreach((array)$postfilters as $fn) 
     $fn($list, $opt, $pagename, $page);
-  
+
   if ($retpages) 
     for($i=0; $i<count($list); $i++)
       $list[$i] = &$PCache[$list[$i]];
@@ -822,12 +834,21 @@ function PageIndexGrep($terms, $invert = false) {
     while (!feof($fp)) {
       $line = fgets($fp, 4096);
       while (substr($line, -1, 1) != "\n" && !feof($fp))
-        $line .= fgets($fp, 4096);
+      {  $line .= fgets($fp, 4096); }
+  
+//      $draftKeyword = strpos($line, 1-Draft1);
+//      continue;
+  
       $i = strpos($line, ':');
       if (!$i) continue;
+      
+  
+      
       $add = true;
       foreach($terms as $t) 
-        if (strpos($line, $t) === false) { $add = false; break; }
+      {  if (strpos($line, $t) === false) { $add = false; break; }
+            
+      }
       if ($add xor $invert) $pagelist[] = substr($line, 0, $i);
     }
     fclose($fp);

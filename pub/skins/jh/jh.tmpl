@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" 
+    "http://www.w3.org/TR/html40/loose.dtd">
+<html><head>
+  <title>$WikiTitle | $Group / $Title $Action</title>
+  <link rel='stylesheet' href='$PubDirUrl/css/stdlayout.css' type='text/css' />
+  <link rel='stylesheet' href='$SkinDirUrl/jh.css' type='text/css' />
+  <style type='text/css'><!--
+    /* Many of these CSS properties could've gone into the jh.css file   **
+    ** but I chose to put them here to make it easier to translate       **
+    ** $PubDirUrl.                                                       */
+
+    .dottedtop { background-image: url($SkinDirUrl/dotted-top.gif); }
+    .dottedbot { 
+      margin-top:1.33em; margin-bottom:5px; 
+      background-image: url($SkinDirUrl/dotted-bot.gif); 
+    }
+
+    /* Here we are using the "sliding doors" technique to create the tabs **
+    ** at the top (see http://www.alistapart.com/articles/slidingdoors).  */
+
+    #wikicmds a {
+      float:left; 
+      display:block;
+      font-family:verdana,helvetica,sans-serif;
+      font-size:smaller;
+      background:url("$SkinDirUrl/bl.gif") no-repeat left top;
+      padding:3px 15px;
+      color:#000; 
+    }
+    #wikicmds li { 
+      float:left; margin:0; padding:0;
+      background:url("$SkinDirUrl/br-off.gif") no-repeat right top; 
+    }
+    #wikicmds #$action {
+      background:url("$SkinDirUrl/br-on.gif") no-repeat right top;
+    }
+
+    /* Commented Backslash Hack
+       hides rule from IE5-Mac \*/
+    #wikicmds a {float:none;}
+    /* End IE5-Mac hack */
+  --></style>
+  <!--HeaderText-->
+</head>
+<body>
+<!--PageHeaderFmt-->
+  <form id='wikihead' action='$ScriptUrl/$[Main/SearchWiki]'>
+  <table width='100%' cellpadding='0' cellspacing='0' border='0'><tr>
+  <td align='right'>
+    <table cellpadding='0' cellspacing='3' border='0'><tr>
+    <td><a href='$ScriptUrl'><img border='0' 
+      src='$SkinDirUrl/home.gif' alt='$[Home]'/></a></td>
+    <td><a href='$ScriptUrl/$[$Group/RecentChanges]'><img border='0'
+      src='$SkinDirUrl/recentchanges.gif' alt='$[Recent Changes]' 
+      /></a></td>
+    <td><input class='wikisearchbox' type='text' name='q' /></td>
+    <td><input type='image' src='$SkinDirUrl/search.gif' alt='$[Search]'
+      name='submit' /></td>
+    <td><a href='$ScriptUrl/$[PmWiki/WikiHelp]'><img border='0' 
+      src='$SkinDirUrl/help.gif' alt='$[WikiHelp]'/></a></td>
+    </tr></table>
+  </td></tr></table></form>
+  <div class='dottedtop'><img src='$SkinDirUrl/no.gif' width='1'
+    height='3' alt='' /></div>
+<!--PageTitleFmt-->
+  <div id='wikititle'>
+    <div class='pagegroup'><a href='$ScriptUrl/$Group'>$Group</a> /</div>
+    <div class='pagetitle'>$Title</a></div></div>
+  <div id='wikicmds'><ul>
+    <li id='browse'><a class='cmdbutton' href='$PageUrl'>$[view]</a></li>
+    <li id='edit'><a href='$PageUrl?action=edit'>$[edit]</a></li>
+    <li id='upload'><a href='$PageUrl?action=upload'>$[attach]</a></li>
+    <li id='print'><a href='$PageUrl?action=print' 
+        target='_blank'>$[print]</a></li>
+    <li id='diff'><a href='$PageUrl?action=diff'>$[history]</a></li></ul></div>
+  <div id='lastmod'>$[Last modified:] $LastModified</div>
+<!--PageText-->
+<!--PageFooterFmt-->
+  <div class='dottedbot'><img src='$SkinDirUrl/no.gif' width='1'
+    height='1' alt='' /></div>
+  <div id='poweredby'>Powered by 
+    <a href='http://www.pmichaud.com/pmwiki'>PmWiki</a></div>
+  <div id='wikifoot'>
+      <a class='cmdbutton' href='$PageUrl'>$[view]</a> 
+      <a href='$PageUrl?action=edit'>$[edit]</a>
+      <a href='$PageUrl?action=upload'>$[attach]</a>
+      <a href='$PageUrl?action=print' 
+        target='_blank'>$[print]</a>
+      <a href='$PageUrl?action=diff'>$[history]</a></div>
+<!--/PageFooterFmt-->
+</body>
+</html>
+
+<!--PageUploadFmt-->
+  <b>$UploadResult</b>
+  <form enctype='multipart/form-data' action='$ScriptUrl' method='post'>
+    <input type='hidden' name='pagename' value='$PageName' />
+    <input type='hidden' name='action' value='postupload' />
+    <input type='hidden' name='upname' value='$UploadName' />
+    <p><b>Step 1:</b> Click the button below to choose a file from your
+      hard drive to upload.</p>
+    <p><input type='file' name='uploadfile' /></p>
+    <p><b>Step 2:</b> Once you have chosen the correct file, click the
+      button below to begin uploading.</p>
+    <p><input type='submit' value='$[Upload]' /></p>
+    <p><b>Step 3:</b> Once you have successfully uploaded a file and
+      it appears in the list below, you can link or embed it in the
+      document by adding <code>Attach:filename.ext</code> (where
+      <code>filename.ext</code> is the name of the file you uploaded)
+      anywhere within the text of the page.
+   </form>

@@ -806,6 +806,39 @@ function PageVar($pagename, $var, $pn = '') {
   global $Cursor, $PCache, $FmtPV, $AsSpacedFunction, $ScriptUrl,
     $EnablePathInfo;
   if ($var == '$ScriptUrl') return PUE($ScriptUrl);
+
+/* Meng: Define my own variable as a shortcut for the photo folder. If accessing using www
+   (https), return empty string. */  
+/* Meng: Process the page name to get the year and the month. This only works if the page name is "Main" 2015/3/17 */
+  if ($var == '$ImgPxD')
+  {
+    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
+    else 
+    {
+      if (strcmp(substr($pagename,9,1),"0")==0)
+      { return "%height=330px%http://localhost/pmwiki/Photo/".substr($pagename,5,4)."/".substr($pagename,10,1)."/"; } 
+      else return "%height=330px%http://localhost/pmwiki/Photo/".substr($pagename,5,4)."/".substr($pagename,9,2)."/";
+    }
+  }	
+
+  if ($var == '$PhotoPx')
+  {
+    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
+    else return PUE('%height=330px%http://localhost/pmwiki/Photo/');
+  }
+  
+  if ($var == '$Photo')
+  {
+    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
+    else return PUE('http://localhost/pmwiki/Photo/');
+  }
+  
+  if ($var == '$PhotoPub') 
+  {
+    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('https://sammeng.dlinkddns.com/photo/');
+    else return PUE('http://localhost/pmwiki/pmwiki/photo/');
+  }
+    
   if ($pn) {
     $pn = isset($Cursor[$pn]) ? $Cursor[$pn] : MakePageName($pagename, $pn);
   } else $pn = $pagename;

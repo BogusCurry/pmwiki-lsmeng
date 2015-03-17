@@ -22,8 +22,8 @@ global $LinkPageExistsFmt, $GroupPrintHeaderFmt,
   $GroupPrintFooterFmt, $GroupHeaderFmt, $GroupFooterFmt;
 
 $LinkPageExistsFmt = "<a class='wikilink' href='\$PageUrl?action=print'>\$LinkText</a>";
-SDV($GroupPrintHeaderFmt,'(:include $Group.GroupPrintHeader basepage={*$FullName}:)(:nl:)');
-SDV($GroupPrintFooterFmt,'(:nl:)(:include $Group.GroupPrintFooter basepage={*$FullName}:)');
+SDV($GroupPrintHeaderFmt,'(:include $Group.GroupPrintHeader:)(:nl:)');
+SDV($GroupPrintFooterFmt,'(:nl:)(:include $Group.GroupPrintFooter:)');
 $GroupHeaderFmt = $GroupPrintHeaderFmt;
 $GroupFooterFmt = $GroupPrintFooterFmt;
 
