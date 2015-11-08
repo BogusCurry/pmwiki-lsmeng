@@ -25,6 +25,12 @@
     write me at <pmichaud@pobox.com> with your question(s) and I'll
     provide explanations (and add comments) that answer them.
 */
+
+/****************************************************************************************/
+/* Sam Meng: To my surprise that the default timezone is not sync to that of the laptop */
+date_default_timezone_set('Asia/Taipei');
+/****************************************************************************************/
+
 error_reporting(E_ALL ^ E_NOTICE);
 StopWatch('PmWiki');
 @ini_set('magic_quotes_runtime', 0);
@@ -807,6 +813,7 @@ function PageVar($pagename, $var, $pn = '') {
     $EnablePathInfo;
   if ($var == '$ScriptUrl') return PUE($ScriptUrl);
 
+/****************************************************************************************/
 /* Meng: Define my own variable as a shortcut for the photo folder. If accessing using www
    (https), return empty string. */  
 /* Meng: Process the page name to get the year and the month. This only works if the page name is "Main" 2015/3/17 */
@@ -838,7 +845,8 @@ function PageVar($pagename, $var, $pn = '') {
     if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('https://sammeng.dlinkddns.com/photo/');
     else return PUE('http://localhost/pmwiki/pmwiki/photo/');
   }
-    
+/****************************************************************************************/
+
   if ($pn) {
     $pn = isset($Cursor[$pn]) ? $Cursor[$pn] : MakePageName($pagename, $pn);
   } else $pn = $pagename;
@@ -1685,8 +1693,10 @@ function MarkupToHTML($pagename, $text, $opt = NULL) {
     $lines[] = $MarkupFrame[0]['escape'] ? PVSE($l) : $l;
   $lines[] = '(:closeall:)';
   $out = '';
+    
   while (count($lines)>0) {
     $x = array_shift($lines);
+    
     $RedoMarkupLine=0;
     $markrules = BuildMarkupRules();
     foreach($markrules as $p=>$r) {
@@ -1699,15 +1709,18 @@ function MarkupToHTML($pagename, $text, $opt = NULL) {
         { echo "ERROR: pat=$p $php_errormsg"; unset($php_errormsg); }
       if ($RedoMarkupLine) { $lines=array_merge((array)$x,$lines); continue 2; }
     }
+    
     if ($x>'') $out .= "$x\n";
   }
   foreach((array)(@$MarkupFrame[0]['posteval']) as $v) eval($v);
   array_shift($MarkupFrame);
   StopWatch('MarkupToHTML end');
+
   return $out;
 }
-   
+
 function HandleBrowse($pagename, $auth = 'read') {
+
   # handle display of a page
   global $DefaultPageTextFmt, $PageNotFoundHeaderFmt, $HTTPHeaders,
     $EnableHTMLCache, $NoHTMLCache, $PageCacheFile, $LastModTime, $IsHTMLCached,
@@ -1741,6 +1754,33 @@ function HandleBrowse($pagename, $auth = 'read') {
     $IsHTMLCached = 0;
     $text = '(:groupheader:)'.@$text.'(:groupfooter:)';
     $t1 = time();
+    
+
+
+/****************************************************************************************/
+/* Ling-San Meng: */
+// Move checkTimeOnAuthSuccess() to the checking password phase, since with password checking mechanism on, 
+// the correctly typed password is cached and password check is still run every time.
+// Even better the password check is actually run no matter what I clicked, this solved the 
+// original problem that page editing is not captured by the time stamp check process and 
+// checkTimeOnAuthSuccess() has to be included in handleEdit() too. Also the page history and search
+// won't get checked if checkTimeOnAuthSuccess() is simply put here (in that case we have to modify
+// phpdiff.php and pagelist.php). It is possible however that the above won't work anymore
+// if I turn off the password checking mechanism.
+#checkTimeOnAuthSuccess();
+
+// Replace the filenames of image and video with their full URL for page presentation.
+// By modifying "$text", the original markup language is not altered at all.
+// The replace is not called of course when browsing locally.
+if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) {}
+else
+{
+  $text = replaceImgWithUrl($text);
+  $text = replaceVideoWithUrl($text);
+}
+
+/****************************************************************************************/
+      
     $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt);
     if (@$EnableHTMLCache > 0 && !$NoHTMLCache && $PageCacheFile
         && (time() - $t1 + 1) >= $EnableHTMLCache) {
@@ -1845,6 +1885,8 @@ function ReplaceOnSave($pagename,&$page,&$new) {
     $new['text'] = PPRA((array)@$ROSPatterns, $new['text']);
   }
   $new['=preview'] = $new['text'];
+  
+#  $new['text'] .= "\n[[TEST]]";
   PCache($pagename, $new);
 }
 
@@ -1894,6 +1936,7 @@ function PostPage($pagename, &$page, &$new) {
         Abort('$[The page has an "attr" attribute and cannot be deleted.]');
       else  $WikiDir->delete($pagename);
     }
+    
     else WritePage($pagename,$new);
     $IsPagePosted = true;
   }
@@ -2057,7 +2100,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0) {
   if (@$page['=auth']['admin']) 
     foreach($page['=auth'] as $lv=>$a) @$page['=auth'][$lv] = 3;
   if (@$page['=passwd']['read']) $NoHTMLCache |= 2;
-  if ($level=='ALWAYS' || @$page['=auth'][$level]) return $page;
+  if ($level=='ALWAYS' || @$page['=auth'][$level]) return $page; 
   if (!$authprompt) return false;
   $GLOBALS['AuthNeeded'] = (@$_POST['authpw']) 
     ? $page['=pwsource'][$level] . ' ' . $level : '';
@@ -2081,6 +2124,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0) {
         <script language='javascript' type='text/javascript'><!--
           document.authform.authpw.focus() //--></script>", &$PageEndFmt));
   PrintFmt($pagename,$AuthPromptFmt);
+
   exit;
 }
 
@@ -2107,11 +2151,23 @@ function IsAuthorized($chal, $source, &$from) {
       if (crypt($AllowPassword, $pw) == $pw)           # nopass
         { $auth=1; continue; }
       foreach((array)$AuthPw as $pwresp)                       # password
-        if (crypt($pwresp, $pw) == $pw) { $auth=1; continue; }
+        if (crypt($pwresp, $pw) == $pw)
+        {
+          $auth = 1;
+
+          // Ling-San Meng:
+          // On correctly entering password, call the check time stamp function.
+          // Note that wiki actually caches the correctly written password so that this 
+          // function is called every time wiki is viewed/edited.
+          checkTimeOnAuthSuccess();
+          
+          continue;
+        }
     }
   }
   if (!$passwd) return $from;
   if ($auth < 0) $auth = 0;
+  
   return array($auth, $passwd, $source);
 }
 
@@ -2248,7 +2304,8 @@ function HandlePostAttr($pagename, $auth = 'attr') {
 } 
 
 
-function HandleLogoutA($pagename, $auth = 'read') {
+function HandleLogoutA($pagename, $auth = 'read')
+{
   global $LogoutRedirectFmt, $LogoutCookies;
   SDV($LogoutRedirectFmt, '$FullName');
   SDV($LogoutCookies, array());
@@ -2263,7 +2320,8 @@ function HandleLogoutA($pagename, $auth = 'read') {
 }
 
 
-function HandleLoginA($pagename, $auth = 'login') {
+function HandleLoginA($pagename, $auth = 'login')
+{
   global $AuthId, $DefaultPasswords;
   unset($DefaultPasswords['admin']);
   $prompt = @(!$_POST['authpw'] || ($AuthId != $_POST['authid']));

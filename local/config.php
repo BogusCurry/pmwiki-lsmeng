@@ -35,7 +35,7 @@ $WikiTitle = 'PmWiki';
 ## the "attr" passwords for the PmWiki and Main groups are locked, so
 ## an admin password is a good way to unlock those.  See PmWiki.Passwords
 ## and PmWiki.PasswordsAdmin.
-# $DefaultPasswords['admin'] = crypt('secret');
+#$DefaultPasswords['admin'] = crypt('secret');
 
 ##  PmWiki comes with graphical user interface buttons for editing;
 ##  to enable these buttons, set $EnableGUIButtons to 1.  
@@ -147,19 +147,23 @@ $WikiTitle = 'PmWiki';
 #######################Below is Ling-San Meng's settings###########################
 # My default password;
 $DefaultPasswords['admin'] = '';
+$DefaultPasswords['read']  = '';
 
 # If you are accessing wiki using non-https method (accessing wiki using LAN)
 if ($UrlScheme == 'http') {
 $ScriptUrl = 'http://localhost/pmwiki/pmwiki/pmwiki.php';
 $PubDirUrl = 'http://localhost/pmwiki/pmwiki/pub';
-//$Skin = adapt;
 }
 else if ($UrlScheme == 'https')
 {
 $ScriptUrl = 'https://sammeng.dlinkddns.com/pmwiki.php';
 $PubDirUrl = 'https://sammeng.dlinkddns.com/pub';
 }
-//SDV($WikiStyle['px'], array('height' => '384px')); 
+
+# Various enhancements written by me
+$logoutTimerInSec = 3600;
+$imgHeightPx = 330;
+include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
 # Include traditional chinese language
 include_once("scripts/xlpage-utf-8.php"); # optional
@@ -183,7 +187,7 @@ $wpap_initialvolume = "1";
 $wpap_width = "500";
 include_once("$FarmD/cookbook/wpap/wpap.php");
 
-# Youtube. Only works in IE.
+# Youtube. 
 include_once("$FarmD/cookbook/swf-sites.php");
 
 /* Neo mp3 and video player. */
@@ -207,7 +211,7 @@ $FlashMediaPlayerInfo['neo_flv'] = array(
     'flashvars' => array('flv=$url',
                          '$parms')),
   'defaults' => array('align' => 'top',
-                      'width' => 440,
+                      'width' => 579,
                       'height' => 330,
                       'showstop'=>1,
 #'showvolume'=>1,
@@ -227,7 +231,7 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
                       'height' => 330,
                       'showstop'=>1,
 #'showvolume'=>1,
-'autoload'=>1,
+'autoload'=>0,
 'showtime'=>2,
 'showfullscreen'=>1,
 #'showswitchsubtitles'=>1,
@@ -240,3 +244,26 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 //if (strpos($Url,'-Draft') !== false) { $Skin = pmwiki_noLine; }
 //if (strpos($FullName,'edit') !== false) { $Skin = pmwiki_noLine; }
 //if($IsPagePosted == false) { $Skin = pmwiki_noLine; }
+
+# For Ape: Automagical PmWiki Embed
+$HTMLFooterFmt['ape'] = '<script type="text/javascript" src="$FarmPubDirUrl/ape/ape.js"></script>';
+
+# Replace some never-used full-width characters on saving.
+$ROSPatterns ['/＊/'] = "*";
+$ROSPatterns ['/＃/'] = "#";
+$ROSPatterns ['/＋/'] = "+";
+$ROSPatterns ['/＼/'] = "\\";
+$ROSPatterns ['/，/'] = ", ";
+$ROSPatterns ['/。/'] = ". ";
+$ROSPatterns ['/：/'] = ": ";
+$ROSPatterns ['/％/'] = "%";
+$ROSPatterns ['/＄/'] = "$";
+$ROSPatterns ['/＆/'] = "&";
+$ROSPatterns ['/＠/'] = "@";
+$ROSPatterns ['/（/'] = "(";
+$ROSPatterns ['/）/'] = ")";
+$ROSPatterns ['/「/'] = "[";
+$ROSPatterns ['/」/'] = "]";
+$ROSPatterns ['/｜/'] = "|";
+$ROSPatterns ['/！/'] = "!";
+$ROSPatterns ['/︿/'] = "^";

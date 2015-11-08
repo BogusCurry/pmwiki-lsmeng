@@ -109,6 +109,7 @@ function PHPDiff($old, $new)
   }
   $out[] = '';
   StopWatch("PHPDiff: end");
+  
   return join("\n",$out);
 }
 
