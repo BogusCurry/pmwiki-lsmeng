@@ -63,8 +63,11 @@ function EditDraft(&$pagename, &$page, &$new) {
       unset($new['rev']);
       SDVA($new, $page);
     }
+
 /* Meng: The following line renames draft upon hitting "publish". */
-  #  $WikiDir->delete($draftname);
+// Change it to actually deleting the page.
+#    $WikiDir->delete($draftname);
+    shell_exec("rm -f wiki.d/".$draftname);
   }
   else if (PageExists($draftname) && $pagename != $draftname)
     { Redirect($draftname, '$PageUrl?action=edit'); exit(); }

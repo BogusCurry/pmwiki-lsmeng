@@ -39,7 +39,6 @@ else SessionAuth($pagename);
 function AuthUserId($pagename, $id, $pw=NULL) {
   global $AuthUser, $AuthUserPageFmt, $AuthUserFunctions, 
     $AuthId, $MessagesFmt, $AuthUserPat;
-
   $auth = array();
   foreach((array)$AuthUser as $k=>$v) $auth[$k] = (array)$v;
   $authid = '';

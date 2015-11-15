@@ -1,1 +1,2 @@
-AddType text/plain .php
+Order Deny,Allow
+Deny from all

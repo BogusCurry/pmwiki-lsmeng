@@ -217,7 +217,6 @@ function MakePageList($pagename, $opt, $retpages = 1) {
 
 /* Meng: Exclude the draft pages! */    
     if (strpos($pn,'-Draft') !== false) continue;
-    
     $page['pagename'] = $page['name'] = $pn;
     PCache($pn, $page);
     $matches[] = $pn;
@@ -751,7 +750,13 @@ function PageIndexTerms($terms) {
 ## The optional $dir parameter allows this function to be called
 ## via register_shutdown_function (which sometimes changes directories
 ## on us).
+// Ling-San Meng
+// This function maintains and updates a file named ".pageindex" in wiki.d which basically
+// speeds up categorization and searches. It however causes autosave to give error message
+// when the pmwiki folder is set to non-readable. It also seems to slow down autosaving
+// since it is called constantly and .pageindex is almost 6MB.
 function PageIndexUpdate($pagelist = NULL, $dir = '') {
+/*
   global $EnableReadOnly, $PageIndexUpdateList, $PageIndexFile, 
     $PageIndexTime, $Now;
   if (IsEnabled($EnableReadOnly, 0)) return;
@@ -803,6 +808,7 @@ function PageIndexUpdate($pagelist = NULL, $dir = '') {
   fixperms($PageIndexFile);
   StopWatch("PageIndexUpdate end ($updatecount updated)");
   ignore_user_abort($abort);
+  */
 }
 
 ## PageIndexQueueUpdate specifies pages to be updated in

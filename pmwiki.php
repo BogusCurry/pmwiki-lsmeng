@@ -596,12 +596,14 @@ function mkdirp($dir) {
   $parent = realpath(dirname($dir)); 
   $bdir = basename($dir);
   $perms = decoct(fileperms($parent) & 03777);
+
   $msg = "PmWiki needs to have a writable <tt>$dir/</tt> directory 
     before it can continue.  You can create the directory manually 
     by executing the following commands on your server:
     <pre>    mkdir $parent/$bdir\n    chmod 777 $parent/$bdir</pre>
     Then, <a href='{$ScriptUrl}'>reload this page</a>.";
   $safemode = ini_get('safe_mode');
+
   if (!$safemode) $msg .= "<br /><br />Or, for a slightly more 
     secure installation, try executing <pre>    chmod 2777 $parent</pre> 
     on your server and following <a target='_blank' href='$ScriptUrl'>
@@ -823,27 +825,27 @@ function PageVar($pagename, $var, $pn = '') {
     else 
     {
       if (strcmp(substr($pagename,9,1),"0")==0)
-      { return "%height=330px%http://localhost/pmwiki/Photo/".substr($pagename,5,4)."/".substr($pagename,10,1)."/"; } 
-      else return "%height=330px%http://localhost/pmwiki/Photo/".substr($pagename,5,4)."/".substr($pagename,9,2)."/";
+      { return "%height=330px%http://localhost/Photo/".substr($pagename,5,4)."/".substr($pagename,10,1)."/"; } 
+      else return "%height=330px%http://localhost/Photo/".substr($pagename,5,4)."/".substr($pagename,9,2)."/";
     }
   }	
 
   if ($var == '$PhotoPx')
   {
     if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
-    else return PUE('%height=330px%http://localhost/pmwiki/Photo/');
+    else return PUE('%height=330px%http://localhost/Photo/');
   }
   
   if ($var == '$Photo')
   {
     if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
-    else return PUE('http://localhost/pmwiki/Photo/');
+    else return PUE('http://localhost/Photo/');
   }
   
   if ($var == '$PhotoPub') 
   {
     if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('https://sammeng.dlinkddns.com/photo/');
-    else return PUE('http://localhost/pmwiki/pmwiki/photo/');
+    else return PUE('http://localhost/pmwiki/photo/');
   }
 /****************************************************************************************/
 
@@ -1209,7 +1211,8 @@ function ListPages($pat=NULL) {
 function RetrieveAuthPage($pagename, $level, $authprompt=true, $since=0) {
   global $AuthFunction;
   SDV($AuthFunction,'PmWikiAuth');
-  if (!function_exists($AuthFunction)) return ReadPage($pagename, $since);
+  if (!function_exists($AuthFunction)) 
+   return ReadPage($pagename, $since); 
   return $AuthFunction($pagename, $level, $authprompt, $since);
 }
 
@@ -1720,7 +1723,6 @@ function MarkupToHTML($pagename, $text, $opt = NULL) {
 }
 
 function HandleBrowse($pagename, $auth = 'read') {
-
   # handle display of a page
   global $DefaultPageTextFmt, $PageNotFoundHeaderFmt, $HTTPHeaders,
     $EnableHTMLCache, $NoHTMLCache, $PageCacheFile, $LastModTime, $IsHTMLCached,
@@ -1777,6 +1779,35 @@ else
 {
   $text = replaceImgWithUrl($text);
   $text = replaceVideoWithUrl($text);
+}
+
+// If the page is the code running page, present the page with the results (execute then 
+// grab the results in the case of c programs) and the source code 
+if ($pagename == "Main.Phpsrc")
+{
+  global $srcFile, $outputFile;
+  
+  // PHP
+  $text = "[+'''Result'''+]\n----\n".file_get_contents($outputFile)."\n\n[+'''Script'''+]\n----\n".file_get_contents($srcFile);
+  
+/*
+// C++
+  if (file_exists('pub/test/a.out') !== false)
+  {
+    $exeResult = shell_exec("./pub/test/a.out");
+    $text = "[+'''Result'''+]\n----\n".$exeResult."\n\n[+'''Script'''+]\n----\n".file_get_contents("pub/test/main.cpp");
+  
+    shell_exec("rm -f pub/test/main.cpp
+rm -f pub/test/compileAndRedirect.php
+rm -f pub/test/a.out");
+  }
+  else
+  {
+    // This behavior requires that the folder be readable via http. I think there will be
+    // security issues.
+    $text = "[[http://localhost/pmwiki/pub/test/compileAndRedirect.php|Compile and get results]]";
+  }
+*/
 }
 
 /****************************************************************************************/
@@ -1940,6 +1971,16 @@ function PostPage($pagename, &$page, &$new) {
     else WritePage($pagename,$new);
     $IsPagePosted = true;
   }
+  
+/****************************************************************************************/
+  // The following is added by Ling-San Meng.
+  // If the pagename matches a specific predetermined pagename, then invoke the php
+  // execution procedures.
+  if ($pagename == "Main.Phpsrc")
+  {
+    runPHP($pagename);
+  }
+/****************************************************************************************/
 }
 
 function PostRecentChanges($pagename,$page,$new,$Fmt=null) {
@@ -2053,7 +2094,8 @@ function HandleSource($pagename, $auth = 'read') {
 ## can be called a lot within a single page execution (i.e., for every
 ## page accessed), we cache the results of site passwords and 
 ## GroupAttribute pages to be able to speed up subsequent calls.
-function PmWikiAuth($pagename, $level, $authprompt=true, $since=0) {
+function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
+{
   global $DefaultPasswords, $GroupAttributesFmt, $AllowPassword,
     $AuthCascade, $FmtV, $AuthPromptFmt, $PageStartFmt, $PageEndFmt, 
     $AuthId, $AuthList, $NoHTMLCache;
@@ -2061,6 +2103,8 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0) {
   SDV($GroupAttributesFmt,'$Group/GroupAttributes');
   SDV($AllowPassword,'nopass');
   $page = ReadPage($pagename, $since);
+
+  
   if (!$page) { return false; }
   if (!isset($acache)) 
     SessionAuth($pagename, (@$_POST['authpw']) 
@@ -2130,6 +2174,22 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0) {
 
 function IsAuthorized($chal, $source, &$from) {
   global $AuthList, $AuthPw, $AllowPassword;
+
+   
+  $IP = get_client_ip();
+  $iSPWCorrect = 0;
+
+/****************************************************************************************/
+  // Ling-San Meng
+  // If the password buffer is empty, the logout function has just been called.
+  // Change the login status to 0 (means logged out)
+  if (sizeof($AuthPw) == 0)
+  {    
+    // Set the IP's login Status to 0
+    setParameterValue($IP,"LoginStatus_",0);
+  }
+/****************************************************************************************/
+
   if (!$chal) return $from;
   $auth = 0; 
   $passwd = array();
@@ -2150,24 +2210,46 @@ function IsAuthorized($chal, $source, &$from) {
       }
       if (crypt($AllowPassword, $pw) == $pw)           # nopass
         { $auth=1; continue; }
+      
       foreach((array)$AuthPw as $pwresp)                       # password
         if (crypt($pwresp, $pw) == $pw)
         {
           $auth = 1;
 
+/****************************************************************************************/
           // Ling-San Meng:
-          // On correctly entering password, call the check time stamp function.
-          // Note that wiki actually caches the correctly written password so that this 
-          // function is called every time wiki is viewed/edited.
-          checkTimeOnAuthSuccess();
-          
+          // If the code runs here, the user is authenticated.
+          // Note that wiki actually caches the correctly written password which gives me 
+          // a lot of trouble.
+          // Use the loginStatus variable to see if a cached password is utilized or we 
+          // have a newly typed correct password.
+          // These codes are executed every time wiki is viewed/edited.
+          $iSPWCorrect = 1;
+
+          // Pass $loginStatus to the check timeStamp function to differentiate between
+          // a brand new login with typed password and a cached authenticated session.
+          $loginStatus = getParameterValue($IP,"LoginStatus_");
+          if ($loginStatus == 0)
+          {
+            setParameterValue($IP,"LoginStatus_",1);
+          }
+          checkTimeOnAuthSuccess($IP,$loginStatus);
+/****************************************************************************************/
+
           continue;
         }
     }
   }
+
   if (!$passwd) return $from;
   if ($auth < 0) $auth = 0;
-  
+
+/****************************************************************************************/
+// Ling-San Meng
+# TRY MOVE THE ABOVE HERE
+#  if ($iSPWCorrect == 1) { HandleLogoutA("MAIN.HOMEPAGE"); }
+/****************************************************************************************/
+
   return array($auth, $passwd, $source);
 }
 

@@ -151,8 +151,8 @@ $DefaultPasswords['read']  = '';
 
 # If you are accessing wiki using non-https method (accessing wiki using LAN)
 if ($UrlScheme == 'http') {
-$ScriptUrl = 'http://localhost/pmwiki/pmwiki/pmwiki.php';
-$PubDirUrl = 'http://localhost/pmwiki/pmwiki/pub';
+$ScriptUrl = 'http://localhost/pmwiki/pmwiki.php';
+$PubDirUrl = 'http://localhost/pmwiki/pub';
 }
 else if ($UrlScheme == 'https')
 {
@@ -161,6 +161,8 @@ $PubDirUrl = 'https://sammeng.dlinkddns.com/pub';
 }
 
 # Various enhancements written by me
+$timeStampFile = '../../pmwikiTimeStamp.txt';
+$emailAddress = "f95942117@gmail.com";
 $logoutTimerInSec = 3600;
 $imgHeightPx = 330;
 include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
@@ -187,12 +189,11 @@ $wpap_initialvolume = "1";
 $wpap_width = "500";
 include_once("$FarmD/cookbook/wpap/wpap.php");
 
-# Youtube. 
+# Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
 
 /* Neo mp3 and video player. */
 $EnableDirectDownload = 1;
-include_once("$FarmD/cookbook/extlinkedres.php");
 include_once('cookbook/flashmediaplayer.php');
 $FlashMediaPlayerInfo['neo_mp3'] = array(
   'swf' => "neolao/player_mp3_maxi.swf",
