@@ -69,7 +69,7 @@ function ObjectAutoActivationWrapper($pagename, $obj) {
   if(!IsEnabled($EnableObjectAutoActivation, 1)) return $obj;
   $script = '';
   if(!isset($PCache[$pagename]['extlinkedres'])) {
-    SDV($ObjectAutoActivationScript, "$FarmPubDirUrl/extlinkedres.js");
+#    SDV($ObjectAutoActivationScript, "$FarmPubDirUrl/extlinkedres.js");
     $script = "\n<script type='text/javascript' src='$ObjectAutoActivationScript'></script>";
     $PCache[$pagename]['extlinkedres'] = true;
   }

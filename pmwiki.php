@@ -188,8 +188,9 @@ $HTMLStylesFmt['pmwiki'] = "
     font-weight:bold; font-size:smaller; border-bottom:none; }
   img { border:0px; }
   ";
+
 $HTMLHeaderFmt['styles'] = array(
-  "<style type='text/css'><!--",&$HTMLStylesFmt,"\n--></style>");
+  "<style type='text/css'><!--",&$HTMLStylesFmt,"\n--></style>");    
 $HTMLBodyFmt = "</head>\n<body>";
 $HTMLStartFmt = array('headers:',&$HTMLDoctypeFmt,&$HTMLHeaderFmt,
   &$HTMLBodyFmt);
@@ -337,6 +338,18 @@ if (IsEnabled($EnableLocalConfig,1)) {
     include_once('config.php');
 }
 
+
+/****************************************************************************************/
+/*
+//global $timerJavaSrc, $timerJavaBody;
+//global $HTMLHeaderFmt;
+$HTMLHeaderFmt[2] .= "<script type='text/javascript'><!--
+  ".$timerJavaSrc."
+  --></script>".$timerJavaBody;  
+*/
+/****************************************************************************************/
+
+  
 SDV($CurrentTime, strftime($TimeFmt, $Now));
 SDV($CurrentTimeISO, strftime($TimeISOFmt, $Now));
 
@@ -813,40 +826,11 @@ function PageTextVar($pagename, $var) {
 function PageVar($pagename, $var, $pn = '') {
   global $Cursor, $PCache, $FmtPV, $AsSpacedFunction, $ScriptUrl,
     $EnablePathInfo;
+
   if ($var == '$ScriptUrl') return PUE($ScriptUrl);
 
 /****************************************************************************************/
-/* Meng: Define my own variable as a shortcut for the photo folder. If accessing using www
-   (https), return empty string. */  
-/* Meng: Process the page name to get the year and the month. This only works if the page name is "Main" 2015/3/17 */
-  if ($var == '$ImgPxD')
-  {
-    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
-    else 
-    {
-      if (strcmp(substr($pagename,9,1),"0")==0)
-      { return "%height=330px%http://localhost/Photo/".substr($pagename,5,4)."/".substr($pagename,10,1)."/"; } 
-      else return "%height=330px%http://localhost/Photo/".substr($pagename,5,4)."/".substr($pagename,9,2)."/";
-    }
-  }	
-
-  if ($var == '$PhotoPx')
-  {
-    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
-    else return PUE('%height=330px%http://localhost/Photo/');
-  }
-  
-  if ($var == '$Photo')
-  {
-    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('');
-    else return PUE('http://localhost/Photo/');
-  }
-  
-  if ($var == '$PhotoPub') 
-  {
-    if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) return PUE('https://sammeng.dlinkddns.com/photo/');
-    else return PUE('http://localhost/pmwiki/photo/');
-  }
+// Meng: Self-defined page variables can be declared here.
 /****************************************************************************************/
 
   if ($pn) {
@@ -1105,6 +1089,8 @@ class PageStore {
     if (!$s)
       Abort("Cannot write page to $pagename ($pagefile)...changes not saved");
     PCache($pagename, $page);
+
+
   }
   function exists($pagename) {
     if (!$pagename) return false;
@@ -1189,6 +1175,17 @@ function WritePage($pagename,$page) {
   $wd->write($pagename,$page);
   if ($LastModFile && !@touch($LastModFile)) 
     { unlink($LastModFile); touch($LastModFile); fixperms($LastModFile); }
+    
+
+/****************************************************************************************/
+  // The following is added by Ling-San Meng.
+  // If the pagename matches a specific predetermined pagename, then invoke the php
+  // execution procedures.
+  if ($pagename == "Main.Runcode")
+  {
+    runCode($pagename);
+  }
+/****************************************************************************************/
 }
 
 function PageExists($pagename) {
@@ -1761,54 +1758,51 @@ function HandleBrowse($pagename, $auth = 'read') {
 
 /****************************************************************************************/
 /* Ling-San Meng: */
-// Move checkTimeOnAuthSuccess() to the checking password phase, since with password checking mechanism on, 
-// the correctly typed password is cached and password check is still run every time.
-// Even better the password check is actually run no matter what I clicked, this solved the 
-// original problem that page editing is not captured by the time stamp check process and 
-// checkTimeOnAuthSuccess() has to be included in handleEdit() too. Also the page history and search
-// won't get checked if checkTimeOnAuthSuccess() is simply put here (in that case we have to modify
-// phpdiff.php and pagelist.php). It is possible however that the above won't work anymore
-// if I turn off the password checking mechanism.
-#checkTimeOnAuthSuccess();
 
-// Replace the filenames of image and video with their full URL for page presentation.
-// By modifying "$text", the original markup language is not altered at all.
-// The replace is not called of course when browsing locally.
-if (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443) {}
-else
+// If this is not a draft page, and both the normal and draft page exist, return the draft
+// page.
+if(stripos($pagename,"-Draft") === false)
 {
-  $text = replaceImgWithUrl($text);
-  $text = replaceVideoWithUrl($text);
+  if (file_exists("wiki.d/".$pagename) !== false && file_exists("wiki.d/".$pagename."-Draft") !== false)
+  { redirect($pagename."-Draft"); }
 }
 
 // If the page is the code running page, present the page with the results (execute then 
 // grab the results in the case of c programs) and the source code 
-if ($pagename == "Main.Phpsrc")
+if ($pagename == "Main.Runcode")
 {
-  global $srcFile, $outputFile;
-  
-  // PHP
+  global $runCodePath;
+  $srcFile = $runCodePath."/main.cpp";
+  $outputFile = $runCodePath."/output.txt";
   $text = "[+'''Result'''+]\n----\n".file_get_contents($outputFile)."\n\n[+'''Script'''+]\n----\n".file_get_contents($srcFile);
-  
-/*
-// C++
-  if (file_exists('pub/test/a.out') !== false)
-  {
-    $exeResult = shell_exec("./pub/test/a.out");
-    $text = "[+'''Result'''+]\n----\n".$exeResult."\n\n[+'''Script'''+]\n----\n".file_get_contents("pub/test/main.cpp");
-  
-    shell_exec("rm -f pub/test/main.cpp
-rm -f pub/test/compileAndRedirect.php
-rm -f pub/test/a.out");
-  }
-  else
-  {
-    // This behavior requires that the folder be readable via http. I think there will be
-    // security issues.
-    $text = "[[http://localhost/pmwiki/pub/test/compileAndRedirect.php|Compile and get results]]";
-  }
-*/
 }
+
+// If this is the special page "OnThisDay", replace the page text with a string containing
+// past diary corresponding to today's date.
+if ($pagename == "Main.OnThisDay") { $text = printOnThisDay(); }
+
+// Read in the diary photo directory to find all the diary images and videos, and then
+// paste their full URL to the diary pages
+global $UrlScheme;
+
+if ($UrlScheme == 'https') {}
+else { $text = pasteImgURLToDiary($pagename, $text); }
+
+// A temporary fix for all the headings for the image URL used before.
+global $pubImgDirURL, $diaryImgDirURL;
+$text = str_replace("{\$PhotoPub}",$pubImgDirURL,$text);
+$text = str_replace("{\$PhotoPx}",$diaryImgDirURL,$text);
+$text = str_replace("{\$Photo}",$diaryImgDirURL,$text);
+if ($UrlScheme == 'http')
+{
+  if (strcmp(substr($pagename,9,1),"0")==0)
+  { $text = str_replace("{\$ImgPxD}",$diaryImgDirURL.substr($pagename,5,4)."/".substr($pagename,10,1)."/",$text); } 
+  else 
+  { $text = str_replace("{\$ImgPxD}",$diaryImgDirURL.substr($pagename,5,4)."/".substr($pagename,9,2)."/",$text); } 
+}
+
+// Replace all the image URL with the size toggle function.
+$text = replaceImgUrlWithSizeToggle($text);
 
 /****************************************************************************************/
       
@@ -1846,6 +1840,7 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL) {
     $fn($pagename, $page, $new);
   }
   StopWatch("UpdatePage: end $pagename");
+  
   return $IsPagePosted;
 }
 
@@ -1965,22 +1960,27 @@ function PostPage($pagename, &$page, &$new) {
     if (preg_match("/$DeleteKeyPattern/",$new['text'])){
       if(@$new['passwdattr']>'' && !CondAuth($pagename, 'attr'))
         Abort('$[The page has an "attr" attribute and cannot be deleted.]');
-      else  $WikiDir->delete($pagename);
+      else 
+      {
+//        $WikiDir->delete($pagename);
+
+/****************************************************************************************/
+        // Ling-San Meng.
+        // After enabling draft the delete keyword does not work properly; the deleted 
+        // page file still exists with a timestamp at the time of deletion. Call shell
+        // to actually delete the page and its draft page at the same time.
+        $draftPageName = $pagename;
+        $basePageName = substr($draftPageName,0,strlen($draftPageName)-6);
+        shell_exec("rm -f wiki.d/".$draftPageName); 
+        shell_exec("rm -f wiki.d/".$basePageName); 
+/****************************************************************************************/
+      }
     }
     
     else WritePage($pagename,$new);
     $IsPagePosted = true;
   }
   
-/****************************************************************************************/
-  // The following is added by Ling-San Meng.
-  // If the pagename matches a specific predetermined pagename, then invoke the php
-  // execution procedures.
-  if ($pagename == "Main.Phpsrc")
-  {
-    runPHP($pagename);
-  }
-/****************************************************************************************/
 }
 
 function PostRecentChanges($pagename,$page,$new,$Fmt=null) {
@@ -2119,7 +2119,12 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   if (!isset($acache['@site'])) {
     foreach($DefaultPasswords as $k => $v) {
       $x = array(2, array(), '');
-      $acache['@site'][$k] = IsAuthorized($v, 'site', $x);
+/****************************************************************************************/
+      // Ling-San Meng
+      // A flag has been appended by me to differentiate if from the following calls to
+      // this function, as this one handles the login mechanism that I need.
+      $acache['@site'][$k] = IsAuthorized($v, 'site', $x,1);
+/****************************************************************************************/
       $AuthList["@_site_$k"] = $acache['@site'][$k][0] ? 1 : 0;
     }
   }
@@ -2172,21 +2177,22 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   exit;
 }
 
-function IsAuthorized($chal, $source, &$from) {
+function IsAuthorized($chal, $source, &$from, $flag=0) {
   global $AuthList, $AuthPw, $AllowPassword;
-
-   
-  $IP = get_client_ip();
-  $iSPWCorrect = 0;
 
 /****************************************************************************************/
   // Ling-San Meng
   // If the password buffer is empty, the logout function has just been called.
   // Change the login status to 0 (means logged out)
-  if (sizeof($AuthPw) == 0)
-  {    
-    // Set the IP's login Status to 0
-    setParameterValue($IP,"LoginStatus_",0);
+  if ($flag == 1)
+  {  
+    $IP = get_client_ip();
+    $nPwAttempt = sizeof($AuthPw);  
+    if ($nPwAttempt == 0)
+    {    
+      // Set the IP's login Status to 0
+      setParameterValue($IP,"LoginStatus_",0);
+    }
   }
 /****************************************************************************************/
 
@@ -2215,27 +2221,6 @@ function IsAuthorized($chal, $source, &$from) {
         if (crypt($pwresp, $pw) == $pw)
         {
           $auth = 1;
-
-/****************************************************************************************/
-          // Ling-San Meng:
-          // If the code runs here, the user is authenticated.
-          // Note that wiki actually caches the correctly written password which gives me 
-          // a lot of trouble.
-          // Use the loginStatus variable to see if a cached password is utilized or we 
-          // have a newly typed correct password.
-          // These codes are executed every time wiki is viewed/edited.
-          $iSPWCorrect = 1;
-
-          // Pass $loginStatus to the check timeStamp function to differentiate between
-          // a brand new login with typed password and a cached authenticated session.
-          $loginStatus = getParameterValue($IP,"LoginStatus_");
-          if ($loginStatus == 0)
-          {
-            setParameterValue($IP,"LoginStatus_",1);
-          }
-          checkTimeOnAuthSuccess($IP,$loginStatus);
-/****************************************************************************************/
-
           continue;
         }
     }
@@ -2245,9 +2230,40 @@ function IsAuthorized($chal, $source, &$from) {
   if ($auth < 0) $auth = 0;
 
 /****************************************************************************************/
-// Ling-San Meng
-# TRY MOVE THE ABOVE HERE
-#  if ($iSPWCorrect == 1) { HandleLogoutA("MAIN.HOMEPAGE"); }
+  // Ling-San Meng:
+  // This function is called multiple times a page is viewed/edited. A flag has been
+  // added by me to identify the one that I need.
+  // If $auth == 1, the user is authenticated.
+  // Note that wiki actually caches the correctly written password which gives me 
+  // a lot of trouble.
+  // Use the loginStatus variable to see if a cached password is utilized or we 
+  // have a newly typed correct password.
+  // These codes are executed every time wiki is viewed/edited.
+
+  if ($flag == 1)
+  {
+    if ($auth == 1)
+    {
+      // Pass $loginStatus to the check timeStamp function to differentiate between
+      // a brand new login with typed password and a cached authenticated session.
+      $loginStatus = getParameterValue($IP,"LoginStatus_");
+      if ($loginStatus == 0)
+      {
+        setParameterValue($IP,"LoginStatus_",1);
+      }
+      checkTimeOnAuthSuccess($IP,$loginStatus);
+    }
+    else
+    {
+      // You have to be correct at the $pwAttemptLimit+1 th time
+      $pwAttemptLimit = 1;
+      if ($nPwAttempt > $pwAttemptLimit)
+      {
+        sendAlertEmail($IP,"Pmwiki ".$nPwAttempt. " Failed Password Attempts: ".$AuthPw[0]." ".$AuthPw[1]);
+        Abort("TOO MANY FAILED PASSWORD ATTEMPTS!");
+      }
+    }
+  }  
 /****************************************************************************************/
 
   return array($auth, $passwd, $source);

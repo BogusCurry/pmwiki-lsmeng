@@ -33,10 +33,10 @@ SDVA( $HandleActions, array(
 	'autosave' => 'HandleAutoSave' ));
 
 XLSDV( 'en', array(
-	'ASnosuffix' => 'Autosave error: non-empty $DraftSuffix required',
-	'ASnoread' => 'Autosave read error',
-	'ASnowrite' => 'Autosave write error',
-	'ASsimuledit' => 'Autosave disabled: simultaneous editing'
+	'ASnosuffix' => '<span  style=\'background-color: red; color: white;\'>Autosave error: non-empty $DraftSuffix required</span>',
+	'ASnoread' => '<span  style=\'background-color: red; color: white;\'>Autosave read error</span>',
+	'ASnowrite' => '<span  style=\'background-color: red; color: white;\'>Autosave write error</span>',
+	'ASsimuledit' => '<span  style=\'background-color: red; color: white;\'>Autosave disabled: simultaneous editing</span>'
 ));
 
 
@@ -73,8 +73,54 @@ function AutoSaveMarkup( $pagename ) {
 	$url .= ( strpos($url,'?') ? '&' : '?' ) . "action=autosave";
 
 	SDV( $AutoSavePubDirUrl, "$PubDirUrl/autosave" );
+/****************************************************************************************/
 /*Meng: Autosave timer. Setting to 1 sec pretty much means saving continuously.*/
-	SDV( $AutoSaveDelay, 1 );
+  global $UrlScheme, $autoSaveDelayHttp, $autoSaveDelayHttps;
+  if ($UrlScheme == 'http') { SDV( $AutoSaveDelay, $autoSaveDelayHttp); }
+  else { SDV( $AutoSaveDelay, $autoSaveDelayHttps); }
+
+/*
+  global $timerJavaSrc, $timerJavaBody;
+  global $HTMLHeaderFmt;
+  $HTMLHeaderFmt['style'] = "
+  <script type='text/javascript'><!--
+  
+  var timer;
+  function startTimer(duration, display)
+  {
+    timer = duration;
+    setInterval(
+    function ()
+    {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? \"0\" + minutes : minutes;
+        seconds = seconds < 10 ? \"0\" + seconds : seconds;
+
+        display.textContent = minutes + \":\" + seconds;
+
+        if (--timer < 0)
+        {
+          timer = duration;
+        }
+        
+    }
+    , 1000);
+  }
+  
+  window.onload = function ()
+  {
+    fiveMinutes = 3;
+    display = document.querySelector('#time');
+    startTimer(fiveMinutes, display);
+  };
+  --></script>  <body>
+    <div>Logout in <span id=\"time\"></span> minutes</div>
+  </body>
+  ";
+*/
+/****************************************************************************************/
 	SDVA( $AutoSaveFmt, array(
 		'info' => "<label id='autosave-label'><input type='checkbox' checked='1' id='autosave-cb' /><span id='autosave-status'>Autosave</span></label>",
 		'util' => "<script type='text/javascript' src='$AutoSavePubDirUrl/util.js'></script>",

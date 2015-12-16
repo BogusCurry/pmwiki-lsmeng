@@ -49,7 +49,7 @@ var AS = {
 				// fallthrough
 			case undefined:
 				if (AS.ts) {
-/* Meng: Uncomment below to show the last modified time. Pretty annoying in my opinion. */
+/* Meng: Uncomment the following (show the last modified time). Pretty annoying in my opinion. */
 				//	AS.status = "Draft autosaved at ";
 				//	if (AS.ts.toLocaleFormat) AS.status += AS.ts.toLocaleFormat("%H:%M");
 				//	else AS.status += AS.ts.getHours() + ':' + AS.ts.getMinutes();
@@ -64,7 +64,7 @@ var AS = {
 					AS.cb.checked = false;
 					AS.cb.disabled = true;
 				}
-				if (AS.lbl) AS.lbl.title = "Autosave disabled (error!)";
+				if (AS.lbl) AS.lbl.title = "<span  style='background-color: red; color: white;'>Autosave disabled (error!)</span>";
 		}
 		AS.txt.innerHTML = AS.status;
 	},
@@ -79,7 +79,7 @@ var AS = {
 //		else AS.set_status("Autosave failed (HTTP status " + AS.req.status + ')');
 		else
 		{
-			AS.txt.innerHTML = "Autosave failed (HTTP status " + AS.req.status + ')';
+			AS.txt.innerHTML = "<span  style='background-color: red; color: white;'>Autosave failed (HTTP status " + AS.req.status + ')</span>';
 			AS.busy = false;
 		}
 	},
@@ -112,7 +112,7 @@ var AS = {
 			AS.id = setInterval( AS.save, AS.delay * 1000 );
 			AS.save();
 		} else {
-			AS.txt.innerHTML = "Autosave disabled";
+			AS.txt.innerHTML = "<span  style='background-color: red; color: white;'>Autosave disabled</span>";
 			if (AS.lbl) AS.lbl.title = "Enable autosave";
 		}
 	},

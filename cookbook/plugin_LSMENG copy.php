@@ -1,14 +1,11 @@
 <?php 
-/* 
- * Various enhancements for pmWiki written by Ling-San Meng (Sam Meng).
+/* Various enhancements for pmWiki written by Ling-San Meng (Sam Meng).
  * If the function follows a line beginning with "FmtPV," the function is callable
  * from within wiki pages using markup language {$nameOfFunction}
  *
  * Email: f95942117@gmail.com
- * Last Modified: 2015/12/16
- */
-
-/****************************************************************************************/
+ * Last Modified: 2015/12/13
+*/
 
 // Return a string of a random line from the wiki page "$pagename"
 function getRandLine($pagename)
@@ -44,34 +41,9 @@ function getNoEmptyRandLine($pagename)
   }
 }
 
-// Return 2 strings of random characters serving as passwords of fixed length 6 and 8.
-$FmtPV['$RandomPwd'] = 'RandomPwd()';
-function RandomPwd()
-{
-  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  $charactersLength = strlen($characters);
-    
-  $length = 6;
-  $randomString6 = '';
-  for ($i = 0; $i < $length; $i++)
-  {
-    $randomString6 .= $characters[rand(0, $charactersLength - 1)];
-  }
-    
-  $length = 8;
-  $randomString8 = '';
-  for ($i = 0; $i < $length; $i++)
-  {
-    $randomString8 .= $characters[rand(0, $charactersLength - 1)];
-  }
-  return $randomString6."\\\\\n".$randomString8;
-}
-
-
-/****************************************************************************************/
-
-// Return a string containing past diary corresponding to today's date. 
-function printOnThisDay()
+// Return a string containing past diary corresponding to today's date number. 
+$FmtPV['$printOnThisDay'] = 'printOnThisDay($pn)';
+function printOnThisDay($pagename)
 {
   $today = getdate();
   $onThisDayStr = "";
@@ -111,6 +83,29 @@ function printOnThisDay()
   return "$onThisDayStr";
 }
 
+// Return 2 strings of random characters serving as passwords of fixed length 6 and 8.
+$FmtPV['$RandomPwd'] = 'RandomPwd()';
+function RandomPwd()
+{
+  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  $charactersLength = strlen($characters);
+    
+  $length = 6;
+  $randomString6 = '';
+  for ($i = 0; $i < $length; $i++)
+  {
+    $randomString6 .= $characters[rand(0, $charactersLength - 1)];
+  }
+    
+  $length = 8;
+  $randomString8 = '';
+  for ($i = 0; $i < $length; $i++)
+  {
+    $randomString8 .= $characters[rand(0, $charactersLength - 1)];
+  }
+  return $randomString6."\\\\\n".$randomString8;
+}
+
 // Return a string of the pagename for editing today's diary.
 $FmtPV['$editToday'] = 'editToday()';
 function editToday()
@@ -136,8 +131,6 @@ function showDateTime($pagename)
 
   return "[[Main.onThisDay|".$today[year]."\\\\\n".$today[mon]."/".$today[mday]."\\\\\n".$today[hours].":".$minStr."]]";
 }
-
-/****************************************************************************************/
 
 // Similar to file_get_contents(). Wait a random time duration if the file doesn't exist.
 // A maximum number of retry limit can be set.
@@ -311,13 +304,13 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
 
       $actual_link = "$_SERVER[REQUEST_URI]";
       $pos1 = strpos($actual_link,"=");
-      $pos2 = stripos($actual_link,"?action");
+      $pos2 = strpos($actual_link,"?action");
       $currentPagename = "";
       if ($pos1 === false) { $currentPagename = "Main.HomePage"; }
       else if ($pos2 === false) { $currentPagename = substr($actual_link,$pos1+1,strlen($actual_link)-$pos1); }
       else { $currentPagename = substr($actual_link,$pos1+1,$pos2-$pos1-1); }
 
-      $isEditing = stripos($actual_link,"?action=edit");
+      $isEditing = strpos($actual_link,"?action=edit");
       if ($isEditing === false) { setParameterValue($IP,"TimeStamp_",-1); setParameterValue($IP,"LastSeen_",$formatTime); }
       else { setParameterValue($IP,"TimeStamp_",-2); setParameterValue($IP,"LastSeen_",$formatTime); } 
       HandleLogoutA($currentPagename);
@@ -351,6 +344,158 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
 //      else { sendAlertEmail($IP." (php session timed out I guess)"); }
     }
   }  
+}
+
+
+# For img size toggle; adapted from flipbox.
+include_once($FarmD.'/cookbook/imgSizeToggle.php');
+
+// Replace the image filenames with their full URL.
+// The filename has to follow a specific format as YYYYMMDD_HHMMSS.jpg
+// The URL is preceded by a image height setting provided in "config.php"
+function replaceImgWithUrl($text,$extension)
+{  
+  $count = 1;
+  $pos = 0;
+  while(1)
+  {
+    $pos = @strpos($text, $extension, $pos);
+    
+    if ($pos !== false)
+    {
+      // Format check by examining the underscore and the character right before the filename. 
+      // Remove checking "}" after I get rid of all the old image heading {$imgPx}
+      // "sameTimeChar" is to handle photos taken at exactly the same time so that the file name
+      // is appended by an English letter.
+// Loosening the check after cleaning up all the old img headings
+      $isImgFileNameValid = 0;
+      $sameTimeChar = "";
+      if ($text[$pos-7] == "_" && $text[$pos-16] !== "/" && $text[$pos-16] !== "}" && $text[$pos-14] == "0" && $text[$pos-15] == "2")
+      { $isImgFileNameValid = 1; }
+      else if ($text[$pos-8] == "_" && $text[$pos-17] !== "/" && $text[$pos-17] !== "}" && $text[$pos-15] == "0" && $text[$pos-16] == "2")
+      { $isImgFileNameValid = 1; $sameTimeChar = "a"; }
+      
+      if ($isImgFileNameValid == 1)
+      {
+        $l = strlen($sameTimeChar);
+        
+        $originalFileName = substr($text,$pos-15-$l,19+$l);
+ 
+        $imgUrl = "http://localhost/Photo/".substr($originalFileName,0,4)."/";      
+        if (strcmp(substr($originalFileName,4,1),"0")==0)
+        { $imgUrl .= substr($originalFileName,5,1)."/"; } 
+        else { $imgUrl .= substr($originalFileName,4,2)."/"; }
+        $imgUrl .= $originalFileName;
+
+        $flipboxMarkup = FmtImgSizeToggle('_',$count,$imgUrl);
+        $text = substr_replace($text, $flipboxMarkup, $pos-15-$l, 19+$l);
+        
+        $pos = $pos+strlen($flipboxMarkup);
+        $count++;
+      }
+
+      else { $pos = $pos+4; }
+    }
+    else { break; }
+  }
+
+  return $text;
+}
+
+// Return the full URL of images put in the diary photo directory based on the image filename.
+// The filename has to follow a specific format as YYYYMMDD_HHMMSS.jpg
+// An empty string is returned if the format doesn't check.
+function getDiaryImgUrl($img)
+{  
+  // Check if it has the image extension.
+
+  $extension = substr($img,strlen($img)-4,4);
+  if ($extension !== ".jpg" && $extension !== ".png") { return ""; }
+ 
+
+      // Format check by examining the underscore and the character right before the filename. 
+      // "sameTimeChar" is to handle photos taken at exactly the same time so that the file name
+      // is appended by an English letter.
+      $isImgFileNameValid = 0;
+      $sameTimeChar = "";
+      if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
+      {
+        if (strlen($img) == 19)
+        {
+          $isImgFileNameValid = 1;
+        }
+        else if (strlen($img) == 20)
+        {
+          $isImgFileNameValid = 1;
+          $sameTimeChar = $img[15];
+        }
+        else { return ""; }
+      }
+      else { return ""; }
+
+      if ($isImgFileNameValid == 1)
+      {
+        $l = strlen($sameTimeChar);
+        
+        $imgUrl = "http://localhost/Photo/".substr($img,0,4)."/";      
+        if (strcmp(substr($img,4,1),"0")==0)
+        { $imgUrl .= substr($img,5,1)."/"; } 
+        else { $imgUrl .= substr($img,4,2)."/"; }
+        $imgUrl .= $img;
+
+        return $imgUrl;
+      }
+      else { return ""; }
+}
+
+// Replace the video filenames with the full command for calling the neo flv media player.
+// The video size setting is in "config.php"
+// The filename has to follow a specific format as YYYYMMDD_HHMMSS.mp4
+// If the filename is preceded by "V", the vertical version of neo player will be called
+// The player size settings are in "config.php"
+function replaceVideoWithUrl($text)
+{
+  $pos = 0;
+  while(1)
+  {
+    $pos = strpos($text, ".mp4", $pos);
+    
+    if ($pos !== false)
+    {
+      // Format check by examining the underscore and the character right before the filename. 
+      $charBeforeFileName = $text[$pos-16];
+
+      if ($text[$pos-7] == "_" && $charBeforeFileName !== "/")// && $text[$pos-14] == "0" && $text[$pos-15] == "2")
+      {
+        $originalFileName = substr($text,$pos-15,19);
+        
+        // Take care of the vertical video heading.
+        $filePath = "";
+        if ($charBeforeFileName == "V") { $filePath = "(:neo_flv_V-player "; }
+        else { $filePath = "(:neo_flv-player "; }
+        
+        $filePath .= "http://localhost/Photo/".substr($originalFileName,0,4)."/";
+        if (strcmp(substr($originalFileName,4,1),"0")==0)
+        { $filePath .= substr($originalFileName,5,1)."/"; } 
+        else { $filePath.= substr($originalFileName,4,2)."/"; }
+
+        if ($charBeforeFileName == "V")
+        {
+          $text = substr($text,0,$pos-16).$filePath.$originalFileName." :)".substr($text,$pos+4,strlen($text));
+        }
+        else
+        {  
+          $text = substr($text,0,$pos-15).$filePath.$originalFileName." :)".substr($text,$pos+4,strlen($text));
+        }
+        
+        $pos = $pos+strlen($filePath)+4;
+      }    
+      else { $pos = $pos+4; }
+    }
+    else { break; }
+  }
+
+  return $text;
 }
 
 // Should be clear.
@@ -501,10 +646,6 @@ class OS_BR{
     }
 }
 
-
-/****************************************************************************************/
-
-
 // Should be clear.
 function addLineNum($text)
 {
@@ -584,171 +725,13 @@ function runCode($pagename)
   fclose($fp);
 }
 
-
-/****************************************************************************************/
-
-# For img size toggle; adapted from flipbox.
-include_once($FarmD.'/cookbook/imgSizeToggle.php');
-
-// Replace a complete image URL with the "image size toggle" function.
-function replaceImgUrlWithSizeToggle($text)
-{   
-  $supportImgExtList = array('.jpg', '.png', '.jpeg');
-  $NUM_IMGEXT = count($supportImgExtList);
-
-  $imgCount = 1;
-  
-  for ($iExt=0;$iExt<$NUM_IMGEXT;$iExt++)
-  {  
-    $extension = $supportImgExtList[$iExt];
-    $extLen = strlen($extension);
-    $pos = 0;
-    while(1)
-    {
-      $pos = @stripos($text, $extension, $pos);
-    
-      if ($pos !== false)
-      {
-        // check if this is a valid image url
-        $isImgFileNameValid = 0;
-        $imgUrl = "";
-        $roughInterceptImgUrl = substr($text,0,$pos+$extLen);        
-        global $UrlScheme;
-        $httpPos = strrpos($roughInterceptImgUrl,$UrlScheme.'://'.$_SERVER['HTTP_HOST']);
-        if ($httpPos !== false && $roughInterceptImgUrl[$httpPos-1]!=="%")
-        {
-          $spacePos = strpos($roughInterceptImgUrl," ",$httpPos);
-          if ($spacePos === false)
-          {
-            $isImgFileNameValid = 1;
-            $imgUrl = substr($roughInterceptImgUrl, $httpPos, strlen($roughInterceptImgUrl)-$httpPos);
-          }
-        }
-      
-        if ($isImgFileNameValid == 1)
-        { 
-          $flipboxMarkup = FmtImgSizeToggle('_',$imgCount,$imgUrl);
-          $text = substr_replace($text, $flipboxMarkup, $pos-strlen($imgUrl)+$extLen, strlen($imgUrl));
-        
-          $pos = $pos+strlen($flipboxMarkup)-strlen($imgUrl)+$extLen;
-          $imgCount++;
-        }
-        else { $pos = $pos+$extLen; }
-      }
-      else { break; }
-    }
-
-  }
-  return $text;
-}
-
-// Return the full URL of images put in the diary photo directory based on the image filename.
-// The filename has to follow a specific format as YYYYMMDD_HHMMSS.jpg
-// An empty string is returned if the format doesn't check.
-function getDiaryImgUrl($img)
-{  
-  // Check if it has the image extension.
-  $supportImgExtList = array('.jpg', '.png', '.jpeg');
-  $NUM_IMGEXT = count($supportImgExtList);
-  $EXT_LEN = 0;
-  for ($iExt=0;$iExt<$NUM_IMGEXT;$iExt++)
-  {
-    $extension = $supportImgExtList[$iExt];
-    $pos = stripos($img, $extension);
-    if ($pos !== false)
-    {
-      $EXT_LEN = strlen($extension);
-      break;
-    }
-  }
-  
-  // No valid extension found.
-  if ($EXT_LEN == 0) { return ""; }
-
-  // Format check by examining the underscore and the character right before the filename. 
-  // "sameTimeChar" is to handle photos taken at exactly the same time so that the file name
-  // is appended by an English letter.
-  $isImgFileNameValid = 0;
-  $IMG_NAME_LEN = strlen("YYYYMMDD_HHMMSS");
-  $sameTimeChar = "";
-  if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
-  {
-    if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN)
-    {
-      $isImgFileNameValid = 1;
-    }
-    else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1)
-    {
-      $isImgFileNameValid = 1;
-      $sameTimeChar = $img[$IMG_NAME_LEN];
-    }
-    else { return ""; }
-  }
-  else { return ""; }
-
-  if ($isImgFileNameValid == 1)
-  { 
-    global $diaryImgDirURL;
-    $imgUrl = $diaryImgDirURL.substr($img,0,4)."/";      
-    if (strcmp(substr($img,4,1),"0")==0)
-    { $imgUrl .= substr($img,5,1)."/"; } 
-    else { $imgUrl .= substr($img,4,2)."/"; }
-    $imgUrl .= $img;
-
-    return $imgUrl;
-  }
-  else { return ""; }
-}
-
-// Return the full URL of video put in the diary photo directory based on the video filename.
-// The video size setting is in "config.php"
-// The filename has to follow a specific format as YYYYMMDD_HHMMSS.mp4
-// An empty string is returned if the format doesn't check.
-function getDiaryVideoUrl($img)
-{  
-  // Check if it has the correct video extension.
-  $pos = stripos($img, ".mp4");
-  if ($pos === false) { return ""; }
-
-  // Format check by examining the underscore and the character right before the filename. 
-  // "sameTimeChar" is to handle photos taken at exactly the same time so that the file name
-  // is appended by an English letter.
-  $isImgFileNameValid = 0;
-  if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
-  {
-    if (strlen($img) == 19)
-    {
-      $isImgFileNameValid = 1;
-    }
-    else { return ""; }
-  }
-  else { return ""; }
-
-  if ($isImgFileNameValid == 1)
-  {        
-    // Take care of the vertical video heading.
-    global $diaryImgDirURL;
-    $imgUrl = "(:neo_flv_V-player ";     
-    $imgUrl .= $diaryImgDirURL.substr($img,0,4)."/";
-    if (strcmp(substr($img,4,1),"0")==0)
-    { $imgUrl .= substr($img,5,1)."/"; } 
-    else { $imgUrl.= substr($img,4,2)."/"; }
-        
-    $imgUrl .= $img." :)";
-        
-    return $imgUrl;
-  }
-  else { return ""; }
-}
-
-
 // For diary pages, automatically read the corresponding photo directory and list the file
 // names of all the images and videos under their recorded date.
-function pasteImgURLToDiary($pagename,$text)
+function addImgURLToDiary($pagename,$text)
 {
   // Check if this is a diary page
   $basename = $pagename;
-  $pos = stripos($pagename,"-Draft");
+  $pos = strpos($pagename,"-Draft");
   if ($pos !== false) { $basename = substr($pagename,0,strlen($pagename)-6); }
   $pagenameLen = strlen($basename);
   if ($pagenameLen !== 11) { return $text; }
@@ -759,10 +742,11 @@ function pasteImgURLToDiary($pagename,$text)
   $diaryMonth = substr($basename,9,2);
   if ((int)$diaryMonth < 1 || (int)$diaryMonth > 12) { return $text; }
 
-  // This function is applied since Nov. 2015
-  if ((int)$diaryYear+(int)$diaryMonth < 2026) { return $text; }
+  // This function is applied since Dec. 2015
+  if ((int)$diaryYear+(int)$diaryMonth < 2027) { return $text; }
   
   // Read the photo directory of this month
+// Call config.php
   $dir = "../Photo/".$diaryYear."/".$diaryMonth;
   $file = scandir($dir);
   $N_FILE = count($file);
@@ -774,11 +758,7 @@ function pasteImgURLToDiary($pagename,$text)
     // Check if this is a valid image file with correct filename format.
     $imgName = $file[$iFile];
     $imgUrl = getDiaryImgUrl($imgName);
-    if ($imgUrl == "")
-    {
-      $imgUrl = getDiaryVideoUrl($imgName);
-      if ($imgUrl == "") { continue; }
-    }
+    if ($imgUrl == "") { continue; }
   
     // Get its date & hour
     // Before 6am, it's still the same day...
@@ -787,6 +767,15 @@ function pasteImgURLToDiary($pagename,$text)
     $imgHourMinSecStr = substr($imgName,9,6);
     if ($imgHour<6 && $imgDay>1) { $imgDay--; }
 
+/*
+    // Append the image to an array having the same date
+    // Use vertical mode for all the video, since I have no choice over the mode now and
+    // vertical is used more often
+    if ($extension == ".mp4")
+    { $dayImgList[$imgDay] .= "V".$imgName." "; }
+    else
+    { $dayImgList[$imgDay] .= $imgName." "; }
+*/
     $dayImgList[$imgDay] .= $imgUrl." ";
   }
 
@@ -812,40 +801,3 @@ function pasteImgURLToDiary($pagename,$text)
   
   return $text;
 }
-
-/****************************************************************************************/
-  
-/*
-  global $logoutTimerInSec;
-  
-  $timerJavaSrc = "
-  function startTimer(duration, display)
-  {
-    var timer = duration, minutes, seconds;
-    setInterval(function () {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
-
-        minutes = minutes < 10 ? \"0\" + minutes : minutes;
-        seconds = seconds < 10 ? \"0\" + seconds : seconds;
-
-        display.textContent = minutes + \":\" + seconds;
-
-        if (--timer < 0) {
-            window.location = 'http://"."$_SERVER[REQUEST_URI]"."';
-        }
-    }, 1000);
-  }
-
-  window.onload = function ()
-  {
-    var fiveMinutes = ".$logoutTimerInSec.",
-        display = document.querySelector('#time');
-    startTimer(fiveMinutes, display);
-  };";
-
-  $timerJavaBody = "
-  <body>
-    <div>Logout in <span id=\"time\"></span> minutes</div>
-  </body>";
-*/

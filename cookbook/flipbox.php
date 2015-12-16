@@ -52,6 +52,7 @@ function FmtFlipbox($pagename, $_x, $id) {
   $wiki = sprintf($FlipboxWikiStyle, "fb$_y", "_fbl$id");
 
   $html = "<img id='_fbi$id' src='$FlipboxPubDirUrl/{$FlipboxIcon[0]}$_y{$FlipboxIcon[1]}'";
+
   $onclick = "";
   if(strlen($_x)==1)
     $onclick = " onclick='try{flipbox($id, \"$_y\", true);}catch(e){void(0);}'";
@@ -59,6 +60,7 @@ function FmtFlipbox($pagename, $_x, $id) {
     $onclick = " onclick='try{flipbox($id, \"$_y\", false);}catch(e){void(0);}'";
 
   $html = sprintf($FlipboxHTML, $id, "$FlipboxPubDirUrl/{$FlipboxIcon[0]}$_y{$FlipboxIcon[1]}", $onclick, $_x, $_y);
+  
   return $wiki.Keep(Fmtpagename($html, $pagename));
 }
 

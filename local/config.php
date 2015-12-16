@@ -149,22 +149,38 @@ $WikiTitle = 'PmWiki';
 $DefaultPasswords['admin'] = '';
 $DefaultPasswords['read']  = '';
 
+/*
 # If you are accessing wiki using non-https method (accessing wiki using LAN)
-if ($UrlScheme == 'http') {
-$ScriptUrl = 'http://localhost/pmwiki/pmwiki.php';
-$PubDirUrl = 'http://localhost/pmwiki/pub';
+if ($UrlScheme == 'http')
+{
+  $ScriptUrl = 'http://localhost/pmwiki/pmwiki.php';
+  $PubDirUrl = 'http://localhost/pmwiki/pub';
 }
 else if ($UrlScheme == 'https')
 {
-$ScriptUrl = 'https://sammeng.dlinkddns.com/pmwiki.php';
-$PubDirUrl = 'https://sammeng.dlinkddns.com/pub';
+  $ScriptUrl = 'https://sammeng.dlinkddns.com/pmwiki.php';
+  $PubDirUrl = 'https://sammeng.dlinkddns.com/pub';
 }
+*/
 
 # Various enhancements written by me
-$timeStampFile = '../../pmwikiTimeStamp.txt';
-$emailAddress = "f95942117@gmail.com";
+if ($UrlScheme == 'https')
+{
+  $pubImgDirURL = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/';
+  $diaryImgDirURL = "";
+}
+else
+{
+  $pubImgDirURL = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/photo/';
+  $diaryImgDirURL = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/';
+}
+$runCodePath = "pub/runCode";
+$timeStampFile = '../../pmwikiTimeStamp/pmwikiTimeStamp.txt';
+$emailAddress1 = "f95942117@gmail.com";
+$emailAddress2 = "";
 $logoutTimerInSec = 3600;
 $imgHeightPx = 330;
+$imgHeightPxL = 660;
 include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
 # Include traditional chinese language
@@ -176,6 +192,8 @@ include_once("$FarmD/cookbook/MathJax.php");
 
 # For autosave
 $EnableDrafts = 1;
+$autoSaveDelayHttp = 1;
+$autoSaveDelayHttps = 1;
 include_once("$FarmD/cookbook/autosave.php");
 
 # For flipbox
@@ -239,16 +257,6 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 #'srt'=>1
 ));
 
-
-//if page name contains action=edit
-//load skin with no line
-//if (strpos($Url,'-Draft') !== false) { $Skin = pmwiki_noLine; }
-//if (strpos($FullName,'edit') !== false) { $Skin = pmwiki_noLine; }
-//if($IsPagePosted == false) { $Skin = pmwiki_noLine; }
-
-# For Ape: Automagical PmWiki Embed
-$HTMLFooterFmt['ape'] = '<script type="text/javascript" src="$FarmPubDirUrl/ape/ape.js"></script>';
-
 # Replace some never-used full-width characters on saving.
 $ROSPatterns ['/＊/'] = "*";
 $ROSPatterns ['/＃/'] = "#";
@@ -268,3 +276,9 @@ $ROSPatterns ['/」/'] = "]";
 $ROSPatterns ['/｜/'] = "|";
 $ROSPatterns ['/！/'] = "!";
 $ROSPatterns ['/︿/'] = "^";
+$ROSPatterns ['/－/'] = "-";
+$ROSPatterns ['/？/'] = "?";
+$ROSPatterns ['/～/'] = "~";
+$ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
+$ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
+$ROSPatterns ['/red_/'] = "%color=red%";

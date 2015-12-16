@@ -70,7 +70,10 @@ function EditDraft(&$pagename, &$page, &$new) {
     shell_exec("rm -f wiki.d/".$draftname);
   }
   else if (PageExists($draftname) && $pagename != $draftname)
-    { Redirect($draftname, '$PageUrl?action=edit'); exit(); }
+  {
+    Redirect($draftname, '$PageUrl?action=edit');
+    exit();
+  }
   if ($pagename == $draftname && isset($DraftRecentChangesFmt))
     $RecentChangesFmt = $DraftRecentChangesFmt;
 }
