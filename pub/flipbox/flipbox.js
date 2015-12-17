@@ -49,13 +49,13 @@ function flipbox(id, st, update)
 	{
 		var ajaxdot = new Image();
 		ajaxdot.src= FlipboxPageUrl + id + '&state='+FlipboxStatus[id]+'&r='+Math.random();
-	}
 	
 /* Meng: Also modify the draft page. */
-	if(update)
-	{
 		var ajaxdot = new Image();
 		ajaxdot.src= FlipboxPageUrlDraft + id + '&state='+FlipboxStatus[id]+'&r='+Math.random();
+		
+/* Meng: Reset the logout timer on flipbox update. */
+    timer = TIMER_EXP_DURATION;
 	}
 }
 

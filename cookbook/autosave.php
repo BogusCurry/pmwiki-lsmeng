@@ -39,7 +39,6 @@ XLSDV( 'en', array(
 	'ASsimuledit' => '<span  style=\'background-color: red; color: white;\'>Autosave disabled: simultaneous editing</span>'
 ));
 
-
 SDVA($InputTags['e_deldraftbutton'], array(
     ':html' => "<input type='button' \$InputFormArgs onclick=\"self.location='{\$PageUrl}?action=deldraft';\" />",
     'name' => 'deldraft',
@@ -78,48 +77,6 @@ function AutoSaveMarkup( $pagename ) {
   global $UrlScheme, $autoSaveDelayHttp, $autoSaveDelayHttps;
   if ($UrlScheme == 'http') { SDV( $AutoSaveDelay, $autoSaveDelayHttp); }
   else { SDV( $AutoSaveDelay, $autoSaveDelayHttps); }
-
-/*
-  global $timerJavaSrc, $timerJavaBody;
-  global $HTMLHeaderFmt;
-  $HTMLHeaderFmt['style'] = "
-  <script type='text/javascript'><!--
-  
-  var timer;
-  function startTimer(duration, display)
-  {
-    timer = duration;
-    setInterval(
-    function ()
-    {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
-
-        minutes = minutes < 10 ? \"0\" + minutes : minutes;
-        seconds = seconds < 10 ? \"0\" + seconds : seconds;
-
-        display.textContent = minutes + \":\" + seconds;
-
-        if (--timer < 0)
-        {
-          timer = duration;
-        }
-        
-    }
-    , 1000);
-  }
-  
-  window.onload = function ()
-  {
-    fiveMinutes = 3;
-    display = document.querySelector('#time');
-    startTimer(fiveMinutes, display);
-  };
-  --></script>  <body>
-    <div>Logout in <span id=\"time\"></span> minutes</div>
-  </body>
-  ";
-*/
 /****************************************************************************************/
 	SDVA( $AutoSaveFmt, array(
 		'info' => "<label id='autosave-label'><input type='checkbox' checked='1' id='autosave-cb' /><span id='autosave-status'>Autosave</span></label>",

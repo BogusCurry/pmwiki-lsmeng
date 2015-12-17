@@ -43,8 +43,8 @@ function imgSizeToggle(id, st, update)
 	{
     if( typeof(icon.src) != 'undefined' )
     {
-      if (imgSizeToggleStatus[id] == '_') { icon.height = '".$imgHeightPx."'; }
-      else if (imgSizeToggleStatus[id] == 'x') { icon.height = '".$imgHeightPxL."'; }
+      if (imgSizeToggleStatus[id] == '_') { icon.height = $imgHeightPx; }
+      else if (imgSizeToggleStatus[id] == 'x') { icon.height = $imgHeightPxL; }
       
       icon.alt = newst;
     }

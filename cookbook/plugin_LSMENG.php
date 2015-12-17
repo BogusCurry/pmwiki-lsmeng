@@ -121,7 +121,7 @@ function editToday()
   if ($today[mon]<10) { $pageName .= "0"; } 
   $pageName .= $today[mon]."-Draft?action=edit";
 
-  return "[[".$pageName."|"."'''Diary''']]";
+  return "[[".$pageName."|"."EditDay]]";
 }
 
 // Return a string of year month date time.
@@ -760,7 +760,7 @@ function pasteImgURLToDiary($pagename,$text)
   if ((int)$diaryMonth < 1 || (int)$diaryMonth > 12) { return $text; }
 
   // This function is applied since Nov. 2015
-  if ((int)$diaryYear+(int)$diaryMonth < 2026) { return $text; }
+  if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+11)) { return $text; }
   
   // Read the photo directory of this month
   $dir = "../Photo/".$diaryYear."/".$diaryMonth;
@@ -814,14 +814,16 @@ function pasteImgURLToDiary($pagename,$text)
 }
 
 /****************************************************************************************/
-  
-/*
+
   global $logoutTimerInSec;
+
+  $timerJavaSrc = "  
+  var TIMER_EXP_DURATION = $logoutTimerInSec;
+  var timer;
   
-  $timerJavaSrc = "
   function startTimer(duration, display)
   {
-    var timer = duration, minutes, seconds;
+    timer = duration;
     setInterval(function () {
         minutes = parseInt(timer / 60, 10);
         seconds = parseInt(timer % 60, 10);
@@ -839,13 +841,6 @@ function pasteImgURLToDiary($pagename,$text)
 
   window.onload = function ()
   {
-    var fiveMinutes = ".$logoutTimerInSec.",
-        display = document.querySelector('#time');
-    startTimer(fiveMinutes, display);
+    display = document.querySelector('#ID_LOGOUTTIMER');
+    startTimer(TIMER_EXP_DURATION, display);
   };";
-
-  $timerJavaBody = "
-  <body>
-    <div>Logout in <span id=\"time\"></span> minutes</div>
-  </body>";
-*/

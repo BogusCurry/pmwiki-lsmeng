@@ -340,13 +340,10 @@ if (IsEnabled($EnableLocalConfig,1)) {
 
 
 /****************************************************************************************/
-/*
-//global $timerJavaSrc, $timerJavaBody;
-//global $HTMLHeaderFmt;
+// Meng. Logout timer.
 $HTMLHeaderFmt[2] .= "<script type='text/javascript'><!--
   ".$timerJavaSrc."
-  --></script>".$timerJavaBody;  
-*/
+  --></script>";  
 /****************************************************************************************/
 
   
@@ -1182,9 +1179,7 @@ function WritePage($pagename,$page) {
   // If the pagename matches a specific predetermined pagename, then invoke the php
   // execution procedures.
   if ($pagename == "Main.Runcode")
-  {
-    runCode($pagename);
-  }
+  { runCode($pagename); }
 /****************************************************************************************/
 }
 

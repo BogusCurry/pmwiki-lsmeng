@@ -3,7 +3,7 @@
  *	Copyright 2009 Eemeli Aro <eemeli@gmail.com>
  *	Version: 2009-05-28
  */
-
+  
 var AS = {
 	delay: 0, // in seconds
 	url: '',
@@ -86,6 +86,10 @@ var AS = {
 
 	save: function() {
 		if ( !AS.busy && AS.make_new_post_str() ) {
+
+/* Meng: Reset the logout timer on autosaving. */
+      timer = TIMER_EXP_DURATION;
+
 			AS.txt.innerHTML = "Autosaving...";
 			AS.busy = true;
 			AS.req.open("POST",AS.url,true);
