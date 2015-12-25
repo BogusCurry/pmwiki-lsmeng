@@ -23,7 +23,10 @@
 
 $RecipeInfo['AutoSave']['Version'] = '2009-05-28-2';
 
-if ( !IsEnabled($EnableDrafts,0) ) return;
+// Meng. Comment out the line below as it quits autosave if draft is not enabled.
+//if ( !IsEnabled($EnableDrafts,0) ) return;
+
+$DraftSuffix = "";
 
 SDVA( $HandleAuth, array(
 	'deldraft' => $HandleAuth['edit'],
@@ -48,11 +51,9 @@ SDVA($InputTags['e_deldraftbutton'], array(
 // based on Cookbook/DeleteAction
 function HandleDeleteDraft( $pagename, $auth = 'edit' ) {
 	global $WikiDir, $LastModFile, $DraftSuffix;
-
 	if (empty( $DraftSuffix )) { Abort('?action=deldraft requires a non-empty $DraftSuffix'); return; }
 	$basename = preg_replace("/$DraftSuffix\$/", '', $pagename);
 	$draftname = $basename . $DraftSuffix;
-
 	$page = RetrieveAuthPage( $draftname, $auth, true, READPAGE_CURRENT );
 	if (!$page) { Abort("?cannot delete $draftname"); return; }
 	Lock(2);
@@ -93,18 +94,27 @@ function HandleAutoSave( $pagename, $auth = 'edit' ) {
 		$DraftRecentChangesFmt, $DraftSuffix, $EditFunctions, $DeleteKeyPattern,
 		$EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
 
-	if (empty( $DraftSuffix )) { echo XL('ASnosuffix'); return; }
+// Meng. Comment out the line below as it quits autosave on empty draft suffix.
+//	if (empty( $DraftSuffix )) { echo XL('ASnosuffix'); return; }
+
 	$basename = preg_replace("/$DraftSuffix\$/", '', $pagename);
 	$draftname = $basename . $DraftSuffix;
 	$draftmodtime = PageVar($draftname,'$LastModifiedTime');
 
 /* Meng: The following controls simultaneous editing. */
-	if ( ( $draftmodtime != $Now) && ( $_POST['basetime'] < $draftmodtime ) ) { echo XL('ASsimuledit'); return; }	
+	if ( ( $draftmodtime != $Now) && ( $_POST['basetime'] < $draftmodtime ) )
+	{
+	  echo XL('ASsimuledit');
+	  return;
+//    redirect($pagename."?action=edit");
+	}	
 		
 	$pagename = $basename;
 	$_POST['postdraft'] = 1;
 	SDV( $DraftRecentChangesFmt, array(''=>'') );
-	array_unshift( $EditFunctions, 'EditDraft' );
+
+// Meng. Comment out the line below as it causes errors.
+//	array_unshift( $EditFunctions, 'EditDraft' );
 
 	$DeleteKeyPattern = '.^'; // page deletion disabled
 
@@ -120,18 +130,21 @@ function HandleAutoSave( $pagename, $auth = 'edit' ) {
 				if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
 			}
 		$new["csum:$Now"] = $new['csum'] = "[autosave] $ChangeSummary";
-
+		
 		UpdatePage($pagename, $page, $new);
 	Lock(0);
 
-	if ($IsPagePosted) {
+	if ($IsPagePosted)
+	{
 		$url = PageVar($draftname,'$PageUrl');
 		$url .= ( strpos($url,'?') ? '&' : '?' ) . "action=edit";
 		header("X-AutoSaveAction: $url" );
 		header("X-AutoSavePage: $draftname");
 		header("X-AutoSaveTime: $Now");
 		echo 'ok';
-	} else {
+	} 
+	else
+	{
 		echo XL('ASnowrite');
 	}
 }

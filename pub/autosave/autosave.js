@@ -3,7 +3,7 @@
  *	Copyright 2009 Eemeli Aro <eemeli@gmail.com>
  *	Version: 2009-05-28
  */
-  
+
 var AS = {
 	delay: 0, // in seconds
 	url: '',
@@ -37,7 +37,8 @@ var AS = {
 		return true;
 	},
 	set_status: function(str) {
-		switch(str) {
+		switch(str)
+		{
 			case "ok":
 				AS.ts = new Date();
 				var as_action = AS.req.getResponseHeader("X-AutoSaveAction"),
@@ -47,20 +48,28 @@ var AS = {
 				if (as_pn) AS.ef.n.value = as_pn;
 				if (as_time) AS.ef.basetime.value = as_time;
 				// fallthrough
+
 			case undefined:
-				if (AS.ts) {
-/* Meng: Uncomment the following (show the last modified time). Pretty annoying in my opinion. */
+				if (AS.ts)
+				{
+/* Meng: Comment out the following (show the last modified time). Pretty annoying in my opinion. */
 				//	AS.status = "Draft autosaved at ";
 				//	if (AS.ts.toLocaleFormat) AS.status += AS.ts.toLocaleFormat("%H:%M");
 				//	else AS.status += AS.ts.getHours() + ':' + AS.ts.getMinutes();
 				//	AS.status += " (" + AS.pretty_time() + ')';
-				} else AS.status = "Autosave enabled";
+				}
+				else 
+				{
+				  AS.status = "Autosave enabled";
+				}
 				break;
+
 			default: // some error
 				if ( str.toLowerCase().indexOf("autosave") == -1 ) str = "Autosave: " + str;
 				AS.status = str;
 				clearInterval(AS.id);
-				if (AS.cb) {
+				if (AS.cb)
+				{
 					AS.cb.checked = false;
 					AS.cb.disabled = true;
 				}
@@ -86,10 +95,6 @@ var AS = {
 
 	save: function() {
 		if ( !AS.busy && AS.make_new_post_str() ) {
-
-/* Meng: Reset the logout timer on autosaving. */
-      timer = TIMER_EXP_DURATION;
-
 			AS.txt.innerHTML = "Autosaving...";
 			AS.busy = true;
 			AS.req.open("POST",AS.url,true);

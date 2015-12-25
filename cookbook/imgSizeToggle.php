@@ -20,14 +20,13 @@ function FmtImgSizeToggle($_x, $id, $imgFilePath)
 
 function _idImgSizeToggle(id)
 {
-	if(document.getElementById(id))
-		return document.getElementById(id);
+	if(document.getElementById(id)) { return document.getElementById(id);	}
 	return false;
 }
 
 function imgSizeToggle(id, st, update)
 {
-	if(typeof(imgSizeToggleStatus[id]) == 'undefined' )imgSizeToggleStatus[id] = st;
+	if(typeof(imgSizeToggleStatus[id]) == 'undefined') imgSizeToggleStatus[id] = st;
 
 	var idx = imgFlipboxChoices.indexOf(imgSizeToggleStatus[id]);
 	if(idx==-1) return;

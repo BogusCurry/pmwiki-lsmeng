@@ -23,31 +23,36 @@ SDV($EnableUploadOverwrite,1);
 ## accept, along with the Content-Type: value appropriate for each.
 SDVA($UploadExts,array(
   'gif' => 'image/gif', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
-  'png' => 'image/png', 'bmp' => 'image/bmp', 'ico' => 'image/x-icon',
-  'wbmp'=> 'image/vnd.wap.wbmp', 'svg' => 'image/svg+xml', 'xcf' => 'image/x-xcf',
+  'png' => 'image/png', 'bmp' => 'image/bmp',
   'mp3' => 'audio/mpeg', 'au' => 'audio/basic', 'wav' => 'audio/x-wav',
   'ogg' => 'audio/ogg', 'flac' => 'audio/x-flac',
-  'ogv' => 'video/ogg', 'mp4' => 'video/mp4', 'webm' => 'video/webm',
+  'ogv' => 'video/ogg', 'mp4' => 'video/mp4',
   'mpg' => 'video/mpeg', 'mpeg' => 'video/mpeg',
-  'mov' => 'video/quicktime', 'qt' => 'video/quicktime',
-  'wmf' => 'text/plain', 'avi' => 'video/x-msvideo',
   'zip' => 'application/zip', '7z' => 'application/x-7z-compressed',
-  'gz'  => 'application/x-gzip', 'tgz' => 'application/x-gzip',
-  'rpm' => 'application/x-rpm', 
-  'hqx' => 'application/mac-binhex40', 'sit' => 'application/x-stuffit',
+  'gz'  => 'application/x-gzip', 'tgz' => 'application/x-gzip',  
+  'mov' => 'video/quicktime', 'qt' => 'video/quicktime',
+  'avi' => 'video/x-msvideo',
   'doc' => 'application/msword', 'ppt' => 'application/vnd.ms-powerpoint',
-  'xls' => 'application/vnd.ms-excel', 'mdb' => 'text/plain',
+  'xls' => 'application/vnd.ms-excel',
+  'ico' => 'image/x-icon',
+  'wbmp'=> 'image/vnd.wap.wbmp', 'svg' => 'image/svg+xml', 'xcf' => 'image/x-xcf',
+  'webm' => 'video/webm',
   'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'pdf' => 'application/pdf', 
+  'txt' => 'text/plain', 'rtf' => 'application/rtf', 
+/*  'wmf' => 'text/plain', 
+  'rpm' => 'application/x-rpm', 
+  'hqx' => 'application/mac-binhex40', 'sit' => 'application/x-stuffit',
+   'mdb' => 'text/plain',
   'exe' => 'application/octet-stream',
-  'pdf' => 'application/pdf', 'psd' => 'text/plain', 
+  'psd' => 'text/plain', 
   'ps'  => 'application/postscript', 'ai' => 'application/postscript',
   'eps' => 'application/postscript',
   'htm' => 'text/html', 'html' => 'text/html', 'css' => 'text/css', 
   'fla' => 'application/x-shockwave-flash', 
   'swf' => 'application/x-shockwave-flash',
-  'txt' => 'text/plain', 'rtf' => 'application/rtf', 
   'tex' => 'application/x-tex', 'dvi' => 'application/x-dvi',
   'odt' => 'application/vnd.oasis.opendocument.text',
   'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
@@ -55,13 +60,14 @@ SDVA($UploadExts,array(
   'odg' => 'application/vnd.oasis.opendocument.graphics',
   'epub'=> 'application/epub+zip',
   'kml' => 'application/vnd.google-earth.kml+xml',
-  'kmz' => 'application/vnd.google-earth.kmz',
+  'kmz' => 'application/vnd.google-earth.kmz',*/
   '' => 'text/plain'));
 
 # Array containing forbidden strings in a filename, array('.php', '.cgi')
 SDV($UploadBlacklist, array());
 
-SDV($UploadMaxSize,50000);
+// Meng. Configure this in config.php
+SDV($UploadMaxSize,$maxUploadSize);
 SDV($UploadPrefixQuota,0);
 SDV($UploadDirQuota,0);
 foreach($UploadExts as $k=>$v) 
@@ -254,7 +260,17 @@ function HandlePostUpload($pagename, $auth = 'upload') {
     }
   }
   SDV($UploadRedirectFunction, 'Redirect');
-  $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&$result");
+  
+  
+/****************************************************************************************/
+  // Meng. Return to viewing the page on upload success; default action otherwise.
+  if ($result == "upresult=success")
+  {
+    Redirect($pagename);
+  }
+  else
+  { $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&$result"); }
+/****************************************************************************************/
 }
 
 function UploadVerifyBasic($pagename,$uploadfile,$filepath) {

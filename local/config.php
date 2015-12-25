@@ -45,7 +45,8 @@ $WikiTitle = 'PmWiki';
 ##  You'll also need to set a default upload password, or else set
 ##  passwords on individual groups and pages.  For more information
 ##  see PmWiki.UploadsAdmin.
-#$EnableUpload = 1;                       
+$EnableUpload = 1;          
+$EnableUploadOverwrite = 0;             
 # $DefaultPasswords['upload'] = crypt('secret');
 
 ##  Setting $EnableDiag turns on the ?action=diag and ?action=phpinfo
@@ -91,7 +92,7 @@ $WikiTitle = 'PmWiki';
 
 ##  $DiffKeepDays specifies the minimum number of days to keep a page's
 ##  revision history.  The default is 3650 (approximately 10 years).
-# $DiffKeepDays=30;                        # keep page history at least 30 days
+$DiffKeepDays=36500;
 
 ## By default, viewers are able to see the names (but not the
 ## contents) of read-protected pages in search results and
@@ -145,42 +146,29 @@ $WikiTitle = 'PmWiki';
 #                     '$GUIButtonDirUrlFmt/table.gif"$[Table]"');
 
 #######################Below is Ling-San Meng's settings###########################
-# My default password;
+# My default password; oz
 $DefaultPasswords['admin'] = '';
-$DefaultPasswords['read']  = '';
-
-/*
-# If you are accessing wiki using non-https method (accessing wiki using LAN)
-if ($UrlScheme == 'http')
-{
-  $ScriptUrl = 'http://localhost/pmwiki/pmwiki.php';
-  $PubDirUrl = 'http://localhost/pmwiki/pub';
-}
-else if ($UrlScheme == 'https')
-{
-  $ScriptUrl = 'https://sammeng.dlinkddns.com/pmwiki.php';
-  $PubDirUrl = 'https://sammeng.dlinkddns.com/pub';
-}
-*/
 
 # Various enhancements written by me
-if ($UrlScheme == 'https')
-{
-  $pubImgDirURL = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/';
-  $diaryImgDirURL = "";
-}
-else
-{
-  $pubImgDirURL = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/photo/';
-  $diaryImgDirURL = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/';
-}
+$homeSSID = "Sam Base";
+$currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk '/ SSID/ {print substr($0, index($0, $2))}'");
+$isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
+$DefaultPasswords['read']  = ($isAtHome) ? '' : '$1$/lyhKjN4$KTund6xDvfna6K0CpTzJK.'; // No global site pw at home
+$pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
+$diaryImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
 $runCodePath = "pub/runCode";
 $timeStampFile = '../../pmwikiTimeStamp/pmwikiTimeStamp.txt';
-$emailAddress1 = "f95942117@gmail.com";
+$emailAddress1 = "lsmeng@ece.gatech.edu";
 $emailAddress2 = "";
-$logoutTimerInSec = 3600;
+$pwRetryLimit = 1; // You have to be correct at the $pwRetryLimit+1 th time
+$phpLogoutTimer = ($isAtHome) ? 31536000 : 3600; // Php never logs out at home
+$javaLogoutTimer = ($isAtHome) ? 3600*3 : 3600;
+$sensitivePage = array('Main.OnThisDay','Main.PickUp','Main.Girls','Main.NLPickUp','Main.AccountAndPassword');
+$javaSensitivePageLogoutTimer = 600;
 $imgHeightPx = 330;
 $imgHeightPxL = 660;
+$maxUploadSize = 10000000; // 10 MB
+$pageHistoryUpdateInterval = 86400;
 include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
 # Include traditional chinese language
@@ -191,7 +179,7 @@ XLPage('zhtw','PmWikiZhTw.XLPage');
 include_once("$FarmD/cookbook/MathJax.php");
 
 # For autosave
-$EnableDrafts = 1;
+$EnableDrafts = 0;
 $autoSaveDelayHttp = 1;
 $autoSaveDelayHttps = 1;
 include_once("$FarmD/cookbook/autosave.php");
@@ -200,7 +188,7 @@ include_once("$FarmD/cookbook/autosave.php");
 include_once($FarmD.'/cookbook/flipbox.php');
 
 # This makes "BaseName" = "FullName" without "-Draft"
-$BaseNamePatterns['/-Draft$/'] = '';
+//$BaseNamePatterns['/-Draft$/'] = '';
 
 # For wpap mp3 player
 $wpap_initialvolume = "1";
@@ -264,7 +252,7 @@ $ROSPatterns ['/＋/'] = "+";
 $ROSPatterns ['/＼/'] = "\\";
 $ROSPatterns ['/，/'] = ", ";
 $ROSPatterns ['/。/'] = ". ";
-$ROSPatterns ['/：/'] = ": ";
+$ROSPatterns ['/：/'] = ":";
 $ROSPatterns ['/％/'] = "%";
 $ROSPatterns ['/＄/'] = "$";
 $ROSPatterns ['/＆/'] = "&";

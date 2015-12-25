@@ -119,7 +119,7 @@ function editToday()
   
   $pageName = "Main.".$today[year];
   if ($today[mon]<10) { $pageName .= "0"; } 
-  $pageName .= $today[mon]."-Draft?action=edit";
+  $pageName .= $today[mon]."?action=edit";
 
   return "[[".$pageName."|"."EditDay]]";
 }
@@ -281,7 +281,7 @@ function getParameterValue($IP,$parameter,$inputText="")
 function checkTimeOnAuthSuccess($IP,$loginStatus)
 {
   $lastTimeStamp = getParameterValue($IP,"TimeStamp_");
-  global $logoutTimerInSec;
+  global $phpLogoutTimer, $isAtHome;
 
   $today = getdate();
   $minStr = $today[minutes];
@@ -296,7 +296,7 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
   {
     // Timer hasn't expired.
     $elapsedTime = time()-$lastTimeStamp;
-    if ($elapsedTime < $logoutTimerInSec)
+    if ($elapsedTime < $phpLogoutTimer)
     {
       setParameterValue($IP,"TimeStamp_",time());
       setParameterValue($IP,"LastSeen_",$formatTime);
@@ -307,7 +307,7 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
     {
       // Rare case; an authenticated user suddenly changes his IP
       if ("$loginStatus" == "")
-      { sendAlertEmail($IP." (same browser but unseen IP; a sudden IP change)"); }
+      { sendAlertEmail($IP." (same browser but new IP; a sudden IP change)"); }
 
       $actual_link = "$_SERVER[REQUEST_URI]";
       $pos1 = strpos($actual_link,"=");
@@ -317,9 +317,12 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
       else if ($pos2 === false) { $currentPagename = substr($actual_link,$pos1+1,strlen($actual_link)-$pos1); }
       else { $currentPagename = substr($actual_link,$pos1+1,$pos2-$pos1-1); }
 
-      $isEditing = stripos($actual_link,"?action=edit");
-      if ($isEditing === false) { setParameterValue($IP,"TimeStamp_",-1); setParameterValue($IP,"LastSeen_",$formatTime); }
-      else { setParameterValue($IP,"TimeStamp_",-2); setParameterValue($IP,"LastSeen_",$formatTime); } 
+      global $action;
+      if ($action == 'edit') 
+      { setParameterValue($IP,"TimeStamp_",-2); setParameterValue($IP,"LastSeen_",$formatTime); } 
+      else
+      { setParameterValue($IP,"TimeStamp_",-1); setParameterValue($IP,"LastSeen_",$formatTime); }
+
       HandleLogoutA($currentPagename);
     }
   }
@@ -331,7 +334,7 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
     
     if ($lastTimeStamp == "")
     {
-      sendAlertEmail($IP." (unseen browser and IP)");
+      sendAlertEmail($IP." (new IP and new browser)");
     }
 
     // The IP was previously editing something
@@ -347,7 +350,7 @@ function checkTimeOnAuthSuccess($IP,$loginStatus)
     {
       // Timer hasn't expired.
       $elapsedTime = time()-$lastTimeStamp;
-      if ($elapsedTime < $logoutTimerInSec) { sendAlertEmail($IP." (existing IP but unseen browser)"); }
+      if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail($IP." (existing IP and new browser)"); }
 //      else { sendAlertEmail($IP." (php session timed out I guess)"); }
     }
   }  
@@ -371,7 +374,7 @@ function sendAlertEmail($clientIP,$subject = "Pmwiki Login Alert")
   $browser = $obj->showInfo('browser');
   $browserVersion = $obj->showInfo('version');
   $OS = $obj->showInfo('os');   
-  $str = $formatTime."\n\n"."From\n".$clientIP."\n\nUsing\n".$OS.", ".$browser." ".$browserVersion;
+  $str = $formatTime."\n\n".$clientIP."\n\nUsing\n".$OS.", ".$browser." ".$browserVersion;
 
   // Call shell script to send an email with the above info.      
   shell_exec("echo \"".$str."\" | mail -s \"".$subject."\" ".$emailAddress1." ".$emailAddress2." -f donotreply");
@@ -639,6 +642,26 @@ function replaceImgUrlWithSizeToggle($text)
     }
 
   }
+  
+  // This is very ugly... 
+  // Add the action of setting the cursor style in the event of window.onload
+  global $HTMLHeaderFmt;
+  $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
+  function setImgCursor()
+  {
+  ";
+  for ($i=0;$i<$imgCount;$i++)
+  {
+    $j = $i+1;
+    $HTMLHeaderFmt[] .= "document.getElementById('_isti$j').style.cursor = 'pointer';
+    ";
+  }
+  $HTMLHeaderFmt[] .= "}
+
+  window.addEventListener('load', setImgCursor, false);
+
+  --></script>";
+  
   return $text;
 }
 
@@ -741,23 +764,44 @@ function getDiaryVideoUrl($img)
   else { return ""; }
 }
 
+// Return 2 if this is a diary page
+// Return 1 if this is a diary year page
+// Return 0 otherwise
+function isDiaryPage()
+{
+  global $pagename;
+
+  $pageGroup = substr($pagename,0,5);
+  if (strcasecmp($pageGroup, "Main.") != 0) { return 0; } 
+
+  $diaryYear = substr($pagename,5,4);  
+  $pagenameLen = strlen($pagename);
+
+  if ($pagenameLen == 9)
+  {
+    if ((int)$diaryYear < 2003 || (int)$diaryYear > 2100) { return 0; }
+    else { return 1; }
+  }
+  else if ($pagenameLen == 11)
+  {
+    $diaryMonth = substr($pagename,9,2);
+    if ((int)$diaryYear < 2003 || (int)$diaryYear > 2100) { return 0; }
+    if ((int)$diaryMonth < 1 || (int)$diaryMonth > 12) { return 0; }
+    return 2;
+  }
+  else { return 0; }
+}
 
 // For diary pages, automatically read the corresponding photo directory and list the file
 // names of all the images and videos under their recorded date.
-function pasteImgURLToDiary($pagename,$text)
+function pasteImgURLToDiary($text)
 {
-  // Check if this is a diary page
-  $basename = $pagename;
-  $pos = stripos($pagename,"-Draft");
-  if ($pos !== false) { $basename = substr($pagename,0,strlen($pagename)-6); }
-  $pagenameLen = strlen($basename);
-  if ($pagenameLen !== 11) { return $text; }
-  $pageGroup = substr($basename,0,5);
-  if ($pageGroup !== "Main.") { return $text; }
-  $diaryYear = substr($basename,5,4);
-  if ((int)$diaryYear < 2003 || (int)$diaryYear > 2100) { return $text; }
-  $diaryMonth = substr($basename,9,2);
-  if ((int)$diaryMonth < 1 || (int)$diaryMonth > 12) { return $text; }
+  if (isDiaryPage() != 2) { return $text; }
+
+  global $pagename;
+  
+  $diaryYear = substr($pagename,5,4);
+  $diaryMonth = substr($pagename,9,2);
 
   // This function is applied since Nov. 2015
   if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+11)) { return $text; }
@@ -815,32 +859,136 @@ function pasteImgURLToDiary($pagename,$text)
 
 /****************************************************************************************/
 
-  global $logoutTimerInSec;
+// Java logout timer is more accommodative if physically connected to the home wifi BS and
+// accessed locally.  
+// Sensitive page rule is not applied if connected to the home BS
+$_javaLogoutTimer = $javaLogoutTimer;
+if ($isAtHome == 0)
+{ 
+  // Apply the sensitive page timer to diary pages
+  if (isDiaryPage() != 0) { $_javaLogoutTimer = $javaSensitivePageLogoutTimer; }
+  
+  // Apply the sensitive page timer to specified sensitive pages
+  else
+  {
+    for ($i=0;$i<count($sensitivePage);$i++)
+    {  
+      if (strcasecmp($sensitivePage[$i],substr($pagename,0,strlen($sensitivePage[$i]))) == 0)
+      {
+        $_javaLogoutTimer = $javaSensitivePageLogoutTimer;
+        break;
+      }
+    }
+  }
+}
 
-  $timerJavaSrc = "  
-  var TIMER_EXP_DURATION = $logoutTimerInSec;
+$timerJavaSrc = "  
+  var TIMER_EXP_DURATION = $_javaLogoutTimer;
   var timer;
   
-  function startTimer(duration, display)
+  function startTimer()
   {
-    timer = duration;
-    setInterval(function () {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
+      display = document.querySelector('#ID_LOGOUTTIMER');
+      
+      timer = TIMER_EXP_DURATION;
+      setInterval(function () {
+          hour = parseInt(timer / 3600, 10);
+          minutes = parseInt((timer-hour*3600) / 60, 10);
+          seconds = parseInt(timer % 60, 10);
 
-        minutes = minutes < 10 ? \"0\" + minutes : minutes;
-        seconds = seconds < 10 ? \"0\" + seconds : seconds;
+          hour = hour < 10 ? \"0\" + hour : hour;
+          minutes = minutes < 10 ? \"0\" + minutes : minutes;
+          seconds = seconds < 10 ? \"0\" + seconds : seconds;
 
-        display.textContent = minutes + \":\" + seconds;
+          display.textContent = hour +\":\" + minutes + \":\" + seconds;
 
-        if (--timer < 0) {
-            window.location = 'http://"."$_SERVER[REQUEST_URI]"."';
-        }
-    }, 1000);
+          if (--timer < 0) {
+              httpPageName = 'http://"."$pagename"."';
+              window.location = httpPageName;
+          }
+      }, 1000);
+  }";
+
+$HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
+  ".$timerJavaSrc."
+  
+  window.addEventListener('load', startTimer, false);
+
+  function resetJavaTimer() { timer = TIMER_EXP_DURATION; }
+  window.addEventListener('focus', resetJavaTimer, false);
+  window.addEventListener('scroll', resetJavaTimer, false);
+  window.addEventListener('click', resetJavaTimer, false);
+  window.addEventListener('keypress', resetJavaTimer, false);
+    
+  --></script>";
+  
+/****************************************************************************************/
+  
+// Remember the text edit area scroll position.
+if ($action == 'edit')
+{
+  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/rememberScroll.js'></script>";
+
+/*  
+  // Under Windows, setting position cookies in the events of keydown and mouse click is 
+  // not working if the user goes to the previous/next page using the mouse wheel shortcut
+  // key combinations. The following fixes this somewhat by setting position cookies on 
+  // mouse wheel move.
+  if ($UrlScheme == 'https') 
+  {
+    $HTMLHeaderFmt[] .= "<script type='text/javascript'> window.addEventListener('wheel', setPosCookies, false); </script>";
   }
+*/
+}
 
-  window.onload = function ()
+/****************************************************************************************/
+
+// If this is the special page "BookKeep", calculate and show the monthly expense at the
+// at the top of the page.
+// Fractional numbers are not 
+function bookKeepProcess($pagename,&$text)
+{
+  $textLineArray = explode("\n", $text);  
+  $NumLine = count($textLineArray);
+
+  $today = getdate();
+  $MON = $today[mon];
+
+  for ($iMon=1;$iMon<=$MON;$iMon++)
   {
-    display = document.querySelector('#ID_LOGOUTTIMER');
-    startTimer(TIMER_EXP_DURATION, display);
-  };";
+    $expense[$iMon] = 0;
+    for ($i=0;$i<$NumLine;$i++)
+    {
+      $pos = strpos($textLineArray[$i],"* ".$iMon."/");
+      if ($pos !== false)
+      {
+        $_line = substr($textLineArray[$i],strpos($textLineArray[$i]," ",2));
+
+        // This supports negative numbers but not decimal
+        preg_match_all('/-?[0-9]+/', $_line, $matches);
+
+        // This supports decimal numbers but not negative
+//        preg_match_all('#\d+(?:\.\d{1,2})?#', $_line, $matches);
+                
+        $expense[$iMon] += array_sum($matches[0]);        
+      }
+    }
+  }
+  
+  for ($iMon=$MON;$iMon>0;$iMon--)
+  {
+    $dateObj   = DateTime::createFromFormat('!m', $iMon);
+    $monthName = $dateObj->format('F'); // March
+    $monthName = substr($monthName,0,3).".";
+    $expenseStr .= $monthName." ".$expense[$iMon]." NTD\\\\\n";
+  }
+  $expenseStr .= " \\\\\n";
+    
+  return $expenseStr.$text;
+}
+
+/****************************************************************************************/
+
+// Cookie verification
+
+//$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/userVerify.js'></script>";

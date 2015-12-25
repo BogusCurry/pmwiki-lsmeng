@@ -7,6 +7,8 @@
 */
 
 SDV($DraftSuffix, '-Draft');
+//SDV($DraftSuffix, '');
+
 if ($DraftSuffix) 
   SDV($SearchPatterns['normal']['draft'], "!$DraftSuffix\$!");
 
@@ -57,11 +59,13 @@ function EditDraft(&$pagename, &$page, &$new) {
   else if ($_POST['post'] && !preg_match("/$DeleteKeyPattern/", $new['text'])) { 
     $pagename = $basename; 
     if(IsEnabled($EnableDraftAtomicDiff, 0)) {
+/*
       $page = ReadPage($basename);
       foreach($new as $k=>$v) # delete draft history
         if(preg_match('/:\\d+(:\\d+:)?$/', $k) && ! preg_match("/:$Now(:\\d+:)?$/", $k)) unset($new[$k]);
       unset($new['rev']);
       SDVA($new, $page);
+*/
     }
 
 /* Meng: The following line renames draft upon hitting "publish". */

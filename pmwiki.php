@@ -63,9 +63,13 @@ $Newline = "\263";                                 # deprecated, 2.0.0
 $KeepToken = "\034\034";
 $Now=time();
 define('READPAGE_CURRENT', $Now+604800);
-$TimeFmt = '%B %d, %Y, at %I:%M %p';
+
+$TimeFmt = '%Y/%m/%d at %H:%M:%S';
 $TimeISOFmt = '%Y-%m-%dT%H:%M:%S';
 $TimeISOZFmt = '%Y-%m-%dT%H:%M:%SZ';
+SDV($CurrentTime, strftime($TimeFmt, $Now));
+SDV($CurrentTimeISO, strftime($TimeISOFmt, $Now));
+
 $MessagesFmt = array();
 $BlockMessageFmt = "<h3 class='wikimessage'>$[This post has been blocked by the administrator]</h3>";
 $EditFields = array('text');
@@ -337,18 +341,6 @@ if (IsEnabled($EnableLocalConfig,1)) {
   elseif (file_exists('config.php'))
     include_once('config.php');
 }
-
-
-/****************************************************************************************/
-// Meng. Logout timer.
-$HTMLHeaderFmt[2] .= "<script type='text/javascript'><!--
-  ".$timerJavaSrc."
-  --></script>";  
-/****************************************************************************************/
-
-  
-SDV($CurrentTime, strftime($TimeFmt, $Now));
-SDV($CurrentTimeISO, strftime($TimeISOFmt, $Now));
 
 if (IsEnabled($EnableStdConfig,1))
   include_once("$FarmD/scripts/stdconfig.php");
@@ -963,7 +955,10 @@ function XLPage($lang,$p,$nohtml=false) {
       include_once("$FarmD/scripts/xlpage-$i18n.php");
     }
     if (@$xl['Locale']) setlocale(LC_ALL,$xl['Locale']);
-    if (@$xl['TimeFmt']) $TimeFmt=$xl['TimeFmt'];
+
+    // Meng. Uncomment the following as it overwrites the time format setting in PHP.
+//    if (@$xl['TimeFmt']) $TimeFmt=$xl['TimeFmt'];
+
     if (!in_array($lang, $XLLangs)) array_unshift($XLLangs, $lang);
     XLSDV($lang,$xl);
   }
@@ -1175,7 +1170,7 @@ function WritePage($pagename,$page) {
     
 
 /****************************************************************************************/
-  // The following is added by Ling-San Meng.
+  // Meng.
   // If the pagename matches a specific predetermined pagename, then invoke the php
   // execution procedures.
   if ($pagename == "Main.Runcode")
@@ -1754,18 +1749,11 @@ function HandleBrowse($pagename, $auth = 'read') {
 /****************************************************************************************/
 /* Ling-San Meng: */
 
-// If this is not a draft page, and both the normal and draft page exist, return the draft
-// page.
-if(stripos($pagename,"-Draft") === false)
-{
-  if (file_exists("wiki.d/".$pagename) !== false && file_exists("wiki.d/".$pagename."-Draft") !== false)
-  { redirect($pagename."-Draft"); }
-}
-
 // If the page is the code running page, present the page with the results (execute then 
 // grab the results in the case of c programs) and the source code 
 if ($pagename == "Main.Runcode")
 {
+//    header("Location: http://localhost/pmwiki/pub/runCode/main.php");  
   global $runCodePath;
   $srcFile = $runCodePath."/main.cpp";
   $outputFile = $runCodePath."/output.txt";
@@ -1776,12 +1764,16 @@ if ($pagename == "Main.Runcode")
 // past diary corresponding to today's date.
 if ($pagename == "Main.OnThisDay") { $text = printOnThisDay(); }
 
+// If this is the special page "BookKeep", calculate and show the monthly expense at the
+// at the top of the page
+if (strpos($pagename,"Main.BookKeep") !== false) { $text = bookKeepProcess($pagename,$text); }
+
 // Read in the diary photo directory to find all the diary images and videos, and then
 // paste their full URL to the diary pages
 global $UrlScheme;
 
 if ($UrlScheme == 'https') {}
-else { $text = pasteImgURLToDiary($pagename, $text); }
+else { $text = pasteImgURLToDiary($text); }
 
 // A temporary fix for all the headings for the image URL used before.
 global $pubImgDirURL, $diaryImgDirURL;
@@ -1830,7 +1822,8 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL) {
   StopWatch("UpdatePage: begin $pagename");
   if (is_null($fnlist)) $fnlist = $EditFunctions;
   $IsPagePosted = false;
-  foreach((array)$fnlist as $fn) {
+  foreach((array)$fnlist as $fn)
+  {
     StopWatch("UpdatePage: $fn ($pagename)");
     $fn($pagename, $page, $new);
   }
@@ -1907,7 +1900,6 @@ function ReplaceOnSave($pagename,&$page,&$new) {
   }
   $new['=preview'] = $new['text'];
   
-#  $new['text'] .= "\n[[TEST]]";
   PCache($pagename, $new);
 }
 
@@ -1927,61 +1919,104 @@ function SaveAttributes($pagename,&$page,&$new) {
   unset($new['excerpt']);
 }
 
-function PostPage($pagename, &$page, &$new) {
+function PostPage($pagename, &$page, &$new)
+{
   global $DiffKeepDays, $DiffFunction, $DeleteKeyPattern, $EnablePost,
     $Now, $Charset, $Author, $WikiDir, $IsPagePosted, $DiffKeepNum;
   SDV($DiffKeepDays,3650);
   SDV($DiffKeepNum,20);
   SDV($DeleteKeyPattern,"^\\s*delete\\s*$");
   $IsPagePosted = false;
-  if ($EnablePost) {
+  if ($EnablePost)
+  {
     $new['charset'] = $Charset; # kept for now, may be needed if custom PageStore
     $new['author'] = @$Author;
     $new["author:$Now"] = @$Author;
     $new["host:$Now"] = $_SERVER['REMOTE_ADDR'];
     $diffclass = preg_replace('/\\W/','',@$_POST['diffclass']);
-    if ($page['time']>0 && function_exists(@$DiffFunction)) 
-      $new["diff:$Now:{$page['time']}:$diffclass"] =
-        $DiffFunction($new['text'],@$page['text']);
+
+/****************************************************************************************/
+
+    // Meng. Fix the continuous page history update problem. After autosave without
+    // Draft is used, page history is updated each time the text is auto saved. The 
+    // following limits the page history update interval to be no less than a specified 
+    // time period. Two new fields are added to the page properties for this mechanism.
+    if ($page['time']>0 && function_exists(@$DiffFunction))
+    { 
+      // Get the last history version's time & text
+      $lastVersionTime = $page['lastVerTime'];
+      $lastVersionText = $page['LastVerText'];
+
+      // Update the history version time & text
+      $new['lastVerTime'] = $Now;
+      $new['LastVerText'] = $new['text'];
+
+      global $pageHistoryUpdateInterval;
+      
+      // See if a specified time period has passed since the last page history update,
+      // or the page history hasn't been set yet
+      if (!isset($lastVersionTime))
+      {
+        // Put in page history the difference between the new text and last history version
+        $new["diff:$Now:{$page['time']}:$diffclass"] = $DiffFunction($new['text'],@$page['text']);
+      }
+      else if ($Now-$lastVersionTime > $pageHistoryUpdateInterval)
+      {
+        // Put in page history the difference between the new text and last history version
+        $new["diff:$Now:{$page['time']}:$diffclass"] = $DiffFunction($new['text'],$lastVersionText);
+      }
+      else
+      {
+        // Specified time period has not expired. Record the last version.
+        $new['lastVerTime'] = $lastVersionTime;
+        $new['LastVerText'] = $lastVersionText;
+      }
+    }
+/****************************************************************************************/
+
     $keepgmt = $Now-$DiffKeepDays * 86400;
     $keepnum = array(); 
     $keys = array_keys($new);
+
     foreach($keys as $k)
-      if (preg_match("/^\\w+:(\\d+)/",$k,$match)) {
+      if (preg_match("/^\\w+:(\\d+)/",$k,$match))
+      {
         $keepnum[$match[1]] = 1;
         if(count($keepnum)>$DiffKeepNum && $match[1]<$keepgmt) 
           unset($new[$k]);
       }
-    if (preg_match("/$DeleteKeyPattern/",$new['text'])){
+
+    // Meng. Somehow the following check for delete key pattern doesn't work after autosave 
+    // without Draft is used. Change it to the simple string compare "strcmp" solves the problem.
+    if (strcmp("delete",$new['text']) == 0)
+//    if (preg_match("/$DeleteKeyPattern/",$new['text']))
+    {
       if(@$new['passwdattr']>'' && !CondAuth($pagename, 'attr'))
         Abort('$[The page has an "attr" attribute and cannot be deleted.]');
       else 
       {
-//        $WikiDir->delete($pagename);
-
-/****************************************************************************************/
         // Ling-San Meng.
         // After enabling draft the delete keyword does not work properly; the deleted 
         // page file still exists with a timestamp at the time of deletion. Call shell
         // to actually delete the page and its draft page at the same time.
-        $draftPageName = $pagename;
-        $basePageName = substr($draftPageName,0,strlen($draftPageName)-6);
-        shell_exec("rm -f wiki.d/".$draftPageName); 
-        shell_exec("rm -f wiki.d/".$basePageName); 
-/****************************************************************************************/
+//        $WikiDir->delete($pagename);
+        shell_exec("rm -f wiki.d/".$pagename); 
+
       }
     }
-    
     else WritePage($pagename,$new);
     $IsPagePosted = true;
   }
-  
 }
 
-function PostRecentChanges($pagename,$page,$new,$Fmt=null) {
+function PostRecentChanges($pagename,$page,$new,$Fmt=null)
+{
   global $IsPagePosted, $RecentChangesFmt, $RCDelimPattern, $RCLinesMax;
   if (!$IsPagePosted && $Fmt==null) return;
+  
+  
   if ($Fmt==null) $Fmt = $RecentChangesFmt;
+
   foreach($Fmt as $rcfmt=>$pgfmt) {
     $rcname = FmtPageName($rcfmt,$pagename);  if (!$rcname) continue;
     $pgtext = FmtPageName($pgfmt,$pagename);  if (!$pgtext) continue;
@@ -2116,8 +2151,8 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       $x = array(2, array(), '');
 /****************************************************************************************/
       // Ling-San Meng
-      // A flag has been appended by me to differentiate if from the following calls to
-      // this function, as this one handles the login mechanism that I need.
+      // A flag is added to the passing arguments to differentiate it from the following 
+      // similar function calls, as this one handles the login mechanism that I need.
       $acache['@site'][$k] = IsAuthorized($v, 'site', $x,1);
 /****************************************************************************************/
       $AuthList["@_site_$k"] = $acache['@site'][$k][0] ? 1 : 0;
@@ -2234,7 +2269,6 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
   // Use the loginStatus variable to see if a cached password is utilized or we 
   // have a newly typed correct password.
   // These codes are executed every time wiki is viewed/edited.
-
   if ($flag == 1)
   {
     if ($auth == 1)
@@ -2250,12 +2284,12 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
     }
     else
     {
-      // You have to be correct at the $pwAttemptLimit+1 th time
-      $pwAttemptLimit = 1;
-      if ($nPwAttempt > $pwAttemptLimit)
+      global $pwRetryLimit;
+      if ($nPwAttempt > $pwRetryLimit)
       {
-        sendAlertEmail($IP,"Pmwiki ".$nPwAttempt. " Failed Password Attempts: ".$AuthPw[0]." ".$AuthPw[1]);
-        Abort("TOO MANY FAILED PASSWORD ATTEMPTS!");
+        sendAlertEmail("From\n".$IP."\n\nTyped passwords: ".$AuthPw[0]." ".$AuthPw[1], "Pmwiki ".$nPwAttempt. " Failed Password Attempts");
+//        session_start();session_destroy();
+        Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
       }
     }
   }  
@@ -2421,4 +2455,3 @@ function HandleLoginA($pagename, $auth = 'login')
   $page = RetrieveAuthPage($pagename, $auth, $prompt, READPAGE_CURRENT);
   Redirect($pagename);
 }
-
