@@ -25,7 +25,8 @@
 */
 
 ## $PageIndexFile is the index file for term searches and link= option
-if (IsEnabled($EnablePageIndex, 1)) {
+if (IsEnabled($EnablePageIndex, 1))
+{
   SDV($PageIndexFile, "$WorkDir/.pageindex");
   $EditFunctions[] = 'PostPageIndex';
 }
@@ -185,7 +186,7 @@ function FmtPageList($outfmt, $pagename, $opt) {
 
 ## MakePageList generates a list of pages using the specifications given
 ## by $opt.
-function MakePageList($pagename, $opt, $retpages = 1) {
+function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0) {
   global $MakePageListOpt, $PageListFilters, $PCache;
 
   StopWatch('MakePageList pre');
@@ -210,13 +211,17 @@ function MakePageList($pagename, $opt, $retpages = 1) {
   StopWatch("MakePageList items count=".count($list).", filters=".implode(',',$itemfilters));
   $opt['=phase'] = PAGELIST_ITEM;
   $matches = array(); $opt['=readc'] = 0;
-  foreach((array)$list as $pn) {
+  foreach((array)$list as $pn)
+  {
     $page = array();
     foreach((array)$itemfilters as $fn) 
     if (!$fn($list, $opt, $pn, $page)) continue 2;
 
-/* Meng: Exclude the draft pages! */    
-    if (strpos($pn,'-Draft') !== false) continue;
+    // Meng: Exclude the draft pages
+//    if (strpos($pn,'-Draft') !== false) continue;
+    // Meng: Exclude site.sidebar
+    if (stripos($pn,'Site.SideBar') !== false) continue;
+    
     $page['pagename'] = $page['name'] = $pn;
     PCache($pn, $page);
     $matches[] = $pn;
@@ -236,6 +241,11 @@ if (count($matches) == 1) { header('Location: pmwiki.php?n='.$matches[0]); }
     for($i=0; $i<count($list); $i++)
       $list[$i] = &$PCache[$list[$i]];
   StopWatch('MakePageList end');
+
+  // Meng. It's kind of a trick. If a special flag added by me is set, then update 
+  // all the pages. It's for reconstructing the pageindex.
+  if ($recontructPageIndex == 1) { Meng_PageIndexUpdate($list); }
+
   return $list;
 }
 
@@ -752,13 +762,27 @@ function PageIndexTerms($terms) {
 ## on us).
 // Ling-San Meng
 // This function maintains and updates a file named ".pageindex" in wiki.d which basically
-// speeds up categorization and searches. It however causes autosave to give error message
-// when the pmwiki folder is set to non-readable. It also seems to slow down autosaving
-// since it is called constantly and .pageindex is almost 6MB.
-function PageIndexUpdate($pagelist = NULL, $dir = '') {
-/*
+// speeds up categorization and searches. By default it's called every time the page is 
+// saved, thus it appears to slow down autosaving a bit. The real problem is it keeps 
+// producing warning and error messages, and I simply can't solve it.
+// It turns out by calling this function within the main pmwiki.php, everything is fine
+// and it's more desirable since I get to decide when and where it's called. 
+function PageIndexUpdate($pagelist = NULL, $dir = '')
+{} 
+function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
+{
   global $EnableReadOnly, $PageIndexUpdateList, $PageIndexFile, 
     $PageIndexTime, $Now;
+
+/****************************************************************************************/
+  if (decryptPage($PageIndexFile, 0) == -1)
+  {
+    shell_exec("rm -f ".$PageIndexFile);
+    global $pagename;
+    redirect($pagename);
+  }
+/****************************************************************************************/
+
   if (IsEnabled($EnableReadOnly, 0)) return;
   $abort = ignore_user_abort(true);
   if ($dir) { flush(); chdir($dir); }
@@ -772,7 +796,15 @@ function PageIndexUpdate($pagelist = NULL, $dir = '') {
   $timeout = time() + $PageIndexTime;
   $cmpfn = create_function('$a,$b', 'return strlen($b)-strlen($a);');
   Lock(2);
-  $ofp = fopen("$PageIndexFile,new", 'w');
+
+/****************************************************************************************/
+  // Meng. The original code opens ".pageindex,new" for "w" directly, which produces errors/
+  // warnings. Killing the file first and then opens it solves the problem.
+  $file = $PageIndexFile.",new";
+  if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
+  $ofp = @fopen($file,"w");
+/****************************************************************************************/
+  
   foreach($pagelist as $pn) {
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
@@ -804,11 +836,16 @@ function PageIndexUpdate($pagelist = NULL, $dir = '') {
   }
   fclose($ofp);
   if (file_exists($PageIndexFile)) unlink($PageIndexFile); 
-  rename("$PageIndexFile,new", $PageIndexFile);
+  rename($file, $PageIndexFile);
+  
   fixperms($PageIndexFile);
   StopWatch("PageIndexUpdate end ($updatecount updated)");
   ignore_user_abort($abort);
-  */
+
+/****************************************************************************************/
+  global $EnableEncryption;
+  if ($EnableEncryption == 1) { encryptPage($PageIndexFile); }
+/****************************************************************************************/
 }
 
 ## PageIndexQueueUpdate specifies pages to be updated in
@@ -829,9 +866,48 @@ function PageIndexQueueUpdate($pagelist) {
 ## Also note that this just works for the index; if the index is
 ## incomplete, then so are the results returned by this list.
 ## (MakePageList above already knows how to deal with this.)
-function PageIndexGrep($terms, $invert = false) {
+function PageIndexGrep($terms, $invert = false)
+{
   global $PageIndexFile;
   if (!$PageIndexFile) return array();
+  
+/****************************************************************************************/    
+    // Meng. If encryption is enabled, decrypt the pageindex and generate a temp 
+    // decrypted one. Else, copy it to be the temp decrypted pageindex and then encrypt
+    // the original one.
+    global $EnableEncryption;
+    if ($EnableEncryption == 1)
+    {
+      $result = decryptPage($PageIndexFile, $EnableEncryption);
+
+      if ($result == 1) 
+      { $PageIndexFile .= "_dec"; }
+      else if ($result == 0)
+      {
+        copy($PageIndexFile, $PageIndexFile."_dec");
+        encryptPage($PageIndexFile);
+        $PageIndexFile .= "_dec";
+      }
+      else
+      {
+        shell_exec("rm -f ".$PageIndexFile);
+        global $pagename;
+        redirect($pagename);
+      }
+    }
+    // Else if encryption is off, and the page has been encrypted, replace it with a 
+    // decrypted pageindex.
+    else
+    {
+      if (decryptPage($PageIndexFile, $EnableEncryption) == -1)
+      {    
+        shell_exec("rm -f ".$PageIndexFile);
+        global $pagename;
+        redirect($pagename);
+      }
+    }
+/****************************************************************************************/
+
   StopWatch('PageIndexGrep begin');
   $pagelist = array();
   $fp = @fopen($PageIndexFile, 'r');
@@ -841,9 +917,6 @@ function PageIndexGrep($terms, $invert = false) {
       $line = fgets($fp, 4096);
       while (substr($line, -1, 1) != "\n" && !feof($fp))
       {  $line .= fgets($fp, 4096); }
-  
-//      $draftKeyword = strpos($line, 1-Draft1);
-//      continue;
   
       $i = strpos($line, ':');
       if (!$i) continue;
@@ -860,6 +933,14 @@ function PageIndexGrep($terms, $invert = false) {
     fclose($fp);
   }
   StopWatch('PageIndexGrep end');
+
+/****************************************************************************************/
+    // Meng. Remove the temp decrypted pageindex.
+    if ($EnableEncryption == 1)
+    {
+      if (file_exists($PageIndexFile) !== false) { shell_exec("rm -f ".$PageIndexFile); }
+    }
+/****************************************************************************************/
   return $pagelist;
 }
   

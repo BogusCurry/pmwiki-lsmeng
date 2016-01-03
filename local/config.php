@@ -145,11 +145,13 @@ $DiffKeepDays=36500;
 #                       '||border=1 width=80%\\n||!Hdr ||!Hdr ||!Hdr ||\\n||     ||     ||     ||\\n||     ||     ||     ||\\n', '', '', 
 #                     '$GUIButtonDirUrlFmt/table.gif"$[Table]"');
 
-#######################Below is Ling-San Meng's settings###########################
-# My default password; oz
+/****************************************************************************************/
+// Meng. Configurations for my own plugins/enhancements for PmWiki.
+
+// My default password; oz
 $DefaultPasswords['admin'] = '';
 
-# Various enhancements written by me
+// Various enhancements written by me
 $homeSSID = "Sam Base";
 $currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk '/ SSID/ {print substr($0, index($0, $2))}'");
 $isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
@@ -160,16 +162,47 @@ $runCodePath = "pub/runCode";
 $timeStampFile = '../../pmwikiTimeStamp/pmwikiTimeStamp.txt';
 $emailAddress1 = "lsmeng@ece.gatech.edu";
 $emailAddress2 = "";
-$pwRetryLimit = 1; // You have to be correct at the $pwRetryLimit+1 th time
-$phpLogoutTimer = ($isAtHome) ? 31536000 : 3600; // Php never logs out at home
+
+// Php login password. Have to be correct at the $pwRetryLimit+1 th time
+$pwRetryLimit = 1; 
+// Php logout timer. Pw will be requested after the timer expires.
+$phpLogoutTimer = 3600; 
+// Java logout timer for closing webpages. Set to 3/an hour if not/at home
 $javaLogoutTimer = ($isAtHome) ? 3600*3 : 3600;
+// Define the sensitive pages, which will be closed by java after a very short time.
+// Currently set to 10 min.
 $sensitivePage = array('Main.OnThisDay','Main.PickUp','Main.Girls','Main.NLPickUp','Main.AccountAndPassword');
 $javaSensitivePageLogoutTimer = 600;
+
+// The default image size and enlarged size on click.
 $imgHeightPx = 330;
 $imgHeightPxL = 660;
-$maxUploadSize = 10000000; // 10 MB
-$pageHistoryUpdateInterval = 86400;
+
+// Max allowable upload size in bytes. Currently set to 10 MB.
+$maxUploadSize = 10000000; 
+
+// Update the page history and store the difference if the following time period has 
+// elapsed since last editing. 
+$pageHistoryUpdateInterval = 3600;
+
+// If set to 1, unencrypted page files will be encrypted on editing/viewing.
+// If set to 0,   encrypted page files will be decrypted on editing/viewing.
+// The encryption key for a specific page is set to the following pass phrase appended by
+// its pagename and then hashed using crypt() with crypt($OPENSSL_METHOD) being its salt.
+// => encryption key is crypt($OPENSSL_PASS.$pagename,crypt($OPENSSL_PASS)) 
+// To encrypt/decrypt all the pages at once, simply perform a search for " ".
+// CRC is used for checking if the encryption key is correct.
+$EnableEncryption = 1;
+$OPENSSL_PASS = "lsmeng";
+$OPENSSL_METHOD = "AES-256-CBC";
+$EnableCRC = 1;
+
+// Pageindex
+$pageIndexUpdateInterval = 60;
+
 include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
+
+/****************************************************************************************/
 
 # Include traditional chinese language
 include_once("scripts/xlpage-utf-8.php"); # optional
@@ -186,9 +219,6 @@ include_once("$FarmD/cookbook/autosave.php");
 
 # For flipbox
 include_once($FarmD.'/cookbook/flipbox.php');
-
-# This makes "BaseName" = "FullName" without "-Draft"
-//$BaseNamePatterns['/-Draft$/'] = '';
 
 # For wpap mp3 player
 $wpap_initialvolume = "1";

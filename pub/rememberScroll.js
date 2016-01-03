@@ -1,16 +1,24 @@
 var url =  document.location.href;
 var y_name = url.substring(url.lastIndexOf('pmwiki.php?n=')+13, url.lastIndexOf('?')) + "-scrollY";
 
+function delCookie(name)
+{ 
+  var cval = getCookie(name); 
+  if(cval != null)
+  {
+    var exp = new Date();
+    exp.setTime(exp.getTime() - 1);
+    document.cookie = name + "="+cval+";expires="+exp.toGMTString(); 
+  }
+} 
+
 function setPosCookies()
 {
   cookieName = y_name;
   value = document.getElementById('text').scrollTop;
-  
-  // 不指定expire date, 則離開browser, cookie即失效
-//  var exdate = new Date();
-//  exdate.setDate(exdate.getDate()+expiredays);
-//  document.cookie = c_name + "=" + escape(value) + ((expiredays==null) ? "" : ";expires=" + exdate.toGMTString());
-  document.cookie = cookieName + "=" + escape(value);  
+
+  if (value != 0) { document.cookie = cookieName + "=" + escape(value); }
+  else { delCookie(cookieName); }
 }
 
 function getCookie(c_name)

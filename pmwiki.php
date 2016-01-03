@@ -572,7 +572,7 @@ function Lock($op) {
   if (!$lockfp) { 
     if ($op <= 0) return;
     @unlink($LockFile); 
-    $lockfp = fopen($LockFile,"w") or
+    $lockfp = @fopen($LockFile,"w") or
       Abort('Cannot acquire lockfile', 'flock');
     fixperms($LockFile);
   }
@@ -611,6 +611,7 @@ function mkdirp($dir) {
     on your server and following <a target='_blank' href='$ScriptUrl'>
     this link</a>.  Afterwards you can restore the permissions to 
     their current setting by executing <pre>    chmod $perms $parent</pre>.";
+
   Abort($msg);
 }
 
@@ -1016,11 +1017,42 @@ class PageStore {
     global $PageFileDecodeFunction;
     return $PageFileDecodeFunction($f);
   }
-  function read($pagename, $since=0) {
+  function read($pagename, $since=0)
+  {  
     $newline = '';
     $urlencoded = false;
-    $pagefile = $this->pagefile($pagename);
-    if ($pagefile && ($fp=@fopen($pagefile, "r"))) {
+
+    $pagefile = $this->pagefile($pagename);     
+    
+/****************************************************************************************/
+    global $EnableEncryption, $WorkDir;
+    
+    // Meng. If encryption is enabled, decrypt an encrypted page and generate a temp 
+    // decrypted page file. If the page is a regular page and has not been encrypted, 
+    // copy it as the temp decrypted page file and encrypt the original one.
+    if ($EnableEncryption == 1)
+    {
+      if (decryptPage($pagefile, $EnableEncryption) == 1) 
+      { $pagefile .= "_dec"; }
+      else if (noEncryptPage($pagename) == 0)
+      {
+        // Pages named ".GroupAttribute" will be called here even if they are nonexistent
+        // which gives me some trouble.
+        // Simply ignore the case where the original file doesn't exist.
+        if (@copy($pagefile, $pagefile."_dec") !== false)
+        {
+          encryptPage($pagefile);
+          $pagefile .= "_dec";
+        }
+      }
+    }
+    // Else if encryption is off, and the page has been encrypted, replace it with a 
+    // decrypted page file.
+    else { decryptPage($pagefile, $EnableEncryption); }
+/****************************************************************************************/   
+
+    if ($pagefile && ($fp=@fopen($pagefile, "r")))
+    {      
       $page = $this->attr;
       while (!feof($fp)) {
         $line = fgets($fp, 4096);
@@ -1045,24 +1077,37 @@ class PageStore {
       }
       fclose($fp);
     }
+
+/****************************************************************************************/
+    // Meng. Remove the temp decrypted page file.
+    global $WorkDir;
+    $file = $WorkDir."/".$pagename."_dec";
+    if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
+/****************************************************************************************/
+
     return $this->recode($pagename, @$page);
   }
   function write($pagename,$page) {
     global $Now, $Version, $Charset;
+
     $page['charset'] = $Charset;
     $page['name'] = $pagename;
     $page['time'] = $Now;
-    $page['host'] = $_SERVER['REMOTE_ADDR'];
+    $page['host'] = ($_SERVER['REMOTE_ADDR'] == "::1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
     $page['agent'] = @$_SERVER['HTTP_USER_AGENT'];
     $page['rev'] = @$page['rev']+1;
+
     unset($page['version']); unset($page['newline']);
     uksort($page, 'CmpPageAttr');
     $s = false;
     $pagefile = $this->pagefile($pagename);
     $dir = dirname($pagefile); mkdirp($dir);
     if (!file_exists("$dir/.htaccess") && $fp = @fopen("$dir/.htaccess", "w")) 
-      { fwrite($fp, "Order Deny,Allow\nDeny from all\n"); fclose($fp); }
-    if ($pagefile && ($fp=fopen("$pagefile,new","w"))) {
+    {
+        fwrite($fp, "Order Deny,Allow\nDeny from all\n"); fclose($fp);
+    }
+    if ($pagefile && ($fp=fopen("$pagefile,new","w")))
+    {
       $r0 = array('%', "\n", '<');
       $r1 = array('%25', '%0a', '%3c');
       $x = "version=$Version ordered=1 urlencoded=1\n";
@@ -1076,13 +1121,17 @@ class PageStore {
       $s = $s && (filesize("$pagefile,new") > $sz * 0.95);
       if (file_exists($pagefile)) $s = $s && unlink($pagefile);
       $s = $s && rename("$pagefile,new", $pagefile);
+
+/****************************************************************************************/
+      global $EnableEncryption;
+      if ($EnableEncryption == 1 && noEncryptPage($pagename) == 0)
+      { encryptPage($pagefile); }
+/****************************************************************************************/
     }
     $s && fixperms($pagefile);
     if (!$s)
       Abort("Cannot write page to $pagename ($pagefile)...changes not saved");
     PCache($pagename, $page);
-
-
   }
   function exists($pagename) {
     if (!$pagename) return false;
@@ -1147,12 +1196,14 @@ class PageStore {
 function ReadPage($pagename, $since=0) {
   # read a page from the appropriate directories given by $WikiReadDirsFmt.
   global $WikiLibDirs,$Now;
-  foreach ($WikiLibDirs as $dir) {
+  foreach ($WikiLibDirs as $dir)
+  {
     $page = $dir->read($pagename, $since);
     if ($page) break;
   }
   if (@!$page) $page['ctime'] = $Now;
   if (@!$page['time']) $page['time'] = $Now;
+  
   return $page;
 }
 
@@ -1165,16 +1216,18 @@ function WritePage($pagename,$page) {
   }
   if ($i >= count($WikiLibDirs)) $wd = &$WikiDir;
   $wd->write($pagename,$page);
-  if ($LastModFile && !@touch($LastModFile)) 
-    { unlink($LastModFile); touch($LastModFile); fixperms($LastModFile); }
-    
 
+/****************************************************************************************/
+  // Meng. Comment out the following. They require ".lastmod" in wiki.d to be writable.
+  // The functionality of .lastmod is unknown.
+//  if ($LastModFile && !@touch($LastModFile)) 
+//    { unlink($LastModFile); touch($LastModFile); fixperms($LastModFile); }
+    
 /****************************************************************************************/
   // Meng.
   // If the pagename matches a specific predetermined pagename, then invoke the php
   // execution procedures.
-  if ($pagename == "Main.Runcode")
-  { runCode($pagename); }
+  if ($pagename == "Main.Runcode") { runCode($pagename); }
 /****************************************************************************************/
 }
 
@@ -1749,11 +1802,14 @@ function HandleBrowse($pagename, $auth = 'read') {
 /****************************************************************************************/
 /* Ling-San Meng: */
 
+// Handle pageindex update
+reconstructPageindex();
+updatePageindexOnBrowse($pagename,$page);
+
 // If the page is the code running page, present the page with the results (execute then 
 // grab the results in the case of c programs) and the source code 
 if ($pagename == "Main.Runcode")
 {
-//    header("Location: http://localhost/pmwiki/pub/runCode/main.php");  
   global $runCodePath;
   $srcFile = $runCodePath."/main.cpp";
   $outputFile = $runCodePath."/output.txt";
@@ -1828,7 +1884,6 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL) {
     $fn($pagename, $page, $new);
   }
   StopWatch("UpdatePage: end $pagename");
-  
   return $IsPagePosted;
 }
 
@@ -1932,7 +1987,7 @@ function PostPage($pagename, &$page, &$new)
     $new['charset'] = $Charset; # kept for now, may be needed if custom PageStore
     $new['author'] = @$Author;
     $new["author:$Now"] = @$Author;
-    $new["host:$Now"] = $_SERVER['REMOTE_ADDR'];
+    $new["host:$Now"] = ($_SERVER['REMOTE_ADDR'] == "::1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
     $diffclass = preg_replace('/\\W/','',@$_POST['diffclass']);
 
 /****************************************************************************************/
@@ -1947,33 +2002,38 @@ function PostPage($pagename, &$page, &$new)
       $lastVersionTime = $page['lastVerTime'];
       $lastVersionText = $page['LastVerText'];
 
-      // Update the history version time & text
-      $new['lastVerTime'] = $Now;
-      $new['LastVerText'] = $new['text'];
-
+      // If the page history hasn't been set yet, or
+      // if a specified time period has passed since the last page history update
+      // Put in page history the difference between the new text and last history version
+      // Also update the pageindex
       global $pageHistoryUpdateInterval;
-      
-      // See if a specified time period has passed since the last page history update,
-      // or the page history hasn't been set yet
-      if (!isset($lastVersionTime))
+      if (!isset($lastVersionTime) || $Now-$lastVersionTime > $pageHistoryUpdateInterval)
       {
-        // Put in page history the difference between the new text and last history version
-        $new["diff:$Now:{$page['time']}:$diffclass"] = $DiffFunction($new['text'],@$page['text']);
-      }
-      else if ($Now-$lastVersionTime > $pageHistoryUpdateInterval)
-      {
-        // Put in page history the difference between the new text and last history version
+        $new['lastVerTime'] = $Now;
+        $new['LastVerText'] = $new['text'];
         $new["diff:$Now:{$page['time']}:$diffclass"] = $DiffFunction($new['text'],$lastVersionText);
       }
+      // Specified time period has not expired. Record the last version.
       else
       {
-        // Specified time period has not expired. Record the last version.
+        unset($new["author:$Now"]);
+        unset($new["host:$Now"]);
+        unset($new["csum:$Now"]);
         $new['lastVerTime'] = $lastVersionTime;
         $new['LastVerText'] = $lastVersionText;
       }
+      
+      // Update Pageindex. 
+      global $pageIndexUpdateInterval;
+      $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
+      if (!isset($lastPageindexUpdateTime) || $Now-$lastPageindexUpdateTime > $pageIndexUpdateInterval)
+      {
+        Meng_PageIndexUpdate($pagename);
+        $new['lastPageindexUpdateTime'] = $Now;
+      }
     }
 /****************************************************************************************/
-
+    
     $keepgmt = $Now-$DiffKeepDays * 86400;
     $keepnum = array(); 
     $keys = array_keys($new);
@@ -2001,10 +2061,10 @@ function PostPage($pagename, &$page, &$new)
         // to actually delete the page and its draft page at the same time.
 //        $WikiDir->delete($pagename);
         shell_exec("rm -f wiki.d/".$pagename); 
-
       }
     }
-    else WritePage($pagename,$new);
+    else 
+    { WritePage($pagename,$new); }
     $IsPagePosted = true;
   }
 }
@@ -2067,7 +2127,7 @@ function HandleEdit($pagename, $auth = 'edit') {
     { Redirect(FmtPageName($EditRedirectFmt, $pagename)); return; }
   Lock(2);
   $page = RetrieveAuthPage($pagename, $auth, true);
-  if (!$page) Abort("?cannot edit $pagename"); 
+  if (!$page) Abort("?cannot edit $pagename");   
   $new = $page;
   foreach((array)$EditFields as $k) 
     if (isset($_POST[$k])) $new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
@@ -2269,8 +2329,10 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
   // Use the loginStatus variable to see if a cached password is utilized or we 
   // have a newly typed correct password.
   // These codes are executed every time wiki is viewed/edited.
-  if ($flag == 1)
-  {
+  // If at home, skip checking the php logout timer.
+  global $isAtHome;
+  if ($flag == 1 && $isAtHome != 1)
+  {//echo "here";
     if ($auth == 1)
     {
       // Pass $loginStatus to the check timeStamp function to differentiate between

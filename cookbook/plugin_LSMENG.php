@@ -281,7 +281,7 @@ function getParameterValue($IP,$parameter,$inputText="")
 function checkTimeOnAuthSuccess($IP,$loginStatus)
 {
   $lastTimeStamp = getParameterValue($IP,"TimeStamp_");
-  global $phpLogoutTimer, $isAtHome;
+  global $phpLogoutTimer;
 
   $today = getdate();
   $minStr = $today[minutes];
@@ -926,20 +926,7 @@ $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
   
 // Remember the text edit area scroll position.
 if ($action == 'edit')
-{
-  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/rememberScroll.js'></script>";
-
-/*  
-  // Under Windows, setting position cookies in the events of keydown and mouse click is 
-  // not working if the user goes to the previous/next page using the mouse wheel shortcut
-  // key combinations. The following fixes this somewhat by setting position cookies on 
-  // mouse wheel move.
-  if ($UrlScheme == 'https') 
-  {
-    $HTMLHeaderFmt[] .= "<script type='text/javascript'> window.addEventListener('wheel', setPosCookies, false); </script>";
-  }
-*/
-}
+{ $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/rememberScroll.js'></script>"; }
 
 /****************************************************************************************/
 
@@ -989,6 +976,262 @@ function bookKeepProcess($pagename,&$text)
 
 /****************************************************************************************/
 
+// Return 1 if the page is a special site page that should not be encrypted.
+//        0 otherwise.
+function noEncryptPage($pagename)
+{
+  $noEncryptPageName = array("Site.", "PmWiki.", "PmWikiZhTw.", "SiteAdmin.", "Main.GroupAttributes", "Main.GroupHeader", "Main.GroupFooter");  
+  $NUM = count($noEncryptPageName);
+
+  for ($i=0;$i<$NUM;$i++)
+  {
+    $partPagename = substr($pagename,0,strlen($noEncryptPageName[$i]));
+    if ($partPagename == $noEncryptPageName[$i])
+    { return 1; }
+    // The dot will be replaced by slash and called by the system. Have to deal with this
+    // case too.
+    else if ($partPagename == str_replace('.','/',$noEncryptPageName[$i]))
+    { return 1; }
+  }
+  
+  return 0;
+}
+
+// Keyword used for identifying encrypted page files. If the text content of a page file
+// is preceded by this keyword, the page file has been encrypted.
+$ENC_KEYWORD = "ENC";
+$ENC_KEYWORD_LEN = strlen($ENC_KEYWORD);
+// Set the length of the initialization vector based on encryption method.
+$IV_LEN = openssl_cipher_iv_length($OPENSSL_METHOD);
+
+// Replace a pagefile with an encrypted one. The content of the encrypted pagefile will
+// will preceded by a keyword for indicating the fact that it has been encrypted, followed
+// by its encryption method, which is also encrypted using a one-way encryption mechanism,
+// followed by the initialization vector used for encryption.
+// Return true if successfully encrypted;
+//        false on error.
+function encryptPage($file)
+{
+  global $OPENSSL_PASS, $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
+
+  if (file_exists($file) !== false)
+  {
+    // Get content and encrypt. Don't encrypt the page if it's been encrypted already.
+    $text = file_get_contents($file);
+    if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
+    else
+    {
+      // Get the pagename from the given file name.
+      $pos = strrpos($file,"/");
+      if ($pos === false) { $pagename = $file; }
+      else { $pagename = substr($file,$pos+1); }
+      
+      // Generate a random initialization vector. It is then put before the encrypted  
+      // text.
+      global $IV_LEN;
+      $iv = openssl_random_pseudo_bytes($IV_LEN);
+
+      // Calculate CRC if enabled. Prepend the text with the CRC.
+      global $EnableCRC;
+      if ($EnableCRC) { $text = (string)crc32($text)."\n".$text; }
+
+      // Compute the encryption key. The encryption key for a specific page is set to the 
+      // following pass phrase appended by its pagename and then hashed using crypt() with
+      // crypt($OPENSSL_METHOD) being its salt.
+      $cryptMethod = crypt($OPENSSL_METHOD);
+      $salt = $cryptMethod;
+      $encryptionKey = crypt($OPENSSL_PASS.$pagename, $salt);
+      $encryptText = openssl_encrypt ($text, $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
+      if ($encryptText === false) { Abort("$pagename encryption error!"); }
+
+      shell_exec("rm -f ".$file);
+      $fp = fopen($file,"w");
+      if (!$fp) { Abort("Fail to generate encrypted page file for $pagename!"); }
+      fputs($fp, $ENC_KEYWORD."\n".$cryptMethod."\n".$iv.$encryptText);
+      fclose($fp);
+      return true;
+    }
+  }
+  else { return false; }
+}
+
+// If the keyword for encryption has been found, and the encryption method and passphrase both check,
+// perform decryption. On decryption success, if $EnableEncryption is 1
+// a temp decrypted page file with suffix "_dec" is generated; otherwise the original 
+// encrypted page file is replaced with a decrypted one directly.
+// Return 1 if decrypted; 
+//        0 if not encrypted/doesn't exist;
+//       -1 for decryption error.
+function decryptPage($file, $EnableEncryption)
+{
+  global $OPENSSL_PASS, $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
+
+  if (file_exists($file) !== false)
+  {
+    $text = file_get_contents($file);
+    
+    // See if this page has been encrypted by checking the enc keyword    
+    if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD)
+    {
+      $cryptMethodLen = strpos($text,"\n",$ENC_KEYWORD_LEN+1) - $ENC_KEYWORD_LEN - 1; // -1 is for \n
+      $cryptMethod = substr($text,$ENC_KEYWORD_LEN+1,$cryptMethodLen); 
+
+      // Decrypt the page if the encryption method checks
+      if (crypt($OPENSSL_METHOD,$cryptMethod) == $cryptMethod)
+      {
+        $pos = strrpos($file,"/");
+        if ($pos === false) { $pagename = $file; }
+        else { $pagename = substr($file,$pos+1); }
+       
+        // Retrieve the initialization vector.
+        global $IV_LEN;
+        $iv = substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2, $IV_LEN);
+
+        // Retrieve the salt and compute the encryption key; decrypt.
+        $salt = $cryptMethod;
+        $encryptionKey = crypt($OPENSSL_PASS.$pagename,$salt);
+        $decryptText = openssl_decrypt (substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2+$IV_LEN), $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
+        if ($decryptText === false) { echo "$pagename decryption error"; return -1; }
+
+        // Check CRC to see if the correct passphrase is used.
+        global $EnableCRC;
+        if ($EnableCRC)
+        {
+          $pos = strpos($decryptText,"\n");
+          $crc = substr($decryptText,0,$pos);          
+          $decryptText = substr($decryptText,$pos+1);
+          
+          if ((string)crc32($decryptText) != $crc)
+          { echo "$file was encrypted using a different passphrase!"; return -1; }                  
+        }
+
+        // Warnings once appear when performing search. Seems to be related to the file read 
+        // operation here. Enhance it with a while loop.
+        if ($EnableEncryption == 1) { $file .= "_dec"; }
+        $fp = @fopen($file,"w");
+        $count = 0;
+        while (!$fp)
+        {
+          @shell_exec("rm -f ".$file);
+          $fp=@fopen($file,"w");
+          $count++;
+          if ($count > 10) { Abort("Fail to create decoded page file for $pagename!"); }
+        }
+
+        fputs($fp,$decryptText);
+        fclose($fp);
+      
+        return 1;
+      }
+      else
+      { echo "$file was encrypted using a different cipher!"; return -1; }
+    }
+    else { return 0; }
+  }
+  else { return 0; }
+}
+
+/****************************************************************************************/
+
+// Reconstruct pageindex if nonexistent by performing an empty search.
+function reconstructPageindex()
+{
+  global $PageIndexFile;
+  if (file_exists($PageIndexFile) === false)
+  {  
+    $opt['action'] = 'search';
+    MakePageList("Main.Homepage", $opt, 0, 1);
+  }
+}
+
+// Check the last time we modify this page, and the last time we update the page index for this page
+// If the last modification time is after the pageindex update time, update the pageindex,
+// and replace the page with an updated pageindex update time.
+function updatePageindexOnBrowse($pagename, $page)
+{
+  global $Now;
+  $pageLastModTime = $page['time'];
+  $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
+
+  // See if the time attribute has been set. If not, then this page is most likely invalid.
+  if (isset($pageLastModTime) && noEncryptPage($pagename) == 0)
+  {
+    // See if the "lastPageindexUpdateTime" has been set. If not, then this page is from 
+    // previous releases.
+    if (isset($lastPageindexUpdateTime))
+    {
+      // Update the pageindex depending on its last modified time.
+      if  ($pageLastModTime <= $lastPageindexUpdateTime) {}
+      else
+      {
+        // Update pageindex file.
+        Meng_PageIndexUpdate($pagename);
+
+        global $WorkDir, $EnableEncryption;
+        $file = $WorkDir."/".$pagename;
+        decryptPage($file,0);
+        
+        $pageContent = file_get_contents($file);
+        if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
+        $pos = strpos($pageContent,$lastPageindexUpdateTime);
+        if ($pos === false) { Abort("In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!"); }
+        $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime));
+        $fp = fopen($file,"w");
+        fputs($fp,$pageContent);
+        fclose($fp);
+  
+        if ($EnableEncryption == 1) { encryptPage($file); }
+      }
+    }
+    // "lastPageindexUpdateTime" has not been set. Insert one manually.
+    // Inserted right after the "host" field.
+    else
+    {
+      // Update pageindex file.
+      Meng_PageIndexUpdate($pagename);
+
+      global $WorkDir, $EnableEncryption;
+      $file = $WorkDir."/".$pagename; 
+      decryptPage($file,0);
+
+      $pageContent = file_get_contents($file);
+      if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
+      $pos = strpos($pageContent,"host=");
+      if ($pos === false) { Abort("In $pagename, the field \"host\" does not exist while it should!"); }
+      $pos = strpos($pageContent,"\n",$pos);
+      $newLine = "lastPageindexUpdateTime=".$Now."\n";
+      $pageContent = substr_replace($pageContent, $newLine, $pos+1, 0);
+
+      $fp = fopen($file,"w");
+      fputs($fp,$pageContent);
+      fclose($fp);
+  
+      if ($EnableEncryption == 1) { encryptPage($file); }
+    }
+  }
+}
+
+/****************************************************************************************/
+
 // Cookie verification
 
 //$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/userVerify.js'></script>";
+
+/****************************************************************************************/
+
+// Insert jpg
+/*
+$IMG_PATH = "../../../";
+
+function data_uri($file, $mime) 
+{  
+  $contents = file_get_contents($file);
+  $base64   = base64_encode($contents); 
+  return ('data:' . $mime . ';base64,' . $base64);
+}
+
+$test = data_uri($IMG_PATH.'20151202_999999.jpg','image/png');
+
+*/
+
+/****************************************************************************************/
