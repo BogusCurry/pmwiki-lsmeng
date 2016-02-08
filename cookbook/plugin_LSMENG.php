@@ -141,7 +141,7 @@ function showDateTime($pagename)
 
 // Similar to file_get_contents(). Wait a random time duration if the file doesn't exist.
 // A maximum number of retry limit can be set.
-function fileGetContentsWait($file, $N_TRY=1)
+function fileGetContentsWait($file, $N_TRY=3)
 {
   $minWaitMicroSec = 1000000;
   $maxWaitMicroSec = 5000000;
@@ -149,63 +149,81 @@ function fileGetContentsWait($file, $N_TRY=1)
   $nTry = 1;
   while (1)
   {
-    if (file_exists($file) !== false)
-    {
-      $text = file_get_contents($file);
-      return $text;
-    }
-    else
-    {
-      $nTry++;
-      if ($nTry>$N_TRY) { return ""; }
+    $text = @file_get_contents($file);
+    if ($text !== false) { return $text; }
+
+    $nTry++;
+    if ($nTry>$N_TRY) { return false; }
    
-      $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
-      usleep($waitMicroSec); 
-    }  
+    $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
+    usleep($waitMicroSec); 
   }
 }
 
 // Create a file or kill it if existent, and then write "content" to it.
-// Wait a random time duration if the above steps produce error.
+// Wait a random amount of time if other processes are writing this file.
 // A maximum number of retry limit can be set.
-function filePutContentsWait($file, $content, $N_TRY=1)
-{
+function filePutContentsWait($file, $content, $N_TRY=3)
+{ 
+  // check if it's already locked
+  // if yes wait a random time then retry
   $minWaitMicroSec = 1000000;
   $maxWaitMicroSec = 5000000;
-  
   $nTry = 1;
   while (1)
   {
-    $return_var = 0;
-    if (file_exists($file) !== false) { system("rm -f ".$file, $return_var); }
-    $fp=@fopen($file,"w");
-    if ($return_var === 0 && $fp !== false)
-    {
-      fputs($fp,$content);
-      fclose($fp);
-      break;
+    // if unlocked, lock it
+    if (file_exists($file.",new") === false)
+    { 
+      $fp = @fopen($file.",new","w");
+      if ($fp !== false) { break; }
     }
-    else
-    {
-      $nTry++;
-      if ($nTry>$N_TRY) { break; }
+    
+    $nTry++;
+    if ($nTry>$N_TRY) { Abort("Retry limit reached in filePutContentsWait() for $file!"); }
    
-      $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
-      usleep($waitMicroSec); 
+    $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
+    usleep($waitMicroSec); 
+  }
+
+  fputs($fp,$content);
+  fclose($fp);
+
+  // Check for the existence of ",new" again since things can go wrong when opening lots
+  // of pages at the same time.
+  if (file_exists($file.",new") === true)
+  {
+    @unlink($file);
+    @rename($file.",new", $file);
+  }
+  else
+  {
+    // Leave a backup if things go wrong.
+    echo ",new does not exist in filePutContentsWait() for $file. Backup file generated!";
+    $fp2 = @fopen($file."_backup","w");
+    if ($fp2 !== false)
+    {
+      fputs($fp2,$content);
+      fclose($fp2);
     }
-  } 
+  }
 }
 
 // Set the entry "$parameter" of user "$IP" to "$value".
+// false is returned if the timeStampFile does not exist.
 // A new entry "$parameter" will be created in case that the entry doesn't exist.
 // A new entry "$parameter" of user "$IP" will be created in case the user "$IP" doesn't 
 // exist.
-function setParameterValue($IP,$parameter,$value)
+function setParameterValue($file, $IP,$parameter,$value)
 {
-  global $timeStampFile;
-  $file = $timeStampFile;
-  $text = fileGetContentsWait($file,10);
+  $text = fileGetContentsWait($file);
   
+  // The timeStamp file is generated automatically if nonexistent.
+  // Uncomment the following line to disallow the timeStamp file to be nonexistent. This
+  // also means the timeStamp file won't get overwritten by a blank file when read
+  // operation fails.
+//  if ($text === false) { return false; }
+    
   $pos = strpos($text,$IP);
   $newText = "";
 
@@ -218,36 +236,37 @@ function setParameterValue($IP,$parameter,$value)
     // If the field doesn't exist
     if ($parameterPos === false || $parameterPos>$newLinePos)
     {
-      $endOfLinePos = strpos($text,"\n",$pos+1);
-      $newText = substr($text,0,$endOfLinePos).$parameter.$value." ".substr($text,$endOfLinePos,strlen($text)-$endOfLinePos);
+      $newText = substr($text,0,$newLinePos).$parameter.$value." ".substr($text,$newLinePos,strlen($text)-$newLinePos);
     }
     else
     {
       $parameterLen = strlen($parameter);
-      $oldValue = getParameterValue($IP,$parameter,$text);
+      $oldValue = getParameterValue($file,$IP,$parameter,$text);
       $oldValueLen = strlen($oldValue);
       $newText = substr($text,0,$parameterPos+$parameterLen).$value.substr($text,$parameterPos+$parameterLen+$oldValueLen,strlen($text)-$parameterPos-$parameterLen-$oldValueLen);
     }
   }
   // This is a new IP
   else
-  { $newText = $text."IP_".$IP." ".$parameter.$value." \n"; }
+  { $newText = $text."IP=".$IP." ".$parameter.$value." \n"; }
+  
+  // Move the updated line to the top
+  $pos = strpos($text,"IP=".$IP);
+  $newLinePos = strpos($newText,"\n",$pos+1);
+  $updatedLine = substr($newText,$pos,$newLinePos-$pos+1);
+  $newText = $updatedLine.str_replace($updatedLine,"",$newText);
 
-  filePutContentsWait($file,$newText,10);
+  filePutContentsWait($file,$newText);
 }
 
 // Get the entry "$parameter" of user "$IP", then return its current value.
 // Empty string is returned in case the entry doesn't exist.
-function getParameterValue($IP,$parameter,$inputText="")
+// false is returned if the timeStampFile does not exist
+function getParameterValue($file, $IP,$parameter,$inputText="")
 {
   $text = "";
   if ($inputText !== "") { $text = $inputText; }
-  else
-  {
-    global $timeStampFile;
-    $file = $timeStampFile;
-    $text = fileGetContentsWait($file,10);
-  }
+  else { $text = fileGetContentsWait($file); }
 
   $pos = strpos($text,$IP);
   // If the IP already exists
@@ -268,113 +287,158 @@ function getParameterValue($IP,$parameter,$inputText="")
   else { return ""; }
 }
 
-// Check the stored time stamp status in a text file on each wiki view/edit with
-// successful authentication. If the wiki hasn't been accessed for a duration longer than
-// a prespecified timer (in "config.php"), the wiki builtin logout function is called to request a site-wide 
-// password. In this case the time stamp is changed to some special values as detailed below
-//   Time stamp = 0 means the user just logged in using an unseen IP.
-//   Time stamp = -1 means the specified keep alive timer has expired.
-//   Time stamp = -2 means the specified keepalive timer has expired, and you are currently
-//   editing something.
-// So after typing the correct password (so this function is called again), we can recover
-// the original page according to the time stamp status.
-function checkTimeOnAuthSuccess($IP,$loginStatus)
+function getFormatTime()
 {
-  $lastTimeStamp = getParameterValue($IP,"TimeStamp_");
-  global $phpLogoutTimer;
-
   $today = getdate();
   $minStr = $today[minutes];
   if ($minStr<10) { $minStr = "0".$today[minutes]; }
   $secStr = $today[seconds];
   if ($secStr<10) { $secStr = "0".$today[seconds]; }
   $formatTime = $today[year]."/".$today[mon]."/".$today[mday]."_".$today[hours].":".$minStr.":".$secStr;
+  return $formatTime;
+}
 
-  // If the user was previously authenticated, and is using a cached password
-  // or there is a sudden IP change
-  if ($loginStatus == 1 || "$loginStatus" == "")
+// Check the stored timeStamp and previous state in a text file on authentication success.
+// Builtin authentication check is performed each time wiki is viewed/edited.
+// If the wiki hasn't been accessed for a duration longer than a prespecified timer
+// (in "config.php"), the wiki builtin logout function is called to request a site-wide 
+// password. 
+// LoginStatus=1: Logged in.
+// LoginStatus=0: Actually this means no record, and won't be seen in the timeStamp file.
+// LoginStatus=-1: Logged out when viewing due to timer expiration, or manually clicked logout.
+// LoginStatus=-2: Logged out when editing due to timer expiration.
+// LoginStatus=-3: Logged out for a first-time user.
+// LoginStatus=-4: Logged out by manually clicking.
+function handleTimeStampOnLogin($IP)
+{
+  global $phpLogoutTimer, $pagename;
+  $currentUnixTime = time();
+  $formatTime = getFormatTime();
+  global $timeStampFile;
+  $file = $timeStampFile;
+  $lastTimeStamp = getParameterValue($file,$IP,"TimeStamp=");
+  $loginStatus = getParameterValue($file,$IP,"LoginStatus=");
+
+  setParameterValue($file,$IP,"LastSeen=",$formatTime);   
+
+  // The IP is previously logged in.
+  if ($loginStatus == 1)
   {
-    // Timer hasn't expired.
-    $elapsedTime = time()-$lastTimeStamp;
-    if ($elapsedTime < $phpLogoutTimer)
+    // Timer has expired, log out the IP.
+    $elapsedTime = $currentUnixTime-$lastTimeStamp;
+    if ($elapsedTime >= $phpLogoutTimer)
     {
-      setParameterValue($IP,"TimeStamp_",time());
-      setParameterValue($IP,"LastSeen_",$formatTime);
-    }
-
-    // Timer has expired.
-    else
-    {
-      // Rare case; an authenticated user suddenly changes his IP
-      if ("$loginStatus" == "")
-      { sendAlertEmail($IP." (same browser but new IP; a sudden IP change)"); }
-
-      $actual_link = "$_SERVER[REQUEST_URI]";
-      $pos1 = strpos($actual_link,"=");
-      $pos2 = stripos($actual_link,"?action");
-      $currentPagename = "";
-      if ($pos1 === false) { $currentPagename = "Main.HomePage"; }
-      else if ($pos2 === false) { $currentPagename = substr($actual_link,$pos1+1,strlen($actual_link)-$pos1); }
-      else { $currentPagename = substr($actual_link,$pos1+1,$pos2-$pos1-1); }
-
       global $action;
-      if ($action == 'edit') 
-      { setParameterValue($IP,"TimeStamp_",-2); setParameterValue($IP,"LastSeen_",$formatTime); } 
-      else
-      { setParameterValue($IP,"TimeStamp_",-1); setParameterValue($IP,"LastSeen_",$formatTime); }
-
-      HandleLogoutA($currentPagename);
+      if ($action == 'edit') { setParameterValue($file,$IP,"LoginStatus=",-2); } 
+      else { setParameterValue($file,$IP,"LoginStatus=",-1); }
+      HandleLogoutA($pagename);
     }
+    // Else update TS.
+    else { setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime); }
   }
-  // The user just logged in by typing a correct password
-  else
+  // The IP goes from no record to logged in directly.
+  else if ($loginStatus == 0)
   {
-    setParameterValue($IP,"TimeStamp_",time());
-    setParameterValue($IP,"LastSeen_",$formatTime);
+    setParameterValue($file,$IP,"LoginStatus=", 1);  
+    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+    sendAlertEmail($IP, "Pmwiki Login Alert (logged in browser changes IP, or entry gets deleted manually)"); 
+  }
+  // The IP got logged out when viewing due to timer expiration, or multi-login by another IP
+  else if ($loginStatus == -1)
+  {  
+    setParameterValue($file,$IP,"LoginStatus=", 1);
+    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+
+    // Timer hasn't expired.
+    $elapsedTime = $currentUnixTime-$lastTimeStamp;
+    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail($IP, "Pmwiki Login Alert (multiple login)"); }
+  }
+  // The IP got logged out when editing due to timer expiration, or multi-login by another IP
+  else if ($loginStatus == -2)
+  {
+    setParameterValue($file,$IP,"LoginStatus=", 1);
+    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+
+    // Timer hasn't expired.
+    $elapsedTime = $currentUnixTime-$lastTimeStamp;
+    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail($IP, "Pmwiki Login Alert (multiple login)"); }
     
-    if ($lastTimeStamp == "")
-    {
-      sendAlertEmail($IP." (new IP and new browser)");
-    }
+    redirect($pagename."?action=edit");     
+  }
+  // The IP is a new IP
+  else if ($loginStatus == -3)
+  {  
+    setParameterValue($file,$IP,"LoginStatus=", 1);
+    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+    sendAlertEmail($IP, "Pmwiki Login Alert (new IP)");    
+  }
+  // The IP clicked logout manually previously
+  else if ($loginStatus == -4)
+  {  
+    setParameterValue($file,$IP,"LoginStatus=", 1);
+    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+  }
+}
 
-    // The IP was previously editing something
-    else if ($lastTimeStamp == -2)
-    {
-      $actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-      $pos1 = strpos($actual_link,"=");
+function handleTimeStampOnLogout($IP)
+{
+  global $pagename;
+  $currentUnixTime = time();
+  $formatTime = getFormatTime();
+  global $timeStampFile;
+  $file = $timeStampFile;
+  $loginStatus = getParameterValue($file,$IP,"LoginStatus=");
+  
+  setParameterValue($file,$IP,"LastSeen=",$formatTime);  
 
-      $currentPagename = substr($actual_link,$pos1+1,strlen($actual_link)-$pos1);
-      redirect($currentPagename."?action=edit");
-    }
-    else if ($lastTimeStamp > 0)
-    {
-      // Timer hasn't expired.
-      $elapsedTime = time()-$lastTimeStamp;
-      if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail($IP." (existing IP and new browser)"); }
-//      else { sendAlertEmail($IP." (php session timed out I guess)"); }
-    }
-  }  
+  // The IP was previously logged in.
+  if ($loginStatus == 1)
+  {
+    global $action;    
+    if ($action == 'edit') { setParameterValue($file,$IP,"LoginStatus=",-2); } 
+    else { setParameterValue($file,$IP,"LoginStatus=",-1); }
+    HandleLogoutA($pagename);
+  }
+  // There is no record for this IP. New IP tries to log in.
+  else if ($loginStatus == 0) { setParameterValue($file,$IP,"LoginStatus=", -3); }
+  else if ($loginStatus == -1) {}
+  else if ($loginStatus == -2) {}
+  else if ($loginStatus == -3) {}
+  else if ($loginStatus == -4) {}
+}
+
+function clickLogout()
+{
+  global $pagename;
+  global $phpLogoutTimer;
+  $currentUnixTime = time();
+  $formatTime = getFormatTime();
+  global $timeStampFile;
+  $file = $timeStampFile;
+  $IP = get_client_ip();
+
+  setParameterValue($file,$IP,"LastSeen=",$formatTime);  
+  setParameterValue($file,$IP,"LoginStatus=",-4);
+  HandleLogoutA(substr($pagename,strlen("Logout")));
 }
 
 // Should be clear.
-function sendAlertEmail($clientIP,$subject = "Pmwiki Login Alert")
+function sendAlertEmail($clientIP, $subject = "Pmwiki Login Alert")
 {
   global $emailAddress1;
   global $emailAddress2;
   
-  $today = getdate();
-  $minStr = $today[minutes];
-  if ($minStr<10) { $minStr = "0".$today[minutes]; }
-  $secStr = $today[seconds];
-  if ($secStr<10) { $secStr = "0".$today[seconds]; }
-  $formatTime = $today[year]."/".$today[mon]."/".$today[mday]." ".$today[hours].":".$minStr.":".$secStr;
+  $formatTime = getFormatTime();
 
   // Get browser and OS info.
   $obj = new OS_BR();
   $browser = $obj->showInfo('browser');
   $browserVersion = $obj->showInfo('version');
   $OS = $obj->showInfo('os');   
-  $str = $formatTime."\n\n".$clientIP."\n\nUsing\n".$OS.", ".$browser." ".$browserVersion;
+  $str = $formatTime."\n\nIP:\n".$clientIP."\n\nUsing:\n".$OS.", ".$browser." ".$browserVersion;
+
+  $country = file_get_contents('http://ip-api.com/line/'.$clientIP);
+  $str .= "\n\nLocation details: \n".$country;
 
   // Call shell script to send an email with the above info.      
   shell_exec("echo \"".$str."\" | mail -s \"".$subject."\" ".$emailAddress1." ".$emailAddress2." -f donotreply");
@@ -670,7 +734,7 @@ function replaceImgUrlWithSizeToggle($text)
 // An empty string is returned if the format doesn't check.
 function getDiaryImgUrl($img)
 {  
-  // Check if it has the image extension.
+  // Check if it has the correct image extension.
   $supportImgExtList = array('.jpg', '.png', '.jpeg');
   $NUM_IMGEXT = count($supportImgExtList);
   $EXT_LEN = 0;
@@ -707,16 +771,19 @@ function getDiaryImgUrl($img)
     }
     else { return ""; }
   }
+  // For downloaded images that cannot be automatically renamed, DD_X.jpg is a valid 
+  // image name format. And the length of "X" is not limited.
+  else if ($img[2] == "_") { $isImgFileNameValid = 1; }
   else { return ""; }
 
   if ($isImgFileNameValid == 1)
   { 
     global $diaryImgDirURL;
-    $imgUrl = $diaryImgDirURL.substr($img,0,4)."/";      
-    if (strcmp(substr($img,4,1),"0")==0)
-    { $imgUrl .= substr($img,5,1)."/"; } 
-    else { $imgUrl .= substr($img,4,2)."/"; }
-    $imgUrl .= $img;
+    global $pagename;
+    $diaryYear = substr($pagename,5,4);  
+    $diaryMonth = (string)(int)substr($pagename,9,2);
+
+    $imgUrl = $diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img;
 
     return $imgUrl;
   }
@@ -751,14 +818,14 @@ function getDiaryVideoUrl($img)
   {        
     // Take care of the vertical video heading.
     global $diaryImgDirURL;
-    $imgUrl = "(:neo_flv_V-player ";     
-    $imgUrl .= $diaryImgDirURL.substr($img,0,4)."/";
-    if (strcmp(substr($img,4,1),"0")==0)
-    { $imgUrl .= substr($img,5,1)."/"; } 
-    else { $imgUrl.= substr($img,4,2)."/"; }
-        
-    $imgUrl .= $img." :)";
-        
+    
+    global $pagename;
+    $diaryYear = substr($pagename,5,4);  
+    $diaryMonth = (string)(int)substr($pagename,9,2);
+
+//    $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth.$img." :)";
+    $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)";
+    
     return $imgUrl;
   }
   else { return ""; }
@@ -794,6 +861,7 @@ function isDiaryPage()
 
 // For diary pages, automatically read the corresponding photo directory and list the file
 // names of all the images and videos under their recorded date.
+// The year and month of the file name of the image will be ignored actually.
 function pasteImgURLToDiary($text)
 {
   if (isDiaryPage() != 2) { return $text; }
@@ -801,7 +869,7 @@ function pasteImgURLToDiary($text)
   global $pagename;
   
   $diaryYear = substr($pagename,5,4);
-  $diaryMonth = substr($pagename,9,2);
+  $diaryMonth = (string)(int)substr($pagename,9,2);
 
   // This function is applied since Nov. 2015
   if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+11)) { return $text; }
@@ -825,13 +893,48 @@ function pasteImgURLToDiary($text)
     }
   
     // Get its date & hour
-    // Before 6am, it's still the same day...
-    $imgDay = (int)substr($imgName,6,2);
-    $imgHour = (int)substr($imgName,9,2);
-    $imgHourMinSecStr = substr($imgName,9,6);
-    if ($imgHour<6 && $imgDay>1) { $imgDay--; }
-
-    $dayImgList[$imgDay] .= $imgUrl." ";
+    // If the 3rd position is "_", it's a downloaded pic with manually typed filename.     
+    // Else the file name is automatically given as YYYYMMDD_HHMMSS.jpg
+    if ($imgName[2] == "_")
+    {
+      $imgDay = (int)substr($imgName,0,2);
+      $imgHour = (int)substr($imgName,3,2);
+    }
+    else
+    {
+      $imgDay = (int)substr($imgName,6,2);
+      $imgHour = (int)substr($imgName,9,2);
+    }
+    
+    // Before 6am, it's still the same day...    
+    // If the image is a downloaded one with a manually typed filename, the 6am rule 
+    // is not applied.
+    if ($imgName[2] == "_") { $imgHour = ($imgHour+6) % 24; }
+    if ($imgHour<6)
+    {
+       if ($imgDay>1)
+       {
+         $imgDay--;
+         $dayImgList[$imgDay] .= $imgUrl." ";
+       }
+       else
+       {
+         if ($diaryMonth == "12")
+         {
+           $imgDay = "31";
+           $dayImgList[$imgDay] .= str_replace((string)((int)$diaryYear+1)."/1", $diaryYear."/12",$imgUrl)." ";
+         }
+         else
+         {
+           $checkVars = array('1','3','5','7','8','10');
+           if (in_array($diaryMonth, $checkVars)) { $imgDay = "31"; }
+           else if ($diaryMonth == "2") { $imgDay = "28"; }
+           else { $imgDay = "30"; }
+           $dayImgList[$imgDay] .= str_replace("/".(string)((int)$diaryMonth+1)."/", "/".$diaryMonth."/", $imgUrl)." ";
+         }
+       }
+    }
+    else { $dayImgList[$imgDay] .= $imgUrl." "; }
   }
 
   for ($iDay=1; $iDay<=31; $iDay++)
@@ -932,14 +1035,13 @@ if ($action == 'edit')
 
 // If this is the special page "BookKeep", calculate and show the monthly expense at the
 // at the top of the page.
-// Fractional numbers are not 
 function bookKeepProcess($pagename,&$text)
 {
   $textLineArray = explode("\n", $text);  
   $NumLine = count($textLineArray);
 
   $today = getdate();
-  $MON = $today[mon];
+  $MON = "12";
 
   for ($iMon=1;$iMon<=$MON;$iMon++)
   {
@@ -976,6 +1078,7 @@ function bookKeepProcess($pagename,&$text)
 
 /****************************************************************************************/
 
+      
 // Return 1 if the page is a special site page that should not be encrypted.
 //        0 otherwise.
 function noEncryptPage($pagename)
@@ -1010,14 +1113,18 @@ $IV_LEN = openssl_cipher_iv_length($OPENSSL_METHOD);
 // followed by the initialization vector used for encryption.
 // Return true if successfully encrypted;
 //        false on error.
+//        false if the file does not exist
 function encryptPage($file)
 {
   global $OPENSSL_PASS, $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
 
   if (file_exists($file) !== false)
   {
-    // Get content and encrypt. Don't encrypt the page if it's been encrypted already.
-    $text = file_get_contents($file);
+    // Get content. For extra safety, check for existence again
+    $text = fileGetContentsWait($file);
+    if ($text === false) { return false; }
+    
+    // Don't encrypt the page if it's been encrypted already.
     if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
     else
     {
@@ -1044,11 +1151,8 @@ function encryptPage($file)
       $encryptText = openssl_encrypt ($text, $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
       if ($encryptText === false) { Abort("$pagename encryption error!"); }
 
-      shell_exec("rm -f ".$file);
-      $fp = fopen($file,"w");
-      if (!$fp) { Abort("Fail to generate encrypted page file for $pagename!"); }
-      fputs($fp, $ENC_KEYWORD."\n".$cryptMethod."\n".$iv.$encryptText);
-      fclose($fp);
+      filePutContentsWait($file, $ENC_KEYWORD."\n".$cryptMethod."\n".$iv.$encryptText);
+
       return true;
     }
   }
@@ -1068,7 +1172,9 @@ function decryptPage($file, $EnableEncryption)
 
   if (file_exists($file) !== false)
   {
-    $text = file_get_contents($file);
+    // Get content. For extra safety, check for existence again
+    $text = fileGetContentsWait($file);
+    if ($text === false) { return 0; }
     
     // See if this page has been encrypted by checking the enc keyword    
     if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD)
@@ -1105,22 +1211,9 @@ function decryptPage($file, $EnableEncryption)
           { echo "$file was encrypted using a different passphrase!"; return -1; }                  
         }
 
-        // Warnings once appear when performing search. Seems to be related to the file read 
-        // operation here. Enhance it with a while loop.
         if ($EnableEncryption == 1) { $file .= "_dec"; }
-        $fp = @fopen($file,"w");
-        $count = 0;
-        while (!$fp)
-        {
-          @shell_exec("rm -f ".$file);
-          $fp=@fopen($file,"w");
-          $count++;
-          if ($count > 10) { Abort("Fail to create decoded page file for $pagename!"); }
-        }
+        filePutContentsWait($file, $decryptText);
 
-        fputs($fp,$decryptText);
-        fclose($fp);
-      
         return 1;
       }
       else
@@ -1147,8 +1240,12 @@ function reconstructPageindex()
 // Check the last time we modify this page, and the last time we update the page index for this page
 // If the last modification time is after the pageindex update time, update the pageindex,
 // and replace the page with an updated pageindex update time.
+// Return 
 function updatePageindexOnBrowse($pagename, $page)
 {
+  global $WorkDir;
+  $file = $WorkDir."/".$pagename;
+  
   global $Now;
   $pageLastModTime = $page['time'];
   $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
@@ -1157,55 +1254,26 @@ function updatePageindexOnBrowse($pagename, $page)
   if (isset($pageLastModTime) && noEncryptPage($pagename) == 0)
   {
     // See if the "lastPageindexUpdateTime" has been set. If not, then this page is from 
-    // previous releases.
-    if (isset($lastPageindexUpdateTime))
-    {
-      // Update the pageindex depending on its last modified time.
-      if  ($pageLastModTime <= $lastPageindexUpdateTime) {}
-      else
-      {
-        // Update pageindex file.
-        Meng_PageIndexUpdate($pagename);
-
-        global $WorkDir, $EnableEncryption;
-        $file = $WorkDir."/".$pagename;
-        decryptPage($file,0);
-        
-        $pageContent = file_get_contents($file);
-        if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
-        $pos = strpos($pageContent,$lastPageindexUpdateTime);
-        if ($pos === false) { Abort("In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!"); }
-        $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime));
-        $fp = fopen($file,"w");
-        fputs($fp,$pageContent);
-        fclose($fp);
-  
-        if ($EnableEncryption == 1) { encryptPage($file); }
-      }
-    }
-    // "lastPageindexUpdateTime" has not been set. Insert one manually.
-    // Inserted right after the "host" field.
+    // previous releases. Update the pageindex depending on its last modified time.
+    // On 2nd thought, normally lastPageindexUpdateTime should be set already when viewed
+    if (!isset($lastPageindexUpdateTime) || $pageLastModTime <= $lastPageindexUpdateTime) {}
     else
     {
       // Update pageindex file.
       Meng_PageIndexUpdate($pagename);
 
-      global $WorkDir, $EnableEncryption;
-      $file = $WorkDir."/".$pagename; 
+      // Decrypt and get the page content.
       decryptPage($file,0);
-
       $pageContent = file_get_contents($file);
-      if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
-      $pos = strpos($pageContent,"host=");
-      if ($pos === false) { Abort("In $pagename, the field \"host\" does not exist while it should!"); }
-      $pos = strpos($pageContent,"\n",$pos);
-      $newLine = "lastPageindexUpdateTime=".$Now."\n";
-      $pageContent = substr_replace($pageContent, $newLine, $pos+1, 0);
+      if ($pageContent === false) { echo "Read page error on updatePageindexOnBrowse()"; return; }
 
-      $fp = fopen($file,"w");
-      fputs($fp,$pageContent);
-      fclose($fp);
-  
+      // This field should exist according to the parent if else condition.
+      $pos = strpos($pageContent,$lastPageindexUpdateTime);
+      if ($pos === false) { echo "In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!"; }
+      else { $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime)); }
+      filePutContentsWait($file, $pageContent);
+      
+      global $EnableEncryption;  
       if ($EnableEncryption == 1) { encryptPage($file); }
     }
   }

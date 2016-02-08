@@ -46,7 +46,7 @@ $WikiTitle = 'PmWiki';
 ##  passwords on individual groups and pages.  For more information
 ##  see PmWiki.UploadsAdmin.
 $EnableUpload = 1;          
-$EnableUploadOverwrite = 0;             
+$EnableUploadOverwrite = 1;             
 # $DefaultPasswords['upload'] = crypt('secret');
 
 ##  Setting $EnableDiag turns on the ?action=diag and ?action=phpinfo
@@ -160,7 +160,7 @@ $pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].
 $diaryImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
 $runCodePath = "pub/runCode";
 $timeStampFile = '../../pmwikiTimeStamp/pmwikiTimeStamp.txt';
-$emailAddress1 = "lsmeng@ece.gatech.edu";
+$emailAddress1 = "";//"lsmeng@ece.gatech.edu";
 $emailAddress2 = "";
 
 // Php login password. Have to be correct at the $pwRetryLimit+1 th time
@@ -191,7 +191,8 @@ $pageHistoryUpdateInterval = 3600;
 // its pagename and then hashed using crypt() with crypt($OPENSSL_METHOD) being its salt.
 // => encryption key is crypt($OPENSSL_PASS.$pagename,crypt($OPENSSL_PASS)) 
 // To encrypt/decrypt all the pages at once, simply perform a search for " ".
-// CRC is used for checking if the encryption key is correct.
+// CRC is used for checking if the encryption key is correct. If $EnableEncryption is set 
+// to 0, $EnableCRC is not used.
 $EnableEncryption = 1;
 $OPENSSL_PASS = "lsmeng";
 $OPENSSL_METHOD = "AES-256-CBC";
@@ -300,3 +301,7 @@ $ROSPatterns ['/～/'] = "~";
 $ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
+$ROSPatterns ['/‘/'] = "'";
+$ROSPatterns ['/’/'] = "'";
+$ROSPatterns ['/“/'] = "\"";
+$ROSPatterns ['/”/'] = "\"";

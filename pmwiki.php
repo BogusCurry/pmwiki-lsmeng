@@ -1802,9 +1802,14 @@ function HandleBrowse($pagename, $auth = 'read') {
 /****************************************************************************************/
 /* Ling-San Meng: */
 
+
 // Handle pageindex update
-reconstructPageindex();
-updatePageindexOnBrowse($pagename,$page);
+if (PageExists($pagename) != 1) { Redirect($pagename."?action=edit"); }
+else
+{
+  reconstructPageindex();
+  updatePageindexOnBrowse($pagename,$page);
+}
 
 // If the page is the code running page, present the page with the results (execute then 
 // grab the results in the case of c programs) and the source code 
@@ -1823,6 +1828,13 @@ if ($pagename == "Main.OnThisDay") { $text = printOnThisDay(); }
 // If this is the special page "BookKeep", calculate and show the monthly expense at the
 // at the top of the page
 if (strpos($pagename,"Main.BookKeep") !== false) { $text = bookKeepProcess($pagename,$text); }
+
+// If the pagename begins with the keyword "src", disable the wiki markup for this page
+if (strcasecmp(substr($pagename,strpos($pagename,"."),4), ".src") == 0) 
+{
+  $text = substr_replace($text, "[@", strpos($text,"(:groupheader:)")+strlen("(:groupheader:)"), 0);
+  $text = substr_replace($text, "@]", strpos($text,"(:groupfooter:)"), 0);
+}
 
 // Read in the diary photo directory to find all the diary images and videos, and then
 // paste their full URL to the diary pages
@@ -2119,6 +2131,12 @@ function PreviewPage($pagename,&$page,&$new) {
 }
   
 function HandleEdit($pagename, $auth = 'edit') {
+
+/****************************************************************************************/
+// Meng  
+  if (substr($pagename,0,strlen("Logout")) === "Logout") { clickLogout(); }
+/****************************************************************************************/
+
   global $IsPagePosted, $EditFields, $ChangeSummary, $EditFunctions, 
     $EnablePost, $FmtV, $Now, $EditRedirectFmt, 
     $PageEditForm, $HandleEditFmt, $PageStartFmt, $PageEditFmt, $PageEndFmt;
@@ -2278,11 +2296,7 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
   {  
     $IP = get_client_ip();
     $nPwAttempt = sizeof($AuthPw);  
-    if ($nPwAttempt == 0)
-    {    
-      // Set the IP's login Status to 0
-      setParameterValue($IP,"LoginStatus_",0);
-    }
+    if ($nPwAttempt == 0) { handleTimeStampOnLogout($IP); }
   }
 /****************************************************************************************/
 
@@ -2330,28 +2344,21 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
   // have a newly typed correct password.
   // These codes are executed every time wiki is viewed/edited.
   // If at home, skip checking the php logout timer.
-  global $isAtHome;
-  if ($flag == 1 && $isAtHome != 1)
-  {//echo "here";
-    if ($auth == 1)
-    {
-      // Pass $loginStatus to the check timeStamp function to differentiate between
-      // a brand new login with typed password and a cached authenticated session.
-      $loginStatus = getParameterValue($IP,"LoginStatus_");
-      if ($loginStatus == 0)
-      {
-        setParameterValue($IP,"LoginStatus_",1);
-      }
-      checkTimeOnAuthSuccess($IP,$loginStatus);
-    }
+  if ($flag == 1)
+  {
+    if ($auth == 1) { handleTimeStampOnLogin($IP); }
     else
     {
-      global $pwRetryLimit;
+      global $pwRetryLimit, $DefaultPasswords;
       if ($nPwAttempt > $pwRetryLimit)
       {
-        sendAlertEmail("From\n".$IP."\n\nTyped passwords: ".$AuthPw[0]." ".$AuthPw[1], "Pmwiki ".$nPwAttempt. " Failed Password Attempts");
-//        session_start();session_destroy();
-        Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
+        if (crypt($AuthPw[$nPwAttempt-1],$DefaultPasswords['admin']) == $DefaultPasswords['admin']) {}
+        else
+        {
+//          session_start();session_destroy();        
+          sendAlertEmail($IP, "Pmwiki ".$nPwAttempt." Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
+          Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
+        }
       }
     }
   }  

@@ -836,13 +836,14 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   }
   fclose($ofp);
   if (file_exists($PageIndexFile)) unlink($PageIndexFile); 
-  rename($file, $PageIndexFile);
+/****************************************************************************************/
+  // Meng. Suppress the rename warning, and skip the fixperms since they cause errors sometimes
+  @rename($file, $PageIndexFile);
   
-  fixperms($PageIndexFile);
+//  fixperms($PageIndexFile);
   StopWatch("PageIndexUpdate end ($updatecount updated)");
   ignore_user_abort($abort);
-
-/****************************************************************************************/
+  
   global $EnableEncryption;
   if ($EnableEncryption == 1) { encryptPage($PageIndexFile); }
 /****************************************************************************************/

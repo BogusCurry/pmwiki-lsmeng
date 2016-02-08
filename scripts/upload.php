@@ -243,10 +243,19 @@ function HandlePostUpload($pagename, $auth = 'upload') {
     mkdirp($filedir);
     if (IsEnabled($EnableUploadVersions, 0))
       @rename($filepath, "$filepath,$Now");
-    if (!move_uploaded_file($uploadfile['tmp_name'],$filepath))
-      { Abort("?cannot move uploaded file to $filepath"); return; }
+    if (!@move_uploaded_file($uploadfile['tmp_name'],$filepath))
+    {
+/****************************************************************************************/
+      // Meng. The builtin $EnableUploadOverwrite is not functioning. So I will have to 
+      // delete the existing file manually on first failed attempt.
+      global $EnableUploadOverwrite;
+      if ($EnableUploadOverwrite==1 && file_exists($filepath)) { shell_exec("rm -f ".$filepath); }
+      if (!@move_uploaded_file($uploadfile['tmp_name'],$filepath))        
+      { Abort("?cannot move uploaded file to $filepath"); return; }        
+/****************************************************************************************/
+    }
     fixperms($filepath, $UploadPermAdd, $UploadPermSet);
-    if ($LastModFile) { touch($LastModFile); fixperms($LastModFile); }
+    if ($LastModFile) { @touch($LastModFile); fixperms($LastModFile); }
     $result = "upresult=success";
     $FmtV['$upname'] = $upname;
     $FmtV['$upsize'] = $uploadfile['size'];
