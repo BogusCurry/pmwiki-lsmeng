@@ -1,9 +1,4 @@
-[@    1| IP_118.160.222.112 LoginStatus_1 TimeStamp_1454561449 LastSeen_2016/2/4_12:50:49 
-    2| IP_219.87.64.222 LoginStatus_1 TimeStamp_1454486955 LastSeen_2016/2/3_16:09:15 
-    3| IP_localhost LoginStatus_1 TimeStamp_1454461878 LastSeen_2016/2/3_9:11:18 
-    4| IP_118.160.221.10 LoginStatus_0 TimeStamp_1454419716 LastSeen_2016/2/2_21:28:36 
-    5| IP_114.32.68.102 LoginStatus_1 TimeStamp_1454057034 LastSeen_2016/1/29_16:43:54 
-    6| IP_122.147.15.66 LoginStatus_1 TimeStamp_1453366144 LastSeen_2016/1/21_16:49:04 
-    7| IP_118.160.228.113 LoginStatus_0 TimeStamp_1451999151 LastSeen_2016/1/5_21:05:51 
-    8| IP_114.45.137.214 LoginStatus_0 TimeStamp_1453353188 LastSeen_2016/1/21_13:13:08
-    9| @]
+[@    1| IP=122.147.15.66 LastSeen=2016/2/23_10:43:46 LoginStatus=1 TimeStamp=1456195426 
+    2| IP=localhost LastSeen=2016/2/22_21:56:12 LoginStatus=-1 TimeStamp=1455883632 
+    3| IP=test LastSeen=2016/2/15_15:53:05 LoginStatus=1 TimeStamp=1455522785 
+    4| @]

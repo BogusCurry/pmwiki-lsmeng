@@ -71,7 +71,8 @@ function EditDraft(&$pagename, &$page, &$new) {
 /* Meng: The following line renames draft upon hitting "publish". */
 // Change it to actually deleting the page.
 #    $WikiDir->delete($draftname);
-    shell_exec("rm -f wiki.d/".$draftname);
+    global $WorkDir;
+    @unlink("$WorkDir/".$draftname);
   }
   else if (PageExists($draftname) && $pagename != $draftname)
   {

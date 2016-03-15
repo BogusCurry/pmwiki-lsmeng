@@ -138,4 +138,3 @@ function ProcessEqref($label) {
     return '(label '.$label.' undefined)';
   }
 }
-

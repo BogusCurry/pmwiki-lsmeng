@@ -249,7 +249,7 @@ function HandlePostUpload($pagename, $auth = 'upload') {
       // Meng. The builtin $EnableUploadOverwrite is not functioning. So I will have to 
       // delete the existing file manually on first failed attempt.
       global $EnableUploadOverwrite;
-      if ($EnableUploadOverwrite==1 && file_exists($filepath)) { shell_exec("rm -f ".$filepath); }
+      if ($EnableUploadOverwrite==1 && file_exists($filepath)) { @unlink($filepath); }
       if (!@move_uploaded_file($uploadfile['tmp_name'],$filepath))        
       { Abort("?cannot move uploaded file to $filepath"); return; }        
 /****************************************************************************************/

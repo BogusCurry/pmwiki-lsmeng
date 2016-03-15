@@ -139,6 +139,26 @@ function showDateTime($pagename)
 
 /****************************************************************************************/
 
+function renameWait($oldFile, $newFile, $N_TRY=3)
+{ 
+  // check if it's already locked
+  // if yes wait a random time then retry
+  $minWaitMicroSec = 1000000;
+  $maxWaitMicroSec = 5000000;
+  $nTry = 1;
+  while (1)
+  {
+    // if unlocked, lock it
+    if (@rename($oldFile,$newFile) === true) { return true; }
+    
+    $nTry++;
+    if ($nTry>$N_TRY) { echo("Retry limit reached in renameWait() for $oldFile!"); return false; }
+   
+    $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
+    usleep($waitMicroSec); 
+  }
+}
+
 // Similar to file_get_contents(). Wait a random time duration if the file doesn't exist.
 // A maximum number of retry limit can be set.
 function fileGetContentsWait($file, $N_TRY=3)
@@ -164,7 +184,7 @@ function fileGetContentsWait($file, $N_TRY=3)
 // Wait a random amount of time if other processes are writing this file.
 // A maximum number of retry limit can be set.
 function filePutContentsWait($file, $content, $N_TRY=3)
-{ 
+{	
   // check if it's already locked
   // if yes wait a random time then retry
   $minWaitMicroSec = 1000000;
@@ -180,6 +200,7 @@ function filePutContentsWait($file, $content, $N_TRY=3)
     }
     
     $nTry++;
+    global $pagename;
     if ($nTry>$N_TRY) { Abort("Retry limit reached in filePutContentsWait() for $file!"); }
    
     $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
@@ -210,20 +231,16 @@ function filePutContentsWait($file, $content, $N_TRY=3)
 }
 
 // Set the entry "$parameter" of user "$IP" to "$value".
-// false is returned if the timeStampFile does not exist.
 // A new entry "$parameter" will be created in case that the entry doesn't exist.
 // A new entry "$parameter" of user "$IP" will be created in case the user "$IP" doesn't 
-// exist.
-function setParameterValue($file, $IP,$parameter,$value)
+// exist. Return
+// a string of the updated text if nothing goes wrong
+// false if the text is encrypted
+function setParameterValue($text, $IP, $parameter, $value)
 {
-  $text = fileGetContentsWait($file);
+  // The text is still encrypted. Something must be wrong.
+  if (isEncryptStr($text) == true) { return false; }
   
-  // The timeStamp file is generated automatically if nonexistent.
-  // Uncomment the following line to disallow the timeStamp file to be nonexistent. This
-  // also means the timeStamp file won't get overwritten by a blank file when read
-  // operation fails.
-//  if ($text === false) { return false; }
-    
   $pos = strpos($text,$IP);
   $newText = "";
 
@@ -241,7 +258,7 @@ function setParameterValue($file, $IP,$parameter,$value)
     else
     {
       $parameterLen = strlen($parameter);
-      $oldValue = getParameterValue($file,$IP,$parameter,$text);
+      $oldValue = getParameterValue($text,$IP,$parameter);
       $oldValueLen = strlen($oldValue);
       $newText = substr($text,0,$parameterPos+$parameterLen).$value.substr($text,$parameterPos+$parameterLen+$oldValueLen,strlen($text)-$parameterPos-$parameterLen-$oldValueLen);
     }
@@ -249,26 +266,26 @@ function setParameterValue($file, $IP,$parameter,$value)
   // This is a new IP
   else
   { $newText = $text."IP=".$IP." ".$parameter.$value." \n"; }
-  
+
   // Move the updated line to the top
   $pos = strpos($text,"IP=".$IP);
   $newLinePos = strpos($newText,"\n",$pos+1);
   $updatedLine = substr($newText,$pos,$newLinePos-$pos+1);
   $newText = $updatedLine.str_replace($updatedLine,"",$newText);
-
-  filePutContentsWait($file,$newText);
+  return $newText;
 }
 
-// Get the entry "$parameter" of user "$IP", then return its current value.
-// Empty string is returned in case the entry doesn't exist.
-// false is returned if the timeStampFile does not exist
-function getParameterValue($file, $IP,$parameter,$inputText="")
+// Get the entry "$parameter" of user "$IP", then return its current value. Return
+// a string of the field value if nothing goes wrong
+// Empty string if the IP doesn't exist, or the field doesn't exist
+// false if the text is encrypted
+function getParameterValue($text, $IP, $parameter)
 {
-  $text = "";
-  if ($inputText !== "") { $text = $inputText; }
-  else { $text = fileGetContentsWait($file); }
-
+  // The file is still encrypted. Something must be wrong.
+  if (isEncryptStr($text) == true) { return false; }
+  
   $pos = strpos($text,$IP);
+  
   // If the IP already exists
   if ($pos !== false)
   {
@@ -287,6 +304,7 @@ function getParameterValue($file, $IP,$parameter,$inputText="")
   else { return ""; }
 }
 
+// Return a string of the properly formatted current time 
 function getFormatTime()
 {
   $today = getdate();
@@ -307,21 +325,77 @@ function getFormatTime()
 // LoginStatus=0: Actually this means no record, and won't be seen in the timeStamp file.
 // LoginStatus=-1: Logged out when viewing due to timer expiration, or manually clicked logout.
 // LoginStatus=-2: Logged out when editing due to timer expiration.
-// LoginStatus=-3: Logged out for a first-time user.
+// LoginStatus=-3: Logged out for a first-time user trying to log in.
 // LoginStatus=-4: Logged out by manually clicking.
-function handleTimeStampOnLogin($IP)
+// LoginStatus=-5: Logged out for not encrypted when encryption is on.
+// LoginStatus=-6: Logged out for no timeStampFile.
+//
+// The timeStampFile will be encrypted if encryption is on, and will not get modified
+// before a successful login. If encryption is off, the information of new IP trying to 
+// log in and last seen will still get recorded. The user will be logged out immediately
+// if the timeStampFile does not exist, decryption fails, and unencrypted when encryption
+// is on.
+function handleTimeStampOnLogin()
 {
-  global $phpLogoutTimer, $pagename;
-  $currentUnixTime = time();
-  $formatTime = getFormatTime();
+  // If the timeStampFile does not exist, generate, encrypt, log out.
   global $timeStampFile;
   $file = $timeStampFile;
-  $lastTimeStamp = getParameterValue($file,$IP,"TimeStamp=");
-  $loginStatus = getParameterValue($file,$IP,"LoginStatus=");
 
-  setParameterValue($file,$IP,"LastSeen=",$formatTime);   
+  global $phpLogoutTimer;
+  $currentUnixTime = time();
+  $formatTime = getFormatTime(); 
+  $IP = get_client_ip(); 
+  
+  global $pagename, $EnableEncryption;
+  $text = fileGetContentsWait($file);
+  // Time stamp file exists
+  if ($text !== false)
+  {
+	  $isFileExist = true;
 
-  // The IP is previously logged in.
+    // If content encrypted
+    if (isEncryptStr($text) == true)
+    {
+      $isPageEncrypt = true;
+      $text = decryptStr($text);
+      
+      // If decryption fails, the file has probably been tampered with. Log out.
+      if ($text === -1) { Abort("TimeStampFile decryption fails in handleTimeStampOnLogin()!"); HandleLogoutA($pagename); }
+      // Empty passphrase. Shouldn't happen.
+      else if ($text === 0) { Abort("Empty passphrase in handleTimeStampOnLogin()"); }
+    }
+    else { $isPageEncrypt = false; }
+        
+    // If encryption is on and content was not encrypted, the file could have been replaced 
+    // with a plain text. Encrypt then log out.
+    if ($EnableEncryption == 1 && $isPageEncrypt == false)
+    {
+      $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);
+      $text = setParameterValue($text,$IP,"LoginStatus=", -5);  
+      $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
+      $text = encryptStr($text);
+      filePutContentsWait($file, $text);
+      HandleLogoutA($pagename);
+    }
+  }
+  // Time stamp file missing
+  else
+  {
+    $isFileExist = false;
+    $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);
+    $text = setParameterValue($text,$IP,"LoginStatus=", -6);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
+    if ($EnableEncryption == 1) { $text = encryptStr($text); }
+    filePutContentsWait($file,$text);
+    HandleLogoutA($pagename);
+  }
+   
+  // If successfully decrypted, or not encrypted
+  $lastTimeStamp = getParameterValue($text,$IP,"TimeStamp=");
+  $loginStatus = getParameterValue($text,$IP,"LoginStatus=");  
+  $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);
+
+  // The IP was previously logged in.
   if ($loginStatus == 1)
   {
     // Timer has expired, log out the IP.
@@ -329,101 +403,165 @@ function handleTimeStampOnLogin($IP)
     if ($elapsedTime >= $phpLogoutTimer)
     {
       global $action;
-      if ($action == 'edit') { setParameterValue($file,$IP,"LoginStatus=",-2); } 
-      else { setParameterValue($file,$IP,"LoginStatus=",-1); }
+      if ($action == 'edit') { $text = setParameterValue($text,$IP,"LoginStatus=",-2); } 
+      else { $text = setParameterValue($text,$IP,"LoginStatus=",-1); }
+
+      if ($EnableEncryption == 1) { $text = encryptStr($text); }
+      filePutContentsWait($file,$text);
       HandleLogoutA($pagename);
     }
     // Else update TS.
-    else { setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime); }
+    else { $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime); }
   }
-  // The IP goes from no record to logged in directly.
-  else if ($loginStatus == 0)
+  // The IP goes from no record in an existing time stamp file to logged in directly.
+  else if ($loginStatus == 0 && $isFileExist == true)
   {
-    setParameterValue($file,$IP,"LoginStatus=", 1);  
-    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
-    sendAlertEmail($IP, "Pmwiki Login Alert (logged in browser changes IP, or entry gets deleted manually)"); 
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);  
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
+    if ($EnableEncryption == 1)
+    { sendAlertEmail("Pmwiki Login Alert (new IP)"); }
+    else
+    { sendAlertEmail("Pmwiki Login Alert (logged in browser changes IP, or entry gets deleted manually)"); }
   }
   // The IP got logged out when viewing due to timer expiration, or multi-login by another IP
   else if ($loginStatus == -1)
   {  
-    setParameterValue($file,$IP,"LoginStatus=", 1);
-    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
 
     // Timer hasn't expired.
     $elapsedTime = $currentUnixTime-$lastTimeStamp;
-    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail($IP, "Pmwiki Login Alert (multiple login)"); }
+    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail("Pmwiki Login Alert (multiple login)"); }
   }
   // The IP got logged out when editing due to timer expiration, or multi-login by another IP
   else if ($loginStatus == -2)
   {
-    setParameterValue($file,$IP,"LoginStatus=", 1);
-    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
 
     // Timer hasn't expired.
     $elapsedTime = $currentUnixTime-$lastTimeStamp;
-    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail($IP, "Pmwiki Login Alert (multiple login)"); }
+    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail("Pmwiki Login Alert (multiple login)"); }
     
-    redirect($pagename."?action=edit");     
+    if ($EnableEncryption == 1) { $text = encryptStr($text); }
+    filePutContentsWait($file, $text);
+    redirect(substr($pagename,strlen("LOGOUT"))."?action=edit");     
   }
   // The IP is a new IP
   else if ($loginStatus == -3)
   {  
-    setParameterValue($file,$IP,"LoginStatus=", 1);
-    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
-    sendAlertEmail($IP, "Pmwiki Login Alert (new IP)");    
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
+    sendAlertEmail("Pmwiki Login Alert (new IP)");
   }
   // The IP clicked logout manually previously
   else if ($loginStatus == -4)
   {  
-    setParameterValue($file,$IP,"LoginStatus=", 1);
-    setParameterValue($file,$IP,"TimeStamp=",$currentUnixTime);
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
   }
-}
-
-function handleTimeStampOnLogout($IP)
-{
-  global $pagename;
-  $currentUnixTime = time();
-  $formatTime = getFormatTime();
-  global $timeStampFile;
-  $file = $timeStampFile;
-  $loginStatus = getParameterValue($file,$IP,"LoginStatus=");
+  // Previously logged out by not encrypted when encryption is on.
+  else if ($loginStatus == -5)
+  {  
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
+    sendAlertEmail("Pmwiki Login Alert (time stampe file unencrypted)");
+  }
+  // Previously logged out by having no timeStampFile
+  else if ($loginStatus == -6)
+  {  
+    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
+    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
+    sendAlertEmail("Pmwiki Login Alert (time stamp file missing)");
+  }
   
-  setParameterValue($file,$IP,"LastSeen=",$formatTime);  
-
-  // The IP was previously logged in.
-  if ($loginStatus == 1)
-  {
-    global $action;    
-    if ($action == 'edit') { setParameterValue($file,$IP,"LoginStatus=",-2); } 
-    else { setParameterValue($file,$IP,"LoginStatus=",-1); }
-    HandleLogoutA($pagename);
-  }
-  // There is no record for this IP. New IP tries to log in.
-  else if ($loginStatus == 0) { setParameterValue($file,$IP,"LoginStatus=", -3); }
-  else if ($loginStatus == -1) {}
-  else if ($loginStatus == -2) {}
-  else if ($loginStatus == -3) {}
-  else if ($loginStatus == -4) {}
+  if ($EnableEncryption == 1) { $text = encryptStr($text); }
+  filePutContentsWait($file,$text);
 }
 
+function handleTimeStampOnLogout()
+{
+	global $timeStampFile;
+  $file = $timeStampFile;
+
+  $IP = get_client_ip();
+  $formatTime = getFormatTime();
+  
+  $text = @file_get_contents($file);
+  // Time stamp file exists
+  if ($text !== false)
+  {
+    // If content encrypted, nothing can be done since passphrase is not available.
+    if (isEncryptStr($text))
+    {
+      $text = decryptStr($text);
+      if ($text === -1) { Abort("TimeStampFile decryption fails in handleTimeStampOnLogout()!"); }
+      else if ($text === 0) {} // No phassphrase captured. Normal case when encryption is on
+      else { Abort("Decryption succeeds during logout. Shouldn't happen!"); }
+    }
+    // Content plain text. Record new connection attempts in plain text, even when 
+    // encryption is on.
+    else
+    {
+      $loginStatus = getParameterValue($text,$IP,"LoginStatus=");
+      $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);  
+
+      // There is no record for this IP. New IP tries to log in.
+      if ($loginStatus == 0)
+      {
+        $text = setParameterValue($text,$IP,"LoginStatus=", -3);
+        sendAlertEmail("Pmwiki Login Alert (new IP trying to log in)");
+      }
+      else if ($loginStatus == 1) { Abort("loginStatus=1 in handleTimeStampOnLogout(). Shouldn't happen!"); }
+      else {}
+
+      filePutContentsWait($file,$text);
+    }
+  }
+}
+
+// On clicking the logout link on the upper right corner of pages, the user will
+// be directed to a page with its name being the original one preceded by "LOGOUT"
+// which serves as a keyword for directing to this function.
 function clickLogout()
 {
-  global $pagename;
+	global $timeStampFile;
+  $file = $timeStampFile;
+  
   global $phpLogoutTimer;
   $currentUnixTime = time();
   $formatTime = getFormatTime();
-  global $timeStampFile;
-  $file = $timeStampFile;
+  
+/***************************************************************************************/
+  // It turns the passphrase as well as all the session variables are visible
+  // only after SessionAuth() and IsAuthorized() are called. I have no clue
+  // regarding their details. As far as capturing the passphase and therefore
+  // allow decryption, it works fine for now.
+  global $DefaultPasswords, $pagename;
+  SessionAuth($pagename, (@$_POST['authpw']) 
+                           ? array('authpw' => array($_POST['authpw'] => 1))
+                           : '');
+  foreach($DefaultPasswords as $k => $v)
+  { $acache['@site'][$k] = IsAuthorized($v, 'site', $x,1); }
+/***************************************************************************************/
+ 
+  $text = fileGetContentsWait($file);
+  $text = decryptStr($text);
+  if ($text === -1) { Abort("TimeStampFile decryption fails in clickLogout()!"); }
+  else if ($text === 0) { Abort("No passphase in clickLogout(). Shouldn't happen!"); }
+  
   $IP = get_client_ip();
-
-  setParameterValue($file,$IP,"LastSeen=",$formatTime);  
-  setParameterValue($file,$IP,"LoginStatus=",-4);
-  HandleLogoutA(substr($pagename,strlen("Logout")));
+  $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);  
+  $text = setParameterValue($text,$IP,"LoginStatus=",-4);
+  
+  global $EnableEncryption;
+  if ($EnableEncryption == 1) { $text = encryptStr($text); }
+  filePutContentsWait($file, $text);   
+  HandleLogoutA($pagename);
 }
 
 // Should be clear.
-function sendAlertEmail($clientIP, $subject = "Pmwiki Login Alert")
+function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
 {
   global $emailAddress1;
   global $emailAddress2;
@@ -435,10 +573,11 @@ function sendAlertEmail($clientIP, $subject = "Pmwiki Login Alert")
   $browser = $obj->showInfo('browser');
   $browserVersion = $obj->showInfo('version');
   $OS = $obj->showInfo('os');   
-  $str = $formatTime."\n\nIP:\n".$clientIP."\n\nUsing:\n".$OS.", ".$browser." ".$browserVersion;
+  $IP = get_client_ip();
+  $str = $formatTime."\n\nIP:\n".$IP."\n\nUsing:\n".$OS.", ".$browser." ".$browserVersion;
 
-  $country = file_get_contents('http://ip-api.com/line/'.$clientIP);
-  $str .= "\n\nLocation details: \n".$country;
+  $country = @file_get_contents('http://ip-api.com/line/'.$IP);
+  $str .= "\n\nLocation details: \n".$country."\n".$content;
 
   // Call shell script to send an email with the above info.      
   shell_exec("echo \"".$str."\" | mail -s \"".$subject."\" ".$emailAddress1." ".$emailAddress2." -f donotreply");
@@ -609,8 +748,8 @@ function runCode($pagename)
   $srcFile = $runCodePath."/main.cpp";
   $outputFile = $runCodePath."/output.txt";
   $cExeFile = $runCodePath."/a.out";
-  if (file_exists($srcFile) !== false) { shell_exec("rm -f ".$srcFile); }
-  if (file_exists($outputFile) !== false) { shell_exec("rm -f ".$outputFile); }
+  if (file_exists($srcFile) !== false) { @unlink($srcFile); }
+  if (file_exists($outputFile) !== false) { @unlink($outputFile); }
 
   $page = RetrieveAuthPage("Main.Runcode", 'read', false, READPAGE_CURRENT);
   $text = $page['text'];
@@ -622,7 +761,7 @@ function runCode($pagename)
   $fp=fopen($srcFile,"w");
   fputs($fp,$text);
   fclose($fp);
-  if (file_exists($cExeFile) !== false) { shell_exec("rm -f ".$cExeFile); }  
+  if (file_exists($cExeFile) !== false) { @unlink($cExeFile); }  
 
   // PHP
   if (substr($text,0,5)=="<?php")
@@ -644,15 +783,60 @@ function runCode($pagename)
   fclose($fp);
 
   // Write the formatted src to file  
-  shell_exec("rm -f ".$srcFile);
+  @unlink($srcFile);
   $text = "[@".addLineNum($text)."@]";
   $fp=fopen($srcFile,"w");
   fputs($fp,$text);
   fclose($fp);
 }
 
-
 /****************************************************************************************/
+
+// Copy files from the dropbox upload folder to the local upload folder in case the file
+// does not exist locally.
+function syncFileFromDropbox($text)
+{
+    global $pubImgDirURL, $WorkDir;
+    $pubImgDirURL_LEN = strlen($pubImgDirURL);
+    $pos = 0;
+    while(1)
+    {
+      // Find a pubImgDirURL
+      $pos = @stripos($text, $pubImgDirURL, $pos);
+      
+      if ($pos !== false)
+      {
+        // Find the end of the URL. It could be followed by an empty space, a new line\\
+        // a new line markup, end of file, and more.
+        $posE1 = (@strpos($text," ", $pos) === false) ? INF : @strpos($text," ", $pos);
+        $posE2 = (@strpos($text,"\n", $pos) === false) ? INF : @strpos($text,"\n", $pos);
+        $posE3 = (@strpos($text,"\\", $pos) === false) ? INF : @strpos($text,"\\", $pos);
+        $posE4 = (@strpos($text,"(:groupfooter:)", $pos) === false) ? INF : @strpos($text,"(:groupfooter:)", $pos);
+        $posE5 = (@strpos($text,"|", $pos) === false) ? INF : @strpos($text,"|", $pos);
+        $posE = min($posE1,$posE2,$posE3,$posE4,$posE5);
+        
+        if ($posE === false || $posE == INF) { Abort("Error in function syncFileFromDropbox()!"); }
+        
+        // Cut to get the url
+        $url = substr($text,$pos+$pubImgDirURL_LEN,$posE-$pos-$pubImgDirURL_LEN);
+        $uploadDir = str_replace("wiki.d","uploads",$WorkDir);
+
+//echo $text;
+//break;
+        // If the file is non existent, copy from Dropbox at the same url
+        if (file_exists("uploads/$url") === false)
+        {
+          if (file_exists("$uploadDir/$url") === false)
+          { echo "File $url does not exist in either local or Dropbox side!"; }
+          else { copy("$uploadDir/$url", "uploads/$url"); }
+        }
+        
+        // Adjust position
+        $pos = $posE;
+      }
+      else { break; }
+    }
+}
 
 # For img size toggle; adapted from flipbox.
 include_once($FarmD.'/cookbook/imgSizeToggle.php');
@@ -771,9 +955,10 @@ function getDiaryImgUrl($img)
     }
     else { return ""; }
   }
-  // For downloaded images that cannot be automatically renamed, DD_X.jpg is a valid 
-  // image name format. And the length of "X" is not limited.
-  else if ($img[2] == "_") { $isImgFileNameValid = 1; }
+  // For downloaded images that cannot be automatically renamed, D_X.jpg DD_X.jpg are valid 
+  // image name format. The length and type of "X" is not limited, i.e., can be non-numeric.
+  else if ($img[2] == "_" && is_numeric($img[0]) && is_numeric($img[1]) ) { $isImgFileNameValid = 1; }
+  else if ($img[1] == "_" && is_numeric($img[0])) { $isImgFileNameValid = 1; }
   else { return ""; }
 
   if ($isImgFileNameValid == 1)
@@ -812,6 +997,10 @@ function getDiaryVideoUrl($img)
     }
     else { return ""; }
   }
+  // DD_X.mp4 is also a valid file name format
+  // And the length of "X" is not limited.
+  else if ($img[2] == "_") { $isImgFileNameValid = 1; }
+  else if ($img[1] == "_") { $isImgFileNameValid = 1; }
   else { return ""; }
 
   if ($isImgFileNameValid == 1)
@@ -824,7 +1013,7 @@ function getDiaryVideoUrl($img)
     $diaryMonth = (string)(int)substr($pagename,9,2);
 
 //    $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth.$img." :)";
-    $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)";
+   $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)";
     
     return $imgUrl;
   }
@@ -876,7 +1065,7 @@ function pasteImgURLToDiary($text)
   
   // Read the photo directory of this month
   $dir = "../Photo/".$diaryYear."/".$diaryMonth;
-  $file = scandir($dir);
+  $file = @scandir($dir);
   $N_FILE = count($file);
   
   for ($iDay=1; $iDay<=31; $iDay++) { $dayImgList[$iDay] = ""; }
@@ -893,12 +1082,17 @@ function pasteImgURLToDiary($text)
     }
   
     // Get its date & hour
-    // If the 3rd position is "_", it's a downloaded pic with manually typed filename.     
+    // If the 3rd or 2nd position is "_", it's a downloaded pic with manually typed filename.     
     // Else the file name is automatically given as YYYYMMDD_HHMMSS.jpg
     if ($imgName[2] == "_")
     {
       $imgDay = (int)substr($imgName,0,2);
       $imgHour = (int)substr($imgName,3,2);
+    }
+    else if ($imgName[1] == "_")
+    {
+      $imgDay = (int)substr($imgName,0,1);
+      $imgHour = (int)substr($imgName,2,2);
     }
     else
     {
@@ -909,7 +1103,7 @@ function pasteImgURLToDiary($text)
     // Before 6am, it's still the same day...    
     // If the image is a downloaded one with a manually typed filename, the 6am rule 
     // is not applied.
-    if ($imgName[2] == "_") { $imgHour = ($imgHour+6) % 24; }
+    if ($imgName[2] == "_" || $imgName[1]) { $imgHour = ($imgHour+6) % 24; }
     if ($imgHour<6)
     {
        if ($imgDay>1)
@@ -986,30 +1180,41 @@ if ($isAtHome == 0)
 }
 
 $timerJavaSrc = "  
+
+//import java.util.Calendar;
+//Date dateobj = new Date();
+
   var TIMER_EXP_DURATION = $_javaLogoutTimer;
   var timer;
-  
+
   function startTimer()
   {
       display = document.querySelector('#ID_LOGOUTTIMER');
       
-      timer = TIMER_EXP_DURATION;
-      setInterval(function () {
-          hour = parseInt(timer / 3600, 10);
-          minutes = parseInt((timer-hour*3600) / 60, 10);
-          seconds = parseInt(timer % 60, 10);
+      var clock = new Date();
+      timer = Math.ceil(clock.getTime()/1000) + TIMER_EXP_DURATION;
+      
+      setInterval(function ()
+      {
+        var clock = new Date();          
+        var diff = timer - Math.ceil(clock.getTime()/1000);
 
-          hour = hour < 10 ? \"0\" + hour : hour;
-          minutes = minutes < 10 ? \"0\" + minutes : minutes;
-          seconds = seconds < 10 ? \"0\" + seconds : seconds;
+        if (diff < 0)
+        {
+          httpPageName = 'http://"."$pagename"."';
+          window.location = httpPageName;
+        }
+        
+        hour = parseInt(diff / 3600, 10);
+        minutes = parseInt((diff-hour*3600) / 60, 10);
+        seconds = parseInt(diff % 60, 10);
 
-          display.textContent = hour +\":\" + minutes + \":\" + seconds;
+        hour = hour < 10 ? \"0\" + hour : hour;
+        minutes = minutes < 10 ? \"0\" + minutes : minutes;
+        seconds = seconds < 10 ? \"0\" + seconds : seconds;
 
-          if (--timer < 0) {
-              httpPageName = 'http://"."$pagename"."';
-              window.location = httpPageName;
-          }
-      }, 1000);
+        display.textContent = hour +\":\" + minutes + \":\" + seconds;
+    }, 1000);
   }";
 
 $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
@@ -1017,12 +1222,11 @@ $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
   
   window.addEventListener('load', startTimer, false);
 
-  function resetJavaTimer() { timer = TIMER_EXP_DURATION; }
+  function resetJavaTimer() { var clock = new Date(); timer = Math.ceil(clock.getTime()/1000) + TIMER_EXP_DURATION; }
   window.addEventListener('focus', resetJavaTimer, false);
   window.addEventListener('scroll', resetJavaTimer, false);
   window.addEventListener('click', resetJavaTimer, false);
   window.addEventListener('keypress', resetJavaTimer, false);
-    
   --></script>";
   
 /****************************************************************************************/
@@ -1078,28 +1282,6 @@ function bookKeepProcess($pagename,&$text)
 
 /****************************************************************************************/
 
-      
-// Return 1 if the page is a special site page that should not be encrypted.
-//        0 otherwise.
-function noEncryptPage($pagename)
-{
-  $noEncryptPageName = array("Site.", "PmWiki.", "PmWikiZhTw.", "SiteAdmin.", "Main.GroupAttributes", "Main.GroupHeader", "Main.GroupFooter");  
-  $NUM = count($noEncryptPageName);
-
-  for ($i=0;$i<$NUM;$i++)
-  {
-    $partPagename = substr($pagename,0,strlen($noEncryptPageName[$i]));
-    if ($partPagename == $noEncryptPageName[$i])
-    { return 1; }
-    // The dot will be replaced by slash and called by the system. Have to deal with this
-    // case too.
-    else if ($partPagename == str_replace('.','/',$noEncryptPageName[$i]))
-    { return 1; }
-  }
-  
-  return 0;
-}
-
 // Keyword used for identifying encrypted page files. If the text content of a page file
 // is preceded by this keyword, the page file has been encrypted.
 $ENC_KEYWORD = "ENC";
@@ -1107,121 +1289,161 @@ $ENC_KEYWORD_LEN = strlen($ENC_KEYWORD);
 // Set the length of the initialization vector based on encryption method.
 $IV_LEN = openssl_cipher_iv_length($OPENSSL_METHOD);
 
-// Replace a pagefile with an encrypted one. The content of the encrypted pagefile will
-// will preceded by a keyword for indicating the fact that it has been encrypted, followed
+function isEncryptStr($text)
+{
+  global $ENC_KEYWORD, $ENC_KEYWORD_LEN;
+  	
+  // See if the given text has been encrypted by checking the enc keyword
+  // "CRC" is another keyword which means that the string is first protected by CRC before
+  // the encryption
+  $heading = substr($text,0,$ENC_KEYWORD_LEN);
+  if ($heading === $ENC_KEYWORD) { return 1; }
+  else if ($heading === "CRC") { return 2; }
+  else { return 0; }
+}
+
+// Return 1 if the page is a special site page that should not be encrypted.
+//        0 otherwise.
+// After numerous revision of the pmwiki src code, it turns out "SiteAdmin.Status" is
+// the only page that requires this function. Simply the original function to speed up.
+function noEncryptPage($pagename)
+{
+	if (strcasecmp("$pagename","SiteAdmin.Status") == 0) { return 1; }
+	else { return 0; }
+	
+/*
+  $noEncryptPageName = array("SiteAdmin.Status");
+  
+  $NUM = count($noEncryptPageName);
+
+  for ($i=0;$i<$NUM;$i++)
+  {
+    $partPagename = substr($pagename,0,strlen($noEncryptPageName[$i]));
+    if (strcasecmp($partPagename, $noEncryptPageName[$i]) == 0)
+    { return 1; }
+    // The dot will be replaced by slash and called by the system. Have to deal with this
+    // case too.
+    else if (strcasecmp($partPagename, str_replace('.','/',$noEncryptPageName[$i])) == 0)
+    { return 1; }
+  }
+  
+  return 0;
+*/
+}
+
+// String encryption. The content of the encrypted string will be preceded by a predefined
+// keyword for indicating the fact that it has been encrypted, followed
 // by its encryption method, which is also encrypted using a one-way encryption mechanism,
 // followed by the initialization vector used for encryption.
-// Return true if successfully encrypted;
-//        false on error.
-//        false if the file does not exist
-function encryptPage($file)
+// Return
+// encrypted text if successfully encrypted;
+// false on error, already encrypted, or empty string provided.
+function encryptStr($text)
 {
-  global $OPENSSL_PASS, $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
+  // Get the pass phrase. It should be set right after a successful login.
+  global $OPENSSL_PASS;
+  if ($OPENSSL_PASS == "") { return false; }
+//  { echo "empty pass no encrypt for $file! "; return false; }
 
-  if (file_exists($file) !== false)
-  {
-    // Get content. For extra safety, check for existence again
-    $text = fileGetContentsWait($file);
-    if ($text === false) { return false; }
-    
+  global $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
+
+  // Configure whether CRC is used for checking if the encryption key is correct.
+  $EnableCRC = 0;
+  
+  if ($text == "") { return false; }
+  else
+  {    
     // Don't encrypt the page if it's been encrypted already.
     if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
     else
     {
-      // Get the pagename from the given file name.
-      $pos = strrpos($file,"/");
-      if ($pos === false) { $pagename = $file; }
-      else { $pagename = substr($file,$pos+1); }
+      // Using pagename as part of the passphrase gives me some trouble. Give up this 
+      // feature for the time being.
+      $pagename = "";
       
       // Generate a random initialization vector. It is then put before the encrypted  
       // text.
       global $IV_LEN;
       $iv = openssl_random_pseudo_bytes($IV_LEN);
-
+      
       // Calculate CRC if enabled. Prepend the text with the CRC.
-      global $EnableCRC;
       if ($EnableCRC) { $text = (string)crc32($text)."\n".$text; }
 
       // Compute the encryption key. The encryption key for a specific page is set to the 
       // following pass phrase appended by its pagename and then hashed using crypt() with
       // crypt($OPENSSL_METHOD) being its salt.
       $cryptMethod = crypt($OPENSSL_METHOD);
-      $salt = $cryptMethod;
-      $encryptionKey = crypt($OPENSSL_PASS.$pagename, $salt);
+      $salt = $cryptMethod;  
+      $encryptionKey = crypt($OPENSSL_PASS.strtoupper($pagename), $salt);
+ 
       $encryptText = openssl_encrypt ($text, $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
       if ($encryptText === false) { Abort("$pagename encryption error!"); }
 
-      filePutContentsWait($file, $ENC_KEYWORD."\n".$cryptMethod."\n".$iv.$encryptText);
-
-      return true;
+      // If CRC is prepended before encrypting, prepend the encrypted text with "CRC"; 
+      // otherwise prepend it with a predefined keyword for encryption, currently set to
+      // "ENC" and should have the same length with "CRC".
+      if ($EnableCRC) { $KEYWORD = "CRC"; }
+      else { $KEYWORD = $ENC_KEYWORD; }
+      $encryptText = $KEYWORD."\n".$cryptMethod."\n".$iv.$encryptText;
+      
+      return $encryptText;
     }
   }
-  else { return false; }
 }
 
-// If the keyword for encryption has been found, and the encryption method and passphrase both check,
-// perform decryption. On decryption success, if $EnableEncryption is 1
-// a temp decrypted page file with suffix "_dec" is generated; otherwise the original 
-// encrypted page file is replaced with a decrypted one directly.
-// Return 1 if decrypted; 
-//        0 if not encrypted/doesn't exist;
-//       -1 for decryption error.
-function decryptPage($file, $EnableEncryption)
+// String decryption. Decrypt the string if the keyword for encryption has been found,
+// and the encryption method and passphrase both check. Return
+// decrypted text if decrypted
+// "$text" if not encrypted, i.e., "$text" is plain text/empty passphrase provided
+// 0 if encrypted but empty passphrase provided
+// -1 for decryption error, e.g., wrong key or settings
+function decryptStr($text)
 {
-  global $OPENSSL_PASS, $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
+  global $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
 
-  if (file_exists($file) !== false)
+  // See if this page has been encrypted   
+  if (isEncryptStr($text) == false) { return $text; }
+  else
   {
-    // Get content. For extra safety, check for existence again
-    $text = fileGetContentsWait($file);
-    if ($text === false) { return 0; }
-    
-    // See if this page has been encrypted by checking the enc keyword    
-    if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD)
+    $cryptMethodLen = strpos($text,"\n",$ENC_KEYWORD_LEN+1) - $ENC_KEYWORD_LEN - 1; // -1 is for \n
+    $cryptMethod = substr($text,$ENC_KEYWORD_LEN+1,$cryptMethodLen); 
+
+    // Decrypt the page if the encryption method checks
+    if (crypt($OPENSSL_METHOD,$cryptMethod) !== $cryptMethod)
+    { echo "$file was encrypted using a different cipher!"; return -1; }
+    else
     {
-      $cryptMethodLen = strpos($text,"\n",$ENC_KEYWORD_LEN+1) - $ENC_KEYWORD_LEN - 1; // -1 is for \n
-      $cryptMethod = substr($text,$ENC_KEYWORD_LEN+1,$cryptMethodLen); 
+      // Using pagename as part of the passphrase gives me some trouble. Give up this 
+      // feature for the time being.
+      $pagename = "";
+        
+      // Retrieve the initialization vector.
+      global $IV_LEN;
+      $iv = substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2, $IV_LEN);
 
-      // Decrypt the page if the encryption method checks
-      if (crypt($OPENSSL_METHOD,$cryptMethod) == $cryptMethod)
+      // Retrieve the salt and compute the encryption key; decrypt.
+      $salt = $cryptMethod;
+      global $OPENSSL_PASS;
+      if ($OPENSSL_PASS == "") { return 0; }
+      $encryptionKey = crypt($OPENSSL_PASS.strtoupper($pagename),$salt);
+      $decryptText = openssl_decrypt (substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2+$IV_LEN), $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
+      if ($decryptText === false)
+      { echo "$pagename decryption fails at openssl_decrypt(). Possibly a wrong passphrase!"; return -1; }
+
+      // Check CRC to see if the correct passphrase is used.
+      if (isEncryptStr($text) == 2)
       {
-        $pos = strrpos($file,"/");
-        if ($pos === false) { $pagename = $file; }
-        else { $pagename = substr($file,$pos+1); }
-       
-        // Retrieve the initialization vector.
-        global $IV_LEN;
-        $iv = substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2, $IV_LEN);
-
-        // Retrieve the salt and compute the encryption key; decrypt.
-        $salt = $cryptMethod;
-        $encryptionKey = crypt($OPENSSL_PASS.$pagename,$salt);
-        $decryptText = openssl_decrypt (substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2+$IV_LEN), $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
-        if ($decryptText === false) { echo "$pagename decryption error"; return -1; }
-
-        // Check CRC to see if the correct passphrase is used.
-        global $EnableCRC;
-        if ($EnableCRC)
-        {
-          $pos = strpos($decryptText,"\n");
-          $crc = substr($decryptText,0,$pos);          
-          $decryptText = substr($decryptText,$pos+1);
+        $pos = strpos($decryptText,"\n");
+        $crc = substr($decryptText,0,$pos);          
+        $decryptText = substr($decryptText,$pos+1);
           
-          if ((string)crc32($decryptText) != $crc)
-          { echo "$file was encrypted using a different passphrase!"; return -1; }                  
-        }
-
-        if ($EnableEncryption == 1) { $file .= "_dec"; }
-        filePutContentsWait($file, $decryptText);
-
-        return 1;
+        if ((string)crc32($decryptText) != $crc)
+        { echo "CRC doen't check. $file was encrypted using a different passphrase!"; return -1; }                  
       }
-      else
-      { echo "$file was encrypted using a different cipher!"; return -1; }
+
+      return $decryptText;        
     }
-    else { return 0; }
   }
-  else { return 0; }
 }
 
 /****************************************************************************************/
@@ -1244,7 +1466,7 @@ function reconstructPageindex()
 function updatePageindexOnBrowse($pagename, $page)
 {
   global $WorkDir;
-  $file = $WorkDir."/".$pagename;
+  $file = "$WorkDir/$pagename";
   
   global $Now;
   $pageLastModTime = $page['time'];
@@ -1262,19 +1484,22 @@ function updatePageindexOnBrowse($pagename, $page)
       // Update pageindex file.
       Meng_PageIndexUpdate($pagename);
 
-      // Decrypt and get the page content.
-      decryptPage($file,0);
-      $pageContent = file_get_contents($file);
-      if ($pageContent === false) { echo "Read page error on updatePageindexOnBrowse()"; return; }
+      $pageContent = fileGetContentsWait($file);
+      $pageContent = decryptStr($pageContent);
+      if ($pageContent === -1) { echo "Read page error on updatePageindexOnBrowse()"; return; }
 
       // This field should exist according to the parent if else condition.
       $pos = strpos($pageContent,$lastPageindexUpdateTime);
       if ($pos === false) { echo "In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!"; }
       else { $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime)); }
-      filePutContentsWait($file, $pageContent);
+
+      global $EnableEncryption;      
+      if ($EnableEncryption == 1) { $pageContent = encryptStr($pageContent); }
       
-      global $EnableEncryption;  
-      if ($EnableEncryption == 1) { encryptPage($file); }
+      filePutContentsWait("wiki.d/$pagename", $pageContent);
+
+      unlink("$WorkDir/$pagename");        
+      renameWait("wiki.d/$pagename", "$WorkDir/$pagename");
     }
   }
 }

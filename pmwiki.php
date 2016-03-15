@@ -44,7 +44,10 @@ if (ini_get('register_globals'))
   }
 $UnsafeGlobals = array_keys($GLOBALS); $GCount=0; $FmtV=array();
 SDV($FarmD,dirname(__FILE__));
-SDV($WorkDir,'wiki.d');
+
+// Meng. Move the working directory setting to "config.php".
+//SDV($WorkDir,'wiki.d');
+
 define('PmWiki',1);
 if (preg_match('/\\w\\w:/', $FarmD)) exit();
 @include_once("$FarmD/scripts/version.php");
@@ -52,7 +55,7 @@ $GroupPattern = '[[:upper:]][\\w]*(?:-\\w+)*';
 $NamePattern = '[[:upper:]\\d][\\w]*(?:-\\w+)*';
 $BlockPattern = 'form|div|table|t[rdh]|p|[uo]l|d[ltd]|h[1-6r]|pre|blockquote';
 $WikiWordPattern = '[[:upper:]][[:alnum:]]*(?:[[:upper:]][[:lower:]0-9]|[[:lower:]0-9][[:upper:]])[[:alnum:]]*';
-$WikiDir = new PageStore('wiki.d/{$FullName}');
+$WikiDir = new PageStore('$WorkDir/{$FullName}');
 $WikiLibDirs = array(&$WikiDir,new PageStore('$FarmD/wikilib.d/{$FullName}'));
 $PageFileEncodeFunction = 'PUE'; # only used if $WikiDir->encodefilenames is set
 $PageFileDecodeFunction = 'urldecode';
@@ -565,7 +568,7 @@ function Lock($op) {
   global $WorkDir, $LockFile, $EnableReadOnly;
   if ($op > 0 && IsEnabled($EnableReadOnly, 0))
     Abort('Cannot modify site -- $EnableReadOnly is set', 'readonly');
-  SDV($LockFile, "$WorkDir/.flock");
+  SDV($LockFile, "wiki.d/.flock");
   mkdirp(dirname($LockFile));
   static $lockfp,$curop;
   if (!$lockfp) $lockfp = @fopen($LockFile, "w");
@@ -612,12 +615,13 @@ function mkdirp($dir) {
     this link</a>.  Afterwards you can restore the permissions to 
     their current setting by executing <pre>    chmod $perms $parent</pre>.";
 
-  Abort($msg);
+//  Abort($msg);
 }
 
 ## fixperms attempts to correct permissions on a file or directory
 ## so that both PmWiki and the account (current dir) owner can manipulate it
 function fixperms($fname, $add = 0, $set = 0) {
+/*
   clearstatcache();
   if (!file_exists($fname)) Abort('?no such file');
   if ($set) { # advanced admins, $UploadPermSet
@@ -631,6 +635,7 @@ function fixperms($fname, $add = 0, $set = 0) {
     if ($bp && (fileperms($fname) & $bp) != $bp)
       @chmod($fname,fileperms($fname)|$bp);
   }
+*/
 }
 
 ## GlobToPCRE converts wildcard patterns into pcre patterns for
@@ -994,16 +999,16 @@ class PageStore {
     else $this->recodefn = false;
   }
   function pagefile($pagename) {
-    global $FarmD;
+    global $FarmD, $WorkDir;
     $dfmt = $this->dirfmt;
     if ($pagename > '') {
       $pagename = str_replace('/', '.', $pagename);
-      if ($dfmt == 'wiki.d/{$FullName}')               # optimizations for
-        return $this->PFE("wiki.d/$pagename");         # standard locations
+      if ($dfmt == '$WorkDir/{$FullName}')               # optimizations for
+        return $this->PFE("$WorkDir/$pagename");         # standard locations
       if ($dfmt == '$FarmD/wikilib.d/{$FullName}')     # 
         return $this->PFE("$FarmD/wikilib.d/$pagename");
-      if ($dfmt == 'wiki.d/{$Group}/{$FullName}')
-        return $this->PFE(preg_replace('/([^.]+).*/', 'wiki.d/$1/$0', $pagename));
+      if ($dfmt == '$WorkDir/{$Group}/{$FullName}')
+        return $this->PFE(preg_replace('/([^.]+).*/', '$WorkDir/$1/$0', $pagename));
     }
     return $this->PFE(FmtPageName($dfmt, $pagename));
   }
@@ -1024,40 +1029,39 @@ class PageStore {
 
     $pagefile = $this->pagefile($pagename);     
     
-/****************************************************************************************/
-    global $EnableEncryption, $WorkDir;
-    
-    // Meng. If encryption is enabled, decrypt an encrypted page and generate a temp 
-    // decrypted page file. If the page is a regular page and has not been encrypted, 
-    // copy it as the temp decrypted page file and encrypt the original one.
-    if ($EnableEncryption == 1)
-    {
-      if (decryptPage($pagefile, $EnableEncryption) == 1) 
-      { $pagefile .= "_dec"; }
-      else if (noEncryptPage($pagename) == 0)
-      {
-        // Pages named ".GroupAttribute" will be called here even if they are nonexistent
-        // which gives me some trouble.
-        // Simply ignore the case where the original file doesn't exist.
-        if (@copy($pagefile, $pagefile."_dec") !== false)
-        {
-          encryptPage($pagefile);
-          $pagefile .= "_dec";
-        }
-      }
-    }
-    // Else if encryption is off, and the page has been encrypted, replace it with a 
-    // decrypted page file.
-    else { decryptPage($pagefile, $EnableEncryption); }
-/****************************************************************************************/   
+    // Meng. If this is a special unencrypted page and exists in the local wiki.d folder
+    // Find it in the local wiki.d folder.
+    if (noEncryptPage($pagename) == 1 && file_exists("wiki.d/$pagename"))
+    { $pagefile = "wiki.d/$pagename"; }
 
-    if ($pagefile && ($fp=@fopen($pagefile, "r")))
+    // Meng. If encryption is enabled, decrypt an encrypted page and get its content.
+    // Otherwise replace the page with a decrypted one, and then get its content.
+    if(file_exists($pagefile) == false) { return ; }
+
+    $wholePageText = file_get_contents($pagefile);
+    if (isEncryptStr($wholePageText) == true)
+    {
+    	$isPageEncrypt = true;
+    	$wholePageText = decryptStr($wholePageText);
+    }
+    else { $isPageEncrypt = false; }
+  
+/*
+    // Fix for the /GroupAttributes pages
+    if (stripos("$pagename","/GroupAttributes") !== false)
+    { $pagename = str_replace("/",".","$pagename"); }
+
+    if (stripos($pagefile,$pagename) === false) echo "$pagefile $pagename not same";
+*/
+
+    // Meng. Change the original read file line by line to read a string line by line,
+    // so that I can encrypt it directly without writing it to a file first.
+    if ($pagefile)
     {      
       $page = $this->attr;
-      while (!feof($fp)) {
-        $line = fgets($fp, 4096);
-        while (substr($line, -1, 1) != "\n" && !feof($fp)) 
-          { $line .= fgets($fp, 4096); }
+
+      foreach(preg_split("/((\r?\n)|(\r\n?))/", $wholePageText) as $line)
+      {
         $line = rtrim($line);
         if ($urlencoded) $line = urldecode(str_replace('+', '%2b', $line));
         @list($k,$v) = explode('=', $line, 2);
@@ -1075,15 +1079,22 @@ class PageStore {
         if ($newline) $v = str_replace($newline, "\n", $v);
         $page[$k] = $v;
       }
-      fclose($fp);
     }
-
-/****************************************************************************************/
-    // Meng. Remove the temp decrypted page file.
-    global $WorkDir;
-    $file = $WorkDir."/".$pagename."_dec";
-    if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
-/****************************************************************************************/
+   
+    // Page encryption is performed if encryption is on, this is not a special page that
+    // shouldn't be encrypted, and the pagefile exists in the public wiki.d folder.
+    global $EnableEncryption, $WorkDir;
+    if ($EnableEncryption==1 && $isPageEncrypt==false && noEncryptPage($pagename)==0 && stripos("$pagefile","$WorkDir")!==false)
+    {
+    	$wholePageText = encryptStr($wholePageText);
+    	if ($wholePageText !== false)
+    	{ filePutContentsWait($pagefile, $wholePageText); }
+    }
+   
+    // Replace the page with a decrypted one if encryption is off and the page has been
+    // encrypted.
+    else if ($EnableEncryption == 0 && $isPageEncrypt == true)
+    { filePutContentsWait($pagefile, $wholePageText); }
 
     return $this->recode($pagename, @$page);
   }
@@ -1103,30 +1114,42 @@ class PageStore {
     $pagefile = $this->pagefile($pagename);
     $dir = dirname($pagefile); mkdirp($dir);
     if (!file_exists("$dir/.htaccess") && $fp = @fopen("$dir/.htaccess", "w")) 
-    {
-        fwrite($fp, "Order Deny,Allow\nDeny from all\n"); fclose($fp);
-    }
-    if ($pagefile && ($fp=fopen("$pagefile,new","w")))
+    { fwrite($fp, "Order Deny,Allow\nDeny from all\n"); fclose($fp); }
+
+    // Meng. Change the following write file process to be within the local wiki.d folder.
+    // Also change the original put to file line by line to append to a string line by
+    // line so that I can encrypt it before writing to a file.
+    if ($pagefile && ($fp=fopen("wiki.d/$pagename,new","w")))
     {
       $r0 = array('%', "\n", '<');
       $r1 = array('%25', '%0a', '%3c');
       $x = "version=$Version ordered=1 urlencoded=1\n";
-      $s = true && fputs($fp, $x); $sz = strlen($x);
+      $s = true && $updatedText=$x; $sz = strlen($x);
       foreach($page as $k=>$v) 
-        if ($k > '' && $k{0} != '=') {
+        if ($k > '' && $k{0} != '=')
+        {
           $x = str_replace($r0, $r1, "$k=$v") . "\n";
-          $s = $s && fputs($fp, $x); $sz += strlen($x);
+          $s = $s && $updatedText.=$x; $sz += strlen($x);
         }
-      $s = fclose($fp) && $s;
-      $s = $s && (filesize("$pagefile,new") > $sz * 0.95);
-      if (file_exists($pagefile)) $s = $s && unlink($pagefile);
-      $s = $s && rename("$pagefile,new", $pagefile);
 
-/****************************************************************************************/
-      global $EnableEncryption;
-      if ($EnableEncryption == 1 && noEncryptPage($pagename) == 0)
-      { encryptPage($pagefile); }
-/****************************************************************************************/
+      // The encryption
+      global $EnableEncryption, $WorkDir;
+      if ($EnableEncryption==1 && noEncryptPage($pagename)==0 && file_exists("$WorkDir/$pagename"))
+      { $updatedText = encryptStr($updatedText); }
+      
+      fputs($fp,$updatedText);
+      $s = fclose($fp) && $s;
+      
+      $s = $s && (filesize("wiki.d/$pagename,new") > $sz * 0.95);
+      if (file_exists($pagefile)) $s = $s && unlink($pagefile);
+
+      $s = $s && rename("wiki.d/$pagename,new", "wiki.d/$pagename");
+
+      // Move the pagefile to where it was if it is not specified as a special unencrypted page.
+      if (noEncryptPage($pagename) == 0) { renameWait("wiki.d/$pagename", $pagefile, 10); }
+
+      @unlink("wiki.d_backup/$pagename");
+      @copy($pagefile, "wiki.d_backup/$pagename");
     }
     $s && fixperms($pagefile);
     if (!$s)
@@ -1203,7 +1226,7 @@ function ReadPage($pagename, $since=0) {
   }
   if (@!$page) $page['ctime'] = $Now;
   if (@!$page['time']) $page['time'] = $Now;
-  
+
   return $page;
 }
 
@@ -1263,7 +1286,6 @@ function Abort($msg, $info='') {
     $info = "<p class='vspace'><a target='_blank' rel='nofollow' href='http://www.pmwiki.org/pmwiki/info/$info'>$[More information]</a></p>";
   $msg = "<h3>$[PmWiki can't process your request]</h3>
     <p class='vspace'>$msg</p>
-    <p class='vspace'>$[We are sorry for any inconvenience].</p>
     $info
     <p class='vspace'><a href='$ScriptUrl'>$[Return to] $ScriptUrl</a></p>";
   @header("Content-type: text/html; charset=$Charset");
@@ -1279,8 +1301,8 @@ function Redirect($pagename, $urlfmt='$PageUrl') {
   $pageurl = FmtPageName($urlfmt,$pagename);
   if (IsEnabled($EnableRedirect,1) && 
       (!isset($_REQUEST['redirect']) || $_REQUEST['redirect'])) {
-    header("Location: $pageurl");
-    header("Content-type: text/html");
+    @header("Location: $pageurl");
+    @header("Content-type: text/html");
     echo "<html><head>
       <meta http-equiv='Refresh' Content='$RedirectDelay; URL=$pageurl' />
      <title>Redirect</title></head><body></body></html>";
@@ -1802,7 +1824,6 @@ function HandleBrowse($pagename, $auth = 'read') {
 /****************************************************************************************/
 /* Ling-San Meng: */
 
-
 // Handle pageindex update
 if (PageExists($pagename) != 1) { Redirect($pagename."?action=edit"); }
 else
@@ -1811,9 +1832,20 @@ else
   updatePageindexOnBrowse($pagename,$page);
 }
 
+/*
+if (strcasecmp($pagename,"Main.DecryptText") == 0)
+{
+  $text = substr($text,strlen("(:groupheader:)"));
+  $text = substr($text,0,strlen($text)-strlen("(:groupfooter:)"));
+echo "$text<br><br>"; 
+  
+echo decryptStr($text);
+}
+*/
+
 // If the page is the code running page, present the page with the results (execute then 
 // grab the results in the case of c programs) and the source code 
-if ($pagename == "Main.Runcode")
+if (strcasecmp($pagename,"Main.Runcode") == 0)
 {
   global $runCodePath;
   $srcFile = $runCodePath."/main.cpp";
@@ -1823,11 +1855,11 @@ if ($pagename == "Main.Runcode")
 
 // If this is the special page "OnThisDay", replace the page text with a string containing
 // past diary corresponding to today's date.
-if ($pagename == "Main.OnThisDay") { $text = printOnThisDay(); }
+if (strcasecmp($pagename,"Main.OnThisDay") == 0) { $text = printOnThisDay(); }
 
 // If this is the special page "BookKeep", calculate and show the monthly expense at the
 // at the top of the page
-if (strpos($pagename,"Main.BookKeep") !== false) { $text = bookKeepProcess($pagename,$text); }
+if (stripos($pagename,"Main.BookKeep") !== false) { $text = bookKeepProcess($pagename,$text); }
 
 // If the pagename begins with the keyword "src", disable the wiki markup for this page
 if (strcasecmp(substr($pagename,strpos($pagename,"."),4), ".src") == 0) 
@@ -1855,6 +1887,10 @@ if ($UrlScheme == 'http')
   else 
   { $text = str_replace("{\$ImgPxD}",$diaryImgDirURL.substr($pagename,5,4)."/".substr($pagename,9,2)."/",$text); } 
 }
+
+// Sync all the images in pubImgDirURL with Dropbox
+// This has to go before replaceImgUrlWithSizeToggle()
+syncFileFromDropbox($text);
 
 // Replace all the image URL with the size toggle function.
 $text = replaceImgUrlWithSizeToggle($text);
@@ -2069,10 +2105,11 @@ function PostPage($pagename, &$page, &$new)
       {
         // Ling-San Meng.
         // After enabling draft the delete keyword does not work properly; the deleted 
-        // page file still exists with a timestamp at the time of deletion. Call shell
-        // to actually delete the page and its draft page at the same time.
+        // page file still exists with a timestamp at the time of deletion. 
+        // Use unlink to actually delete the page and its draft page at the same time.
 //        $WikiDir->delete($pagename);
-        shell_exec("rm -f wiki.d/".$pagename); 
+        global $WorkDir;
+        @unlink("$WorkDir/$pagename"); 
       }
     }
     else 
@@ -2131,10 +2168,10 @@ function PreviewPage($pagename,&$page,&$new) {
 }
   
 function HandleEdit($pagename, $auth = 'edit') {
-
+	
 /****************************************************************************************/
 // Meng  
-  if (substr($pagename,0,strlen("Logout")) === "Logout") { clickLogout(); }
+  if (substr($pagename,0,strlen("LOGOUT")) === "LOGOUT") { clickLogout(); }
 /****************************************************************************************/
 
   global $IsPagePosted, $EditFields, $ChangeSummary, $EditFunctions, 
@@ -2145,7 +2182,7 @@ function HandleEdit($pagename, $auth = 'edit') {
     { Redirect(FmtPageName($EditRedirectFmt, $pagename)); return; }
   Lock(2);
   $page = RetrieveAuthPage($pagename, $auth, true);
-  if (!$page) Abort("?cannot edit $pagename");   
+  if (!$page) Abort("?cannot edit $pagename");     
   $new = $page;
   foreach((array)$EditFields as $k) 
     if (isset($_POST[$k])) $new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
@@ -2210,22 +2247,26 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   static $acache;
   SDV($GroupAttributesFmt,'$Group/GroupAttributes');
   SDV($AllowPassword,'nopass');
-  $page = ReadPage($pagename, $since);
 
-  
-  if (!$page) { return false; }
+// Meng. Move ReadPage() to somewhere after the authorization process. 
+//  $page = ReadPage($pagename, $since);
+//  if (!$page) { return false; }
+
   if (!isset($acache)) 
     SessionAuth($pagename, (@$_POST['authpw']) 
                            ? array('authpw' => array($_POST['authpw'] => 1))
                            : '');
+                           
   if (@$AuthId) {
     $AuthList["id:$AuthId"] = 1;
     $AuthList["id:-$AuthId"] = -1;
     $AuthList["id:*"] = 1;
   }
   ## To allow @_site_edit in GroupAttributes, we cache it first
-  if (!isset($acache['@site'])) {
-    foreach($DefaultPasswords as $k => $v) {
+  if (!isset($acache['@site']))
+  {
+    foreach($DefaultPasswords as $k => $v)
+    {
       $x = array(2, array(), '');
 /****************************************************************************************/
       // Ling-San Meng
@@ -2236,6 +2277,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       $AuthList["@_site_$k"] = $acache['@site'][$k][0] ? 1 : 0;
     }
   }
+  
   $gn = FmtPageName($GroupAttributesFmt, $pagename);
   if (!isset($acache[$gn])) {
     $gp = ReadPage($gn, READPAGE_CURRENT);
@@ -2244,6 +2286,11 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
                                       $acache['@site'][$k]);
     }
   }
+
+  // Meng. Move ReadPage() here so that the authorization process goes first.
+  $page = ReadPage($pagename, $since);
+  if (!$page) { return false; }
+  
   foreach($DefaultPasswords as $k => $v) 
     list($page['=auth'][$k], $page['=passwd'][$k], $page['=pwsource'][$k]) =
       IsAuthorized(@$page["passwd$k"], 'page', $acache[$gn][$k]);
@@ -2257,7 +2304,20 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   if (@$page['=auth']['admin']) 
     foreach($page['=auth'] as $lv=>$a) @$page['=auth'][$lv] = 3;
   if (@$page['=passwd']['read']) $NoHTMLCache |= 2;
-  if ($level=='ALWAYS' || @$page['=auth'][$level]) return $page; 
+
+  // Meng. Return the page only if passphrase has been captured.
+//  if ($level=='ALWAYS' || @$page['=auth'][$level]) return $page;
+  global $OPENSSL_PASS;
+  if (($level=='ALWAYS' || @$page['=auth'][$level]) && $OPENSSL_PASS != "")
+  {
+    // If the pagename is preceded by the logout keyword, then the user has just logged
+    // in. Remove the keyword and redirect the user with correct pagename.
+    if (substr($pagename,0,strlen("LOGOUT")) == "LOGOUT")
+    { redirect(substr($pagename,strlen("LOGOUT"))); }
+    
+  	return $page;
+  }
+  
   if (!$authprompt) return false;
   $GLOBALS['AuthNeeded'] = (@$_POST['authpw']) 
     ? $page['=pwsource'][$level] . ' ' . $level : '';
@@ -2272,6 +2332,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   }
   $FmtV['$PostVars'] = $postvars;
   $r = str_replace("'", '%37', stripmagic($_SERVER['REQUEST_URI']));
+
   SDV($AuthPromptFmt,array(&$PageStartFmt,
     "<p><b>$[Password required]</b></p>
       <form name='authform' action='$r' method='post'>
@@ -2282,23 +2343,30 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
           document.authform.authpw.focus() //--></script>", &$PageEndFmt));
   PrintFmt($pagename,$AuthPromptFmt);
 
+  // Process the time stamp file during the log out phase.
+  handleTimeStampOnLogout();
+  
+  // Meng. During login, if the pagename does not contain the logout keyword,
+  // redirect to one preceded by the logout keyword    
+  if (substr($pagename,0,strlen("LOGOUT")) !== "LOGOUT")
+  { redirect("LOGOUT$pagename"); }  
+  
   exit;
 }
 
 function IsAuthorized($chal, $source, &$from, $flag=0) {
   global $AuthList, $AuthPw, $AllowPassword;
-
-/****************************************************************************************/
+  
+/*
   // Ling-San Meng
   // If the password buffer is empty, the logout function has just been called.
-  // Change the login status to 0 (means logged out)
   if ($flag == 1)
   {  
-    $IP = get_client_ip();
+    global $nPwAttempt;
     $nPwAttempt = sizeof($AuthPw);  
-    if ($nPwAttempt == 0) { handleTimeStampOnLogout($IP); }
+    if ($nPwAttempt == 0) { handleTimeStampOnLogout(); }
   }
-/****************************************************************************************/
+*/
 
   if (!$chal) return $from;
   $auth = 0; 
@@ -2307,6 +2375,7 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
     $x = '';
     $pwchal = preg_split('/([, ]|\\w+:)/', $c, -1, PREG_SPLIT_DELIM_CAPTURE);
     foreach($pwchal as $pw) {
+
       if ($pw == ',' || $pw == '') continue;
       else if ($pw == ' ') { $x = ''; continue; }
       else if (substr($pw, -1, 1) == ':') { $x = $pw; continue; }
@@ -2340,23 +2409,30 @@ function IsAuthorized($chal, $source, &$from, $flag=0) {
   // If $auth == 1, the user is authenticated.
   // Note that wiki actually caches the correctly written password which gives me 
   // a lot of trouble.
-  // Use the loginStatus variable to see if a cached password is utilized or we 
-  // have a newly typed correct password.
   // These codes are executed every time wiki is viewed/edited.
-  // If at home, skip checking the php logout timer.
   if ($flag == 1)
   {
-    if ($auth == 1) { handleTimeStampOnLogin($IP); }
-    else
+    global $nPwAttempt;
+    $nPwAttempt = sizeof($AuthPw);  
+
+    // If authenticated
+    if ($auth == 1)
     {
+      // Capture the passphrase for encrypting/decrypting pages upon successful login.
+      global $OPENSSL_PASS;
+      $OPENSSL_PASS = $AuthPw[$nPwAttempt-1];
+      
+      handleTimeStampOnLogin();
+    }
+    else
+    { 
       global $pwRetryLimit, $DefaultPasswords;
       if ($nPwAttempt > $pwRetryLimit)
       {
         if (crypt($AuthPw[$nPwAttempt-1],$DefaultPasswords['admin']) == $DefaultPasswords['admin']) {}
         else
         {
-//          session_start();session_destroy();        
-          sendAlertEmail($IP, "Pmwiki ".$nPwAttempt." Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
+          sendAlertEmail("Pmwiki ".$nPwAttempt." Failed Passwords", "Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
           Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
         }
       }
@@ -2399,7 +2475,6 @@ function SessionAuth($pagename, $auth = NULL) {
   $AuthPw = array_map($SessionDecode, array_keys((array)@$_SESSION['authpw']));
   if (!IsEnabled($EnableSessionPasswords, 1)) $_SESSION['authpw'] = array();
   $AuthList = array_merge($AuthList, (array)@$_SESSION['authlist']);
-  
   if (!$sid) @session_write_close();
 }
 
@@ -2514,7 +2589,6 @@ function HandleLogoutA($pagename, $auth = 'read')
   session_destroy();
   Redirect(FmtPageName($LogoutRedirectFmt, $pagename));
 }
-
 
 function HandleLoginA($pagename, $auth = 'login')
 {

@@ -148,14 +148,17 @@ $DiffKeepDays=36500;
 /****************************************************************************************/
 // Meng. Configurations for my own plugins/enhancements for PmWiki.
 
-// My default password; oz
+// Path for wiki.d
+SDV($WorkDir,'/Users/Shared/Dropbox/pmwiki/wiki.d');
+//SDV($WorkDir,'D:\Dropbox\pmwiki\wiki.d');
+
+// Used for logging in, and encryption.
 $DefaultPasswords['admin'] = '';
 
 // Various enhancements written by me
 $homeSSID = "Sam Base";
 $currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk '/ SSID/ {print substr($0, index($0, $2))}'");
 $isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
-$DefaultPasswords['read']  = ($isAtHome) ? '' : '$1$/lyhKjN4$KTund6xDvfna6K0CpTzJK.'; // No global site pw at home
 $pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
 $diaryImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
 $runCodePath = "pub/runCode";
@@ -166,8 +169,10 @@ $emailAddress2 = "";
 // Php login password. Have to be correct at the $pwRetryLimit+1 th time
 $pwRetryLimit = 1; 
 // Php logout timer. Pw will be requested after the timer expires.
-$phpLogoutTimer = 3600; 
-// Java logout timer for closing webpages. Set to 3/an hour if not/at home
+// No auto logout at home
+$phpLogoutTimer = ($isAtHome) ? INF : 3600;
+// Java logout timer for closing webpages.
+// Set to a more relaxed value if at home.
 $javaLogoutTimer = ($isAtHome) ? 3600*3 : 3600;
 // Define the sensitive pages, which will be closed by java after a very short time.
 // Currently set to 10 min.
@@ -187,16 +192,14 @@ $pageHistoryUpdateInterval = 3600;
 
 // If set to 1, unencrypted page files will be encrypted on editing/viewing.
 // If set to 0,   encrypted page files will be decrypted on editing/viewing.
-// The encryption key for a specific page is set to the following pass phrase appended by
-// its pagename and then hashed using crypt() with crypt($OPENSSL_METHOD) being its salt.
-// => encryption key is crypt($OPENSSL_PASS.$pagename,crypt($OPENSSL_PASS)) 
+// The encryption key for a particular page is set to "a certain passphrase appended by
+// its pagename and then hashed using crypt() with crypt($OPENSSL_METHOD) being its salt".
+// => encryption key is crypt($OPENSSL_PASS.$pagename,crypt($OPENSSL_METHOD)) 
+// The passphrase is "DefaultPasswords", and will be set automatically right after a
+// successful login.
 // To encrypt/decrypt all the pages at once, simply perform a search for " ".
-// CRC is used for checking if the encryption key is correct. If $EnableEncryption is set 
-// to 0, $EnableCRC is not used.
 $EnableEncryption = 1;
-$OPENSSL_PASS = "lsmeng";
 $OPENSSL_METHOD = "AES-256-CBC";
-$EnableCRC = 1;
 
 // Pageindex
 $pageIndexUpdateInterval = 60;
@@ -206,7 +209,7 @@ include_once("$FarmD/cookbook/plugin_LSMENG.php");
 /****************************************************************************************/
 
 # Include traditional chinese language
-include_once("scripts/xlpage-utf-8.php"); # optional
+include_once("$FarmD/scripts/xlpage-utf-8.php"); # optional
 XLPage('zhtw','PmWikiZhTw.XLPage');
 
 # Latex
@@ -219,7 +222,7 @@ $autoSaveDelayHttps = 1;
 include_once("$FarmD/cookbook/autosave.php");
 
 # For flipbox
-include_once($FarmD.'/cookbook/flipbox.php');
+include_once("$FarmD/cookbook/flipbox.php");
 
 # For wpap mp3 player
 $wpap_initialvolume = "1";
@@ -231,7 +234,7 @@ include_once("$FarmD/cookbook/swf-sites.php");
 
 /* Neo mp3 and video player. */
 $EnableDirectDownload = 1;
-include_once('cookbook/flashmediaplayer.php');
+include_once("$FarmD/cookbook/flashmediaplayer.php");
 $FlashMediaPlayerInfo['neo_mp3'] = array(
   'swf' => "neolao/player_mp3_maxi.swf",
   'objparms' => array(
@@ -301,6 +304,7 @@ $ROSPatterns ['/～/'] = "~";
 $ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
+$ROSPatterns ['/green_/'] = "%bgcolor=green%";
 $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";

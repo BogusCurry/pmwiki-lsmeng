@@ -16,6 +16,9 @@ function setPosCookies()
 {
   cookieName = y_name;
   value = document.getElementById('text').scrollTop;
+  
+//    var exp = new Date();
+//    window.alert(exp.getTime());
 
   if (value != 0) { document.cookie = cookieName + "=" + escape(value); }
   else { delCookie(cookieName); }

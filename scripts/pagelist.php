@@ -27,7 +27,7 @@
 ## $PageIndexFile is the index file for term searches and link= option
 if (IsEnabled($EnablePageIndex, 1))
 {
-  SDV($PageIndexFile, "$WorkDir/.pageindex");
+  SDV($PageIndexFile, "wiki.d/.pageindex");
   $EditFunctions[] = 'PostPageIndex';
 }
 
@@ -373,7 +373,8 @@ function PageListTermsTargets(&$list, &$opt, $pn, &$page) {
       }
 
       if (@$opt['=cached']) return 0;
-      if ($indexterms) {
+      if ($indexterms)
+      {
         StopWatch("PageListTermsTargets begin count=".count($list));
         $xlist = PageIndexGrep($indexterms, true);
         $list = array_diff($list, $xlist);
@@ -775,9 +776,13 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     $PageIndexTime, $Now;
 
 /****************************************************************************************/
-  if (decryptPage($PageIndexFile, 0) == -1)
+  // Meng. If the content is encrypted, decrypt to get its content.
+  // On decryption error, simply delete the pageindex file and regenerate one.
+  $pageIndexContent = @file_get_contents($PageIndexFile);
+  $pageIndexContent = decryptStr($pageIndexContent);
+  if ($pageIndexContent === -1)
   {
-    shell_exec("rm -f ".$PageIndexFile);
+    @unlink($PageIndexFile);
     global $pagename;
     redirect($pagename);
   }
@@ -797,56 +802,57 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   $cmpfn = create_function('$a,$b', 'return strlen($b)-strlen($a);');
   Lock(2);
 
-/****************************************************************************************/
   // Meng. The original code opens ".pageindex,new" for "w" directly, which produces errors/
   // warnings. Killing the file first and then opens it solves the problem.
   $file = $PageIndexFile.",new";
-  if (file_exists($file) !== false) { shell_exec("rm -f ".$file); }
+  if (file_exists($file) !== false) { @unlink($file); }
   $ofp = @fopen($file,"w");
-/****************************************************************************************/
-  
-  foreach($pagelist as $pn) {
+
+  // Meng. Change the original write file line by line to append a string line by line
+  foreach($pagelist as $pn)
+  {
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
     if (time() > $timeout) continue;
     $page = ReadPage($pn, READPAGE_CURRENT);
-    if ($page) {
+    if ($page)
+    {
       $targets = str_replace(',', ' ', @$page['targets']);
       $terms = PageIndexTerms(array(@$page['text'], $targets, $pn));
       usort($terms, $cmpfn);
       $x = '';
       foreach($terms as $t) { if (strpos($x, $t) === false) $x .= " $t"; }
-      fputs($ofp, "$pn:$Now: $targets :$x\n");
+      $updatedPageIndexContent .= "$pn:$Now: $targets :$x\n";
     }
     $updatecount++;
   }
-  $ifp = @fopen($PageIndexFile, 'r');
-  if ($ifp) {
-    while (!feof($ifp)) {
-      $line = fgets($ifp, 4096);
-      while (substr($line, -1, 1) != "\n" && !feof($ifp)) 
-        $line .= fgets($ifp, 4096);
-      $i = strpos($line, ':');
-      if ($i === false) continue;
-      $n = substr($line, 0, $i);
-      if (@$updated[$n]) continue;
-      fputs($ofp, $line);
-    }
-    fclose($ifp);
+
+  // Meng. Change the original read file line by line to read a string line by line
+  foreach(preg_split("/((\r?\n)|(\r\n?))/", $pageIndexContent) as $line)
+  {
+    $i = strpos($line, ':');
+    if ($i === false) continue;
+    $n = substr($line, 0, $i);
+    if (@$updated[$n]) continue;
+      
+    $updatedPageIndexContent .= $line."\n";
   }
+
+  // Encrypt, put to file, then close file.
+  global $EnableEncryption;
+  if ($EnableEncryption == 1)
+  { $updatedPageIndexContent = encryptStr($updatedPageIndexContent); }
+  fputs($ofp,$updatedPageIndexContent);
   fclose($ofp);
+
   if (file_exists($PageIndexFile)) unlink($PageIndexFile); 
-/****************************************************************************************/
+
   // Meng. Suppress the rename warning, and skip the fixperms since they cause errors sometimes
   @rename($file, $PageIndexFile);
-  
 //  fixperms($PageIndexFile);
+
   StopWatch("PageIndexUpdate end ($updatecount updated)");
   ignore_user_abort($abort);
-  
-  global $EnableEncryption;
-  if ($EnableEncryption == 1) { encryptPage($PageIndexFile); }
-/****************************************************************************************/
 }
 
 ## PageIndexQueueUpdate specifies pages to be updated in
@@ -872,57 +878,40 @@ function PageIndexGrep($terms, $invert = false)
   global $PageIndexFile;
   if (!$PageIndexFile) return array();
   
-/****************************************************************************************/    
-    // Meng. If encryption is enabled, decrypt the pageindex and generate a temp 
-    // decrypted one. Else, copy it to be the temp decrypted pageindex and then encrypt
-    // the original one.
-    global $EnableEncryption;
-    if ($EnableEncryption == 1)
-    {
-      $result = decryptPage($PageIndexFile, $EnableEncryption);
+/****************************************************************************************/     
+  // Meng. If the content is encrypted, decrypt to get its content.
+  // On decryption error, simply delete the pageindex file and regenerate one.
+  $wholePageText = file_get_contents($PageIndexFile);
+  if (isEncryptStr($wholePageText) == true)
+  {
+  	$isPageEncrypt = true;
+  	$wholePageText = decryptStr($wholePageText);
 
-      if ($result == 1) 
-      { $PageIndexFile .= "_dec"; }
-      else if ($result == 0)
-      {
-        copy($PageIndexFile, $PageIndexFile."_dec");
-        encryptPage($PageIndexFile);
-        $PageIndexFile .= "_dec";
-      }
-      else
-      {
-        shell_exec("rm -f ".$PageIndexFile);
-        global $pagename;
-        redirect($pagename);
-      }
-    }
-    // Else if encryption is off, and the page has been encrypted, replace it with a 
-    // decrypted pageindex.
-    else
+	  // Decryption fails. Probably the key has been changed. Delete the pageindex and 
+    // regenerate one.
+    if ($wholePageText === -1)
     {
-      if (decryptPage($PageIndexFile, $EnableEncryption) == -1)
-      {    
-        shell_exec("rm -f ".$PageIndexFile);
-        global $pagename;
-        redirect($pagename);
-      }
+      @unlink($PageIndexFile);
+      global $pagename;
+      redirect($pagename);
     }
+  }
+  else { $isPageEncrypt = false; }
 /****************************************************************************************/
 
   StopWatch('PageIndexGrep begin');
   $pagelist = array();
-  $fp = @fopen($PageIndexFile, 'r');
-  if ($fp) {
+
+  // Meng. Change the original read file line by line to read a string line by line,
+  // so that I can encrypt it directly without writing it to a file first.
+  if (file_exists($PageIndexFile)) 
+  {
     $terms = (array)$terms;
-    while (!feof($fp)) {
-      $line = fgets($fp, 4096);
-      while (substr($line, -1, 1) != "\n" && !feof($fp))
-      {  $line .= fgets($fp, 4096); }
-  
+
+    foreach(preg_split("/((\r?\n)|(\r\n?))/", $wholePageText) as $line)
+    {
       $i = strpos($line, ':');
       if (!$i) continue;
-      
-  
       
       $add = true;
       foreach($terms as $t) 
@@ -931,17 +920,25 @@ function PageIndexGrep($terms, $invert = false)
       }
       if ($add xor $invert) $pagelist[] = substr($line, 0, $i);
     }
-    fclose($fp);
   }
   StopWatch('PageIndexGrep end');
 
 /****************************************************************************************/
-    // Meng. Remove the temp decrypted pageindex.
-    if ($EnableEncryption == 1)
-    {
-      if (file_exists($PageIndexFile) !== false) { shell_exec("rm -f ".$PageIndexFile); }
-    }
+  // Encrypt the pagefile if encryption is on and the content was not encrypted
+  global $EnableEncryption;
+  if ($EnableEncryption==1 && $isPageEncrypt==false)
+  {
+    $wholePageText = encryptStr($wholePageText);
+    if ($wholePageText !== false)
+    { filePutContentsWait($PageIndexFile, $wholePageText); }
+  }
+
+  // Replace the page with a decrypted one if encryption is off and the page has been
+  // encrypted.
+  else if ($EnableEncryption == 0 && $isPageEncrypt == true)
+  { filePutContentsWait($PageIndexFile, $wholePageText); }
 /****************************************************************************************/
+
   return $pagelist;
 }
   
