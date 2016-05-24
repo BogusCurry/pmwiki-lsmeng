@@ -70,7 +70,11 @@ function imgSizeToggle(id, st, update)
   }
 
   $html = sprintf($imgFlipboxHTML, $id, $imgHeightPx, $imgFilePath, $onclick, $_x, $_y);
-  
-  return $wiki.Keep(Fmtpagename($html, ''));
+
+  SDV($imgFlipboxHTML, '<img id="_isti%1$s" height="%2$s" src="%3$s" title="%1$s" alt="%1$s" %4$s/>'); # id, url, onclick, state
+
+//  return $wiki.Keep(Fmtpagename($html, ''));
+//  return Fmtpagename($html, '');
+  return $html;
 }
 

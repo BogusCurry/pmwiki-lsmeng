@@ -42,6 +42,7 @@ XLSDV( 'en', array(
 	'ASsimuledit' => '<span  style=\'background-color: red; color: white;\'>Autosave disabled: simultaneous editing</span>'
 ));
 
+
 SDVA($InputTags['e_deldraftbutton'], array(
     ':html' => "<input type='button' \$InputFormArgs onclick=\"self.location='{\$PageUrl}?action=deldraft';\" />",
     'name' => 'deldraft',
@@ -66,7 +67,14 @@ function HandleDeleteDraft( $pagename, $auth = 'edit' ) {
 
 
 Markup( 'autosave', 'directives', '/\\(:autosave:\\)/ei', "Keep(AutoSaveMarkup(\$pagename))" );
-function AutoSaveMarkup( $pagename ) {
+function AutoSaveMarkup( $pagename )
+{
+  // Meng. Return the autosave markup only when editing.
+  global $action;
+  if ($action != "edit") { return; }
+  global $pagename;
+  if (substr($pagename,0,4) == 'LOCK') { return; }
+  
 	global $PubDirUrl, $AutoSaveFmt, $AutoSavePubDirUrl, $AutoSaveDelay;
 
 	$url = PageVar($pagename,'$PageUrl');
@@ -79,17 +87,28 @@ function AutoSaveMarkup( $pagename ) {
   if ($UrlScheme == 'http') { SDV( $AutoSaveDelay, $autoSaveDelayHttp); }
   else { SDV( $AutoSaveDelay, $autoSaveDelayHttps); }
 /****************************************************************************************/
+  global $lastEditMark;
+  if (!isset($lastEditMark)) { Abort("lastEditMark variable not set in autosave.php!"); }
+  
 	SDVA( $AutoSaveFmt, array(
-		'info' => "<label id='autosave-label'><input type='checkbox' checked='1' id='autosave-cb' /><span id='autosave-status'>Autosave</span></label>",
+		'info' => "<label id='autosave-label'><input type='checkbox' checked='1' id='autosave-cb' /><span id='autosave-status'>Ready</span></label>",
 		'util' => "<script type='text/javascript' src='$AutoSavePubDirUrl/util.js'></script>",
-		'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>",
+		'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
+		<script type='text/javascript'>
+		AS.pagename = '$pagename';
+		AS.lastEditMark = '$lastEditMark';
+		</script>",
 		'config' => "<script type='text/javascript'>AS.url='$url'; AS.delay=$AutoSaveDelay;</script>"
 	));
+
 
 	return "{$AutoSaveFmt['info']}\n{$AutoSaveFmt['util']}\n{$AutoSaveFmt['js']}\n{$AutoSaveFmt['config']}";
 }
 
-function HandleAutoSave( $pagename, $auth = 'edit' ) {
+function HandleAutoSave( $pagename, $auth = 'edit' )
+{
+//sleep(3);
+
 	global
 		$DraftRecentChangesFmt, $DraftSuffix, $EditFunctions, $DeleteKeyPattern,
 		$EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
@@ -99,15 +118,6 @@ function HandleAutoSave( $pagename, $auth = 'edit' ) {
 
 	$basename = preg_replace("/$DraftSuffix\$/", '', $pagename);
 	$draftname = $basename . $DraftSuffix;
-	$draftmodtime = PageVar($draftname,'$LastModifiedTime');
-
-/* Meng: The following controls simultaneous editing. */
-	if ( ( $draftmodtime != $Now) && ( $_POST['basetime'] < $draftmodtime ) )
-	{
-	  echo XL('ASsimuledit');
-	  return;
-//    redirect($pagename."?action=edit");
-	}	
 		
 	$pagename = $basename;
 	$_POST['postdraft'] = 1;
@@ -121,6 +131,20 @@ function HandleAutoSave( $pagename, $auth = 'edit' ) {
 	Lock(2);
 		$page = RetrieveAuthPage($pagename, $auth, false);
 		if (!$page) { echo XL('ASnoread'); return; }
+
+  // Meng. The original code for obtaining $draftmodtime is incorrect and has been
+  // changed to the following line.
+  $draftmodtime = $page['time'];
+
+//echo $_POST['text'];
+
+/* Meng: The following controls simultaneous editing. */
+	if ( ( $draftmodtime != $Now) && ( $_POST['basetime'] < $draftmodtime ) )
+	{
+	  echo XL('ASsimuledit');
+	  return;
+	}
+		
 		PCache($pagename,$page);
 
 		$new = $page;
@@ -130,21 +154,30 @@ function HandleAutoSave( $pagename, $auth = 'edit' ) {
 				if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
 			}
 		$new["csum:$Now"] = $new['csum'] = "[autosave] $ChangeSummary";
-		
+
 		UpdatePage($pagename, $page, $new);
 	Lock(0);
-
-	if ($IsPagePosted)
+  
+	if ($IsPagePosted || true)
 	{
 		$url = PageVar($draftname,'$PageUrl');
 		$url .= ( strpos($url,'?') ? '&' : '?' ) . "action=edit";
 		header("X-AutoSaveAction: $url" );
 		header("X-AutoSavePage: $draftname");
 		header("X-AutoSaveTime: $Now");
+		
 		echo 'ok';
 	} 
 	else
 	{
-		echo XL('ASnowrite');
+	  global $simultEdit;
+	  echo XL('ASnowrite');
 	}
 }
+
+/*
+function HandleAutoSaveRender( $pagename, $auth = 'edit' )
+{
+    echo MarkupToHTML($pagename, $_POST['text']);
+}
+*/

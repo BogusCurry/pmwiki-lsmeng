@@ -39,11 +39,19 @@ function Merge($newtext,$oldtext,$pagetext) {
 
 function MergeSimulEdits($pagename,&$page,&$new) {
   global $Now, $EnablePost, $MessagesFmt, $WorkDir;
+
+//  global $simulEdit;  
+//  $simulEdit = 9;
+  
   if (@!$_POST['basetime'] || !PageExists($pagename) 
       || $page['time'] >= $Now
       || $_POST['basetime']>=$page['time']
       || $page['text'] == $new['text']) return;
+      
   $EnablePost = 0;
+
+//  $simulEdit = 3;
+  
   $old = array();
   RestorePage($pagename,$page,$old,"diff:{$_POST['basetime']}");
   $text = Merge($new['text'],$old['text'],$page['text']);

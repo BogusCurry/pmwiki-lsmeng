@@ -1,70 +1,116 @@
 <?php 
+
 /* 
- * Various enhancements for pmWiki written by Ling-San Meng (Sam Meng).
+ * Various enhancements for pmWiki.
  * If the function follows a line beginning with "FmtPV," the function is callable
  * from within wiki pages using markup language {$nameOfFunction}
- *
+ * 
+ * Author: Ling-San Meng
  * Email: f95942117@gmail.com
- * Last Modified: 2015/12/16
  */
+
+function echo_($str)
+{
+	echo $str."<br>";
+}
 
 /****************************************************************************************/
 
-// Return a string of a random line from the wiki page "$pagename"
-function getRandLine($pagename)
+// Return the name of the page that you are browsing from analyzing the URI.
+function getPageNameFromURI()
 {
-  $page = RetrieveAuthPage($pagename, 'read', false, READPAGE_CURRENT);
-  $textContent = $page['text'];
-  $textLineArray = explode("\n", $textContent);  
-  $NumLine = count($textLineArray);
-  $randLineNum = rand(0, $NumLine-1);
-
-  return "$textLineArray[$randLineNum]";
+  global $URI;
+  $URI = str_replace('LOCK','',$URI);
+  
+  $pos = strpos($URI,"?n=");
+  if ($pos === false) { return "Main.HomePage"; }
+  
+  $pagename = substr($URI,$pos+3);
+  $pos = strpos($pagename,"?");
+  if ($pos !== false)
+  { $pagename = substr($pagename,0,$pos); }
+  
+  return $pagename;
 }
 
-// Return a string of a random nonempty line from the wiki page "$pagename"
-// If the end of line is the newline markup "\\", remove it
+// Return a string of a given number of nonempty random line.
+// Usage: {N-pagename$getNoEmptyRandLine}
+// N is the number of nonempty random line; pagename is the complete pagename
+// including group and name.
 $FmtPV['$getNoEmptyRandLine'] = 'getNoEmptyRandLine($pn)';
 function getNoEmptyRandLine($pagename)
 {
-  $count = 0;
-  while (1)
-  {
-    $str = getRandLine($pagename);
-    $strStripSpace = preg_replace('/\s+/', '', $str);
-    if ($strStripSpace !== "\n" && $strStripSpace !== "" && $strStripSpace !== "	" 
-       && $strStripSpace !== "\\")
+	$pos = strpos($pagename,'-');
+	if ($pos === false) { $N_randLine = 1; }
+	else
+	{
+		$str = substr($pagename,0,$pos);
+		if ($str != (string)(int)$str)
+		{ echo_("Format error in getNoEmptyRandLine()!"); return; }
+		$N_randLine = (int)$str;
+		$pagename = substr($pagename,$pos+1);
+	}
+	
+	$page = RetrieveAuthPage($pagename, 'read', false, READPAGE_CURRENT);
+	if (!$page)	{ echo_("Page doesn't exist in getNoEmptyRandLine()!"); return; }
+  $textContent = $page['text'];
+  $textLineArray = explode("\n", $textContent);  
+  
+	$outputStr = "";
+	for ($iRandLine=0;$iRandLine<$N_randLine;$iRandLine++)
+	{
+    $count = 0;
+    while (1)
     {
-      if (substr($str, strlen($str)-2,2) == "\\\\") { return substr($str,0,strlen($str)-2); }
-      else { return $str; }
+    	// get a random line
+      $NumLine = count($textLineArray);
+      if ($NumLine == 0) { return $outputStr; }
+      $randLineNum = rand(0, $NumLine-1);
+      $str = $textLineArray[$randLineNum];
+      unset($textLineArray[$randLineNum]);
+      
+      // This condition determines whether this is an "empty" line.
+      $strStripSpace = preg_replace('/\s+/', '', $str);
+      if ($strStripSpace !== "\n" && $strStripSpace !== "" && $strStripSpace !== "	" 
+         && $strStripSpace !== "\\")
+      {
+        if (substr($str, strlen($str)-2,2) == "\\\\")
+        { $outputStr .= substr($str,0,strlen($str)-2); }
+        else { $outputStr .= $str; }
+        $outputStr .= "\\\\\n";
+        break;
+      }
+      
+      $count++;
+      if ($count>1000)
+      { echo_("\"$pagename\" is almost empty in getNoEmptyRandLine()!"); return; }
     }
-    
-    $count++;
-    if ($count>1000) { return "This is an almost empty page!"; }
   }
+  
+  return $outputStr;
 }
 
-// Return 2 strings of random characters serving as passwords of fixed length 6 and 8.
-$FmtPV['$RandomPwd'] = 'RandomPwd()';
-function RandomPwd()
+
+// Return a string of random characters for password.
+// Usage: {L$RandomPwd}
+// L is the length of password to be generated.
+$FmtPV['$RandomPwd'] = 'RandomPwd($name)';
+function RandomPwd($length)
 {
+	if ($length != (string)(int)$length)
+	{ echo_("Format error in RandomPwd()!"); return; }
+	
   $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   $charactersLength = strlen($characters);
     
-  $length = 6;
-  $randomString6 = '';
+  $length = (int)$length;
+  $randomString = '';
   for ($i = 0; $i < $length; $i++)
   {
-    $randomString6 .= $characters[rand(0, $charactersLength - 1)];
+    $randomString .= $characters[rand(0, $charactersLength - 1)];
   }
-    
-  $length = 8;
-  $randomString8 = '';
-  for ($i = 0; $i < $length; $i++)
-  {
-    $randomString8 .= $characters[rand(0, $charactersLength - 1)];
-  }
-  return $randomString6."\\\\\n".$randomString8;
+  
+  return $randomString;
 }
 
 
@@ -76,22 +122,24 @@ function printOnThisDay()
   $today = getdate();
   $onThisDayStr = "";
 
+  $monStr = "$today[mon]";
+    
   for($i=$today[year]-1; $i>=2003; $i--)
   {
     $pageName = "Main.".$i;
     if ($today[mon]<10) { $pageName .= "0"; } 
-    $pageName .= $today[mon];
+    $pageName .= $monStr;
 
     $page = RetrieveAuthPage($pageName, 'read', false, READPAGE_CURRENT);
     $textContent = $page['text'];
     $textDateArray = explode("\n* ", $textContent);  
 
-    $onThisDayStr .= "\n'''".$i."/".$today[mon]."'''\n\n";    
-
+    $onThisDayStr["$i"] = "\n'''".$i."/".$today[mon]."'''\n\n";    
+    
     if ($today[mday] == 1)
     {
       if (substr($textDateArray[0],0,4) == "* 1," || substr($textDateArray[0],0,6) == "* 1，")
-      { $onThisDayStr .= $textDateArray[0]; }
+      { $onThisDayStr["$i"] .= $textDateArray[0]; }
     }
     else
     {
@@ -101,14 +149,16 @@ function printOnThisDay()
             (substr($textDateArray[$j],strlen($today[mday]),1) == "," ||
              substr($textDateArray[$j],strlen($today[mday]),3) == "，"))
         {
-          $onThisDayStr .= "* ".$textDateArray[$j];
+          $onThisDayStr["$i"] .= "* ".$textDateArray[$j];
           break; 
         }
       }
     }
+    
+    $onThisDayStr["$i"] = pasteImgURLToDiary($onThisDayStr["$i"], "$i", $monStr);
   }
-
-  return "$onThisDayStr";
+  
+  return join("",$onThisDayStr);
 }
 
 // Return a string of the pagename for editing today's diary.
@@ -121,8 +171,71 @@ function editToday()
   if ($today[mon]<10) { $pageName .= "0"; } 
   $pageName .= $today[mon]."?action=edit";
 
-  return "[[".$pageName."|"."EditDay]]";
+  return "[[".$pageName."|"."E]]";
 }
+
+// Print a symbol for redirecting to the previous diary month if the current page is a 
+// diary page.
+$FmtPV['$previousMonth'] = 'previousMonth()';
+function previousMonth()
+{ 
+  global $pagename;
+  
+  if (isDiaryPage() === 2)
+  {
+    $diaryYear = substr($pagename,5,4);  
+    $diaryMonth = substr($pagename,9,2);
+    if ($diaryMonth === "01")
+    {
+      $diaryMonth = "12";
+      $diaryYear = (string)((int)$diaryYear - 1);
+      $newPagename = "Main.".$diaryYear.$diaryMonth;      
+    }
+    else
+    {
+      $diaryMonth = (int)$diaryMonth - 1;
+      if ($diaryMonth < 10) { $diaryMonth = "0".(string)$diaryMonth; }
+      else { $diaryMonth = (string)$diaryMonth; }
+      $newPagename = "Main.".$diaryYear.$diaryMonth;
+    }
+    
+    if (PageExists($newPagename)) { return "[[".$newPagename."|"."<]]"; }
+    else { return ""; }
+  }
+  else { return ""; }
+}
+
+// Print a symbol for redirecting to the next diary month if the current page is a 
+// diary page.
+$FmtPV['$nextMonth'] = 'nextMonth()';
+function nextMonth()
+{ 
+  global $pagename;
+  
+  if (isDiaryPage() === 2)
+  {
+    $diaryYear = substr($pagename,5,4);  
+    $diaryMonth = substr($pagename,9,2);
+    if ($diaryMonth === "12")
+    {
+      $diaryMonth = "01";
+      $diaryYear = (string)((int)$diaryYear + 1);
+      $newPagename = "Main.".$diaryYear.$diaryMonth;      
+    }
+    else
+    {
+      $diaryMonth = (int)$diaryMonth + 1;
+      if ($diaryMonth < 10) { $diaryMonth = "0".(string)$diaryMonth; }
+      else { $diaryMonth = (string)$diaryMonth; }
+      $newPagename = "Main.".$diaryYear.$diaryMonth;
+    }
+    
+    if (PageExists($newPagename)) { return "[[".$newPagename."|".">]]"; }
+    else { return ""; }
+  }
+  else { return ""; }
+}
+
 
 // Return a string of year month date time.
 $FmtPV['$showDateTime'] = 'showDateTime($pn)';
@@ -139,6 +252,8 @@ function showDateTime($pagename)
 
 /****************************************************************************************/
 
+// Return true on success.
+// Abort on error.
 function renameWait($oldFile, $newFile, $N_TRY=3)
 { 
   // check if it's already locked
@@ -152,7 +267,7 @@ function renameWait($oldFile, $newFile, $N_TRY=3)
     if (@rename($oldFile,$newFile) === true) { return true; }
     
     $nTry++;
-    if ($nTry>$N_TRY) { echo("Retry limit reached in renameWait() for $oldFile!"); return false; }
+    if ($nTry>$N_TRY) { Abort("Retry limit reached in renameWait() for $oldFile!"); }
    
     $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
     usleep($waitMicroSec); 
@@ -183,6 +298,8 @@ function fileGetContentsWait($file, $N_TRY=3)
 // Create a file or kill it if existent, and then write "content" to it.
 // Wait a random amount of time if other processes are writing this file.
 // A maximum number of retry limit can be set.
+// No return values. File write error is considered critical and the whole system
+// will be aborted.
 function filePutContentsWait($file, $content, $N_TRY=3)
 {	
   // check if it's already locked
@@ -316,248 +433,86 @@ function getFormatTime()
   return $formatTime;
 }
 
-// Check the stored timeStamp and previous state in a text file on authentication success.
-// Builtin authentication check is performed each time wiki is viewed/edited.
-// If the wiki hasn't been accessed for a duration longer than a prespecified timer
-// (in "config.php"), the wiki builtin logout function is called to request a site-wide 
-// password. 
-// LoginStatus=1: Logged in.
-// LoginStatus=0: Actually this means no record, and won't be seen in the timeStamp file.
-// LoginStatus=-1: Logged out when viewing due to timer expiration, or manually clicked logout.
-// LoginStatus=-2: Logged out when editing due to timer expiration.
-// LoginStatus=-3: Logged out for a first-time user trying to log in.
-// LoginStatus=-4: Logged out by manually clicking.
-// LoginStatus=-5: Logged out for not encrypted when encryption is on.
-// LoginStatus=-6: Logged out for no timeStampFile.
-//
-// The timeStampFile will be encrypted if encryption is on, and will not get modified
-// before a successful login. If encryption is off, the information of new IP trying to 
-// log in and last seen will still get recorded. The user will be logged out immediately
-// if the timeStampFile does not exist, decryption fails, and unencrypted when encryption
-// is on.
-function handleTimeStampOnLogin()
+
+// Permission setting for regular page files.
+// Set the permission of the pagefile to be the most restrictive one possible.
+// Note that the Owner and Group of the pagefile created by Apache is assumed to be 
+// both "_www". For ease of file operations (read/copy/paste) by the account user, 
+// add your account to the Group "_www".
+function chmodForPageFile($file)
 {
-  // If the timeStampFile does not exist, generate, encrypt, log out.
-  global $timeStampFile;
-  $file = $timeStampFile;
+	global $OS;
+	if ($OS === "Mac")
+	{ 
+    @chmod($file, 0440);
+  }
+}
 
-  global $phpLogoutTimer;
-  $currentUnixTime = time();
-  $formatTime = getFormatTime(); 
-  $IP = get_client_ip(); 
+// Handle a timeStamp for different users (uniquely identified by SESSION).
+// Builtin authentication check is performed each time pmwiki is executed. The major 
+// functionality of this function is: if the user is authenticated, and pmwiki hasn't been
+// accessed for a duration longer than a prespecified timer (in "config.php"), passwords
+// are cleared depending on the time duration that the user has been idle.
+function checkTimeStamp()
+{
+  // It appears that session_start() has to be called first even for reading operation.
+  // checkTimeStamp() can be the 1st function to call $_SESSION, therefore session_start()
+  // has to be called at the outset.
+	@session_start();
+	
+	if (isset($_SESSION['MASTER_KEY']))
+	{
+  	$hasSuccAuthCookie = true;
+  	$hasReqAuthCookie = false;
+	  if (!$hasSuccAuthCookie && $hasReqAuthCookie)
+	  {
+//	    promote to auth
+//	    write timeStamp
+	  }
+	  else if ($hasSuccAuthCookie && !$hasReqAuthCookie)
+	  {
+	    global $siteLogoutIdleDuration, $pageLockIdleDuration;	    
+	    $currentTime = time();
+	    $lastTime = isset($_SESSION['timeStamp']) ? $_SESSION['timeStamp'] : $currentTime;
+	    $timeDiff = $currentTime - $lastTime;
+	    $_SESSION['timeStamp'] = $currentTime;
+	    @session_write_close();
   
-  global $pagename, $EnableEncryption;
-  $text = fileGetContentsWait($file);
-  // Time stamp file exists
-  if ($text !== false)
-  {
-	  $isFileExist = true;
+	    // Timer expires
+	    if ($timeDiff >= $pageLockIdleDuration)
+	    {
+  	    global $pagename, $actionStr;
 
-    // If content encrypted
-    if (isEncryptStr($text) == true)
-    {
-      $isPageEncrypt = true;
-      $text = decryptStr($text);
-      
-      // If decryption fails, the file has probably been tampered with. Log out.
-      if ($text === -1) { Abort("TimeStampFile decryption fails in handleTimeStampOnLogin()!"); HandleLogoutA($pagename); }
-      // Empty passphrase. Shouldn't happen.
-      else if ($text === 0) { Abort("Empty passphrase in handleTimeStampOnLogin()"); }
-    }
-    else { $isPageEncrypt = false; }
+        // Long timer expires, log out the user and shut down the site.
+        if ($timeDiff >= $siteLogoutIdleDuration)
+        {
+//          write temp cookie
+
+          HandleLogoutA($pagename.$actionStr);        
+        }
         
-    // If encryption is on and content was not encrypted, the file could have been replaced 
-    // with a plain text. Encrypt then log out.
-    if ($EnableEncryption == 1 && $isPageEncrypt == false)
-    {
-      $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);
-      $text = setParameterValue($text,$IP,"LoginStatus=", -5);  
-      $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-      $text = encryptStr($text);
-      filePutContentsWait($file, $text);
-      HandleLogoutA($pagename);
-    }
-  }
-  // Time stamp file missing
-  else
-  {
-    $isFileExist = false;
-    $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);
-    $text = setParameterValue($text,$IP,"LoginStatus=", -6);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-    if ($EnableEncryption == 1) { $text = encryptStr($text); }
-    filePutContentsWait($file,$text);
-    HandleLogoutA($pagename);
-  }
-   
-  // If successfully decrypted, or not encrypted
-  $lastTimeStamp = getParameterValue($text,$IP,"TimeStamp=");
-  $loginStatus = getParameterValue($text,$IP,"LoginStatus=");  
-  $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);
-
-  // The IP was previously logged in.
-  if ($loginStatus == 1)
-  {
-    // Timer has expired, log out the IP.
-    $elapsedTime = $currentUnixTime-$lastTimeStamp;
-    if ($elapsedTime >= $phpLogoutTimer)
-    {
-      global $action;
-      if ($action == 'edit') { $text = setParameterValue($text,$IP,"LoginStatus=",-2); } 
-      else { $text = setParameterValue($text,$IP,"LoginStatus=",-1); }
-
-      if ($EnableEncryption == 1) { $text = encryptStr($text); }
-      filePutContentsWait($file,$text);
-      HandleLogoutA($pagename);
-    }
-    // Else update TS.
-    else { $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime); }
-  }
-  // The IP goes from no record in an existing time stamp file to logged in directly.
-  else if ($loginStatus == 0 && $isFileExist == true)
-  {
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);  
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-    if ($EnableEncryption == 1)
-    { sendAlertEmail("Pmwiki Login Alert (new IP)"); }
-    else
-    { sendAlertEmail("Pmwiki Login Alert (logged in browser changes IP, or entry gets deleted manually)"); }
-  }
-  // The IP got logged out when viewing due to timer expiration, or multi-login by another IP
-  else if ($loginStatus == -1)
-  {  
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-
-    // Timer hasn't expired.
-    $elapsedTime = $currentUnixTime-$lastTimeStamp;
-    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail("Pmwiki Login Alert (multiple login)"); }
-  }
-  // The IP got logged out when editing due to timer expiration, or multi-login by another IP
-  else if ($loginStatus == -2)
-  {
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-
-    // Timer hasn't expired.
-    $elapsedTime = $currentUnixTime-$lastTimeStamp;
-    if ($elapsedTime < $phpLogoutTimer) { sendAlertEmail("Pmwiki Login Alert (multiple login)"); }
-    
-    if ($EnableEncryption == 1) { $text = encryptStr($text); }
-    filePutContentsWait($file, $text);
-    redirect(substr($pagename,strlen("LOGOUT"))."?action=edit");     
-  }
-  // The IP is a new IP
-  else if ($loginStatus == -3)
-  {  
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-    sendAlertEmail("Pmwiki Login Alert (new IP)");
-  }
-  // The IP clicked logout manually previously
-  else if ($loginStatus == -4)
-  {  
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-  }
-  // Previously logged out by not encrypted when encryption is on.
-  else if ($loginStatus == -5)
-  {  
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-    sendAlertEmail("Pmwiki Login Alert (time stampe file unencrypted)");
-  }
-  // Previously logged out by having no timeStampFile
-  else if ($loginStatus == -6)
-  {  
-    $text = setParameterValue($text,$IP,"LoginStatus=", 1);
-    $text = setParameterValue($text,$IP,"TimeStamp=",$currentUnixTime);
-    sendAlertEmail("Pmwiki Login Alert (time stamp file missing)");
-  }
-  
-  if ($EnableEncryption == 1) { $text = encryptStr($text); }
-  filePutContentsWait($file,$text);
-}
-
-function handleTimeStampOnLogout()
-{
-	global $timeStampFile;
-  $file = $timeStampFile;
-
-  $IP = get_client_ip();
-  $formatTime = getFormatTime();
-  
-  $text = @file_get_contents($file);
-  // Time stamp file exists
-  if ($text !== false)
-  {
-    // If content encrypted, nothing can be done since passphrase is not available.
-    if (isEncryptStr($text))
-    {
-      $text = decryptStr($text);
-      if ($text === -1) { Abort("TimeStampFile decryption fails in handleTimeStampOnLogout()!"); }
-      else if ($text === 0) {} // No phassphrase captured. Normal case when encryption is on
-      else { Abort("Decryption succeeds during logout. Shouldn't happen!"); }
-    }
-    // Content plain text. Record new connection attempts in plain text, even when 
-    // encryption is on.
-    else
-    {
-      $loginStatus = getParameterValue($text,$IP,"LoginStatus=");
-      $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);  
-
-      // There is no record for this IP. New IP tries to log in.
-      if ($loginStatus == 0)
-      {
-        $text = setParameterValue($text,$IP,"LoginStatus=", -3);
-        sendAlertEmail("Pmwiki Login Alert (new IP trying to log in)");
-      }
-      else if ($loginStatus == 1) { Abort("loginStatus=1 in handleTimeStampOnLogout(). Shouldn't happen!"); }
-      else {}
-
-      filePutContentsWait($file,$text);
-    }
-  }
-}
-
-// On clicking the logout link on the upper right corner of pages, the user will
-// be directed to a page with its name being the original one preceded by "LOGOUT"
-// which serves as a keyword for directing to this function.
-function clickLogout()
-{
-	global $timeStampFile;
-  $file = $timeStampFile;
-  
-  global $phpLogoutTimer;
-  $currentUnixTime = time();
-  $formatTime = getFormatTime();
-  
-/***************************************************************************************/
-  // It turns the passphrase as well as all the session variables are visible
-  // only after SessionAuth() and IsAuthorized() are called. I have no clue
-  // regarding their details. As far as capturing the passphase and therefore
-  // allow decryption, it works fine for now.
-  global $DefaultPasswords, $pagename;
-  SessionAuth($pagename, (@$_POST['authpw']) 
-                           ? array('authpw' => array($_POST['authpw'] => 1))
-                           : '');
-  foreach($DefaultPasswords as $k => $v)
-  { $acache['@site'][$k] = IsAuthorized($v, 'site', $x,1); }
-/***************************************************************************************/
- 
-  $text = fileGetContentsWait($file);
-  $text = decryptStr($text);
-  if ($text === -1) { Abort("TimeStampFile decryption fails in clickLogout()!"); }
-  else if ($text === 0) { Abort("No passphase in clickLogout(). Shouldn't happen!"); }
-  
-  $IP = get_client_ip();
-  $text = setParameterValue($text,$IP,"LastSeen=",$formatTime);  
-  $text = setParameterValue($text,$IP,"LoginStatus=",-4);
-  
-  global $EnableEncryption;
-  if ($EnableEncryption == 1) { $text = encryptStr($text); }
-  filePutContentsWait($file, $text);   
-  HandleLogoutA($pagename);
+        // Short timer expires, redirect to a special page which purges all the page
+  	    // reading passwords.
+        else
+        {
+					@session_start();
+					unset($_SESSION['authpw']);
+					@session_write_close();
+        }
+	    }
+	  }
+	  else { Abort("Unexpected case in checkTimeStamp()!"); }	
+	}
+	else
+	{
+/*
+	  if (there is no authenticated record or temp record by cookie)
+	  {
+	    write a temp cookie
+	    email notification
+	  }
+*/
+	}
 }
 
 // Should be clear.
@@ -565,7 +520,6 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
 {
   global $emailAddress1;
   global $emailAddress2;
-  
   $formatTime = getFormatTime();
 
   // Get browser and OS info.
@@ -707,9 +661,7 @@ class OS_BR{
     }
 }
 
-
 /****************************************************************************************/
-
 
 // Should be clear.
 function addLineNum($text)
@@ -736,6 +688,7 @@ function addLineNum($text)
     }
     else { break; }
   }
+
   return $text;
 }
 
@@ -758,9 +711,9 @@ function runCode($pagename)
   // Actually the whole process can be made even more secure by bypassing the file read/write
   // step completely. Since the current state is also acceptable, let's just leave it
   // as it is for now.
-  $fp=fopen($srcFile,"w");
-  fputs($fp,$text);
-  fclose($fp);
+
+  filePutContentsWait($srcFile, $text, 1);
+
   if (file_exists($cExeFile) !== false) { @unlink($cExeFile); }  
 
   // PHP
@@ -777,17 +730,12 @@ function runCode($pagename)
   }
    
   // Write the results to file
-  $newResult = "[@".addLineNum($result)."@]";
-  $fp=fopen($outputFile,"w");
-  fputs($fp,$newResult);
-  fclose($fp);
+  $newResult = "[@\n".addLineNum($result)."@]";  
+  filePutContentsWait($outputFile, $newResult, 1);
 
   // Write the formatted src to file  
-  @unlink($srcFile);
   $text = "[@".addLineNum($text)."@]";
-  $fp=fopen($srcFile,"w");
-  fputs($fp,$text);
-  fclose($fp);
+  filePutContentsWait($srcFile, $text, 1);
 }
 
 /****************************************************************************************/
@@ -796,55 +744,71 @@ function runCode($pagename)
 // does not exist locally.
 function syncFileFromDropbox($text)
 {
-    global $pubImgDirURL, $WorkDir;
-    $pubImgDirURL_LEN = strlen($pubImgDirURL);
-    $pos = 0;
-    while(1)
-    {
-      // Find a pubImgDirURL
-      $pos = @stripos($text, $pubImgDirURL, $pos);
-      
-      if ($pos !== false)
-      {
-        // Find the end of the URL. It could be followed by an empty space, a new line\\
-        // a new line markup, end of file, and more.
-        $posE1 = (@strpos($text," ", $pos) === false) ? INF : @strpos($text," ", $pos);
-        $posE2 = (@strpos($text,"\n", $pos) === false) ? INF : @strpos($text,"\n", $pos);
-        $posE3 = (@strpos($text,"\\", $pos) === false) ? INF : @strpos($text,"\\", $pos);
-        $posE4 = (@strpos($text,"(:groupfooter:)", $pos) === false) ? INF : @strpos($text,"(:groupfooter:)", $pos);
-        $posE5 = (@strpos($text,"|", $pos) === false) ? INF : @strpos($text,"|", $pos);
-        $posE = min($posE1,$posE2,$posE3,$posE4,$posE5);
-        
-        if ($posE === false || $posE == INF) { Abort("Error in function syncFileFromDropbox()!"); }
-        
-        // Cut to get the url
-        $url = substr($text,$pos+$pubImgDirURL_LEN,$posE-$pos-$pubImgDirURL_LEN);
-        $uploadDir = str_replace("wiki.d","uploads",$WorkDir);
+	global $pubImgDirURL, $WorkDir;
+	if (!isset($pubImgDirURL) || !isset($WorkDir))
+	{
+	  echo 'Either $pubImgDirURL or $WorkDir is not set!<br>';
+	  return;
+	}
+	
+	$pubImgDirURL_LEN = strlen($pubImgDirURL);
+	$pos = 0;
+	while(1)
+	{
+		// Find a pubImgDirURL
+		$pos = @stripos($text, $pubImgDirURL, $pos);
+		
+		if ($pos !== false)
+		{
+			// Find the end of the URL. It could be followed by an empty space, a new line\\
+			// a new line markup, end of file, and more.
+			$posE1 = (@strpos($text," ", $pos) === false) ? INF : @strpos($text," ", $pos);
+			$posE2 = (@strpos($text,"\n", $pos) === false) ? INF : @strpos($text,"\n", $pos);
+			$posE3 = (@strpos($text,"\\", $pos) === false) ? INF : @strpos($text,"\\", $pos);
+			$posE4 = (@strpos($text,"(:groupfooter:)", $pos) === false) ? INF : @strpos($text,"(:groupfooter:)", $pos);
+			$posE5 = (@strpos($text,"|", $pos) === false) ? INF : @strpos($text,"|", $pos);
+			$posE = min($posE1,$posE2,$posE3,$posE4,$posE5);
+			
+			if ($posE === false || $posE == INF) { Abort("Error in function syncFileFromDropbox()!"); }
+			
+			// Cut to get the url
+			$url = substr($text,$pos+$pubImgDirURL_LEN,$posE-$pos-$pubImgDirURL_LEN);
+			$uploadDir = str_replace("wiki.d","uploads",$WorkDir);
 
-//echo $text;
-//break;
-        // If the file is non existent, copy from Dropbox at the same url
-        if (file_exists("uploads/$url") === false)
-        {
-          if (file_exists("$uploadDir/$url") === false)
-          { echo "File $url does not exist in either local or Dropbox side!"; }
-          else { copy("$uploadDir/$url", "uploads/$url"); }
-        }
-        
-        // Adjust position
-        $pos = $posE;
-      }
-      else { break; }
-    }
+			if (file_exists("uploads/$url") === false)
+			{
+				if (file_exists("$uploadDir/$url") === false)
+				{ echo "File $url does not exist in either local or Dropbox side!"; }
+				else { @copy("$uploadDir/$url", "uploads/$url"); }
+			}
+
+			// Adjust position
+			$pos = $posE;
+		}
+		else { break; }
+	}
+}
+
+// Return the image's file content for html display.
+function getImgFileContent($file, $mime='image/png') 
+{  
+  $contents = @file_get_contents(str_replace('%20',' ',$file));
+  $base64   = base64_encode($contents); 
+  return ('data:' . $mime . ';base64,' . $base64);
 }
 
 # For img size toggle; adapted from flipbox.
 include_once($FarmD.'/cookbook/imgSizeToggle.php');
 
-// Replace a complete image URL with the "image size toggle" function.
+// Find valid image URLs in "$text", replace it with the "image size toggle" function.
+// Furthermore, if the image can be found in the dropbox folder, replace the img url with
+// its file contents read directly from the dropbox folder.
+// If the img URL is preceded by "%", the image size is 
+// being adjusted explicitly by the user and the size toggle is not applied.
+// If the img URL is preceded by "[[", the image is a link; the whole function is not applied.
 function replaceImgUrlWithSizeToggle($text)
 {   
-  $supportImgExtList = array('.jpg', '.png', '.jpeg');
+  $supportImgExtList = array('.jpg','.png','.jpeg','.gif');
   $NUM_IMGEXT = count($supportImgExtList);
 
   $imgCount = 1;
@@ -857,7 +821,8 @@ function replaceImgUrlWithSizeToggle($text)
     while(1)
     {
       $pos = @stripos($text, $extension, $pos);
-    
+      
+      // Valid img extension found
       if ($pos !== false)
       {
         // check if this is a valid image url
@@ -866,21 +831,71 @@ function replaceImgUrlWithSizeToggle($text)
         $roughInterceptImgUrl = substr($text,0,$pos+$extLen);        
         global $UrlScheme;
         $httpPos = strrpos($roughInterceptImgUrl,$UrlScheme.'://'.$_SERVER['HTTP_HOST']);
-        if ($httpPos !== false && $roughInterceptImgUrl[$httpPos-1]!=="%")
+        // The keyword http is found, and this is not a link
+        if ($httpPos !== false && substr($roughInterceptImgUrl,$httpPos-2,2) !== "[[")
         {
-          $spacePos = strpos($roughInterceptImgUrl," ",$httpPos);
+          $spacePos = strpos($roughInterceptImgUrl,' ',$httpPos);
+          // If there is no space between http and the img extension, this is
+          // considered a valid img url 
           if ($spacePos === false)
           {
-            $isImgFileNameValid = 1;
             $imgUrl = substr($roughInterceptImgUrl, $httpPos, strlen($roughInterceptImgUrl)-$httpPos);
+  
+						// If the img url points to the $pubImgDirURL
+						global $pubImgDirURL, $PhotoPub;
+						if (strpos($imgUrl, $pubImgDirURL) !== false)
+						{
+							// See if we can find it in the dropbox folder
+							$imgFilename = substr($imgUrl,strlen($pubImgDirURL)); 
+							if (file_exists($PhotoPub.$imgFilename))
+							{
+								if ( $roughInterceptImgUrl[$httpPos-1] !== "%" )
+								{ $isImgFileNameValid = 2; }
+								else { $isImgFileNameValid = 3; }
+							}
+							// This is a public img but only exists in the local upload folder.
+              else
+							{
+								if ( $roughInterceptImgUrl[$httpPos-1] !== "%" )
+								{ $isImgFileNameValid = 1; }
+							}
+						}
+						// WWW images or diary photos.
+            else
+            {
+              if ( $roughInterceptImgUrl[$httpPos-1] !== "%" )
+              { $isImgFileNameValid = 1; }
+            }
           }
         }
-      
-        if ($isImgFileNameValid == 1)
+
+        // If valid img url has been found.
+        if ($isImgFileNameValid != 0)
         { 
+   				// By default, the image is replaced with size toggle html.
           $flipboxMarkup = FmtImgSizeToggle('_',$imgCount,$imgUrl);
+
+  				// Replace image with its file content and size toggle.
+          if ($isImgFileNameValid == 2)
+          {
+            global $PhotoPub;
+						$flipboxMarkupHead = substr($flipboxMarkup,0,strpos($flipboxMarkup,$imgUrl));
+						$flipboxMarkupEnd = substr($flipboxMarkup,strlen($flipboxMarkupHead)+strlen($imgUrl));
+						$flipboxMarkup = $flipboxMarkupHead.getImgFileContent($PhotoPub.$imgFilename).$flipboxMarkupEnd;
+					}
+
+  				// Replace image with its file content and explicit scale.
+          else if ($isImgFileNameValid == 3)
+          {
+            global $PhotoPub;
+            $imgPathSymPos = $pos - (strlen($imgUrl) - $extLen);
+            $percentSymPos = strrpos(substr($roughInterceptImgUrl,0,$imgPathSymPos-1),'%');
+            $scale = substr($roughInterceptImgUrl, $percentSymPos+1, $imgPathSymPos-$percentSymPos-2);
+						$flipboxMarkup = '<img '.$scale.' src='.getImgFileContent($PhotoPub.$imgFilename).'></img>';
+					}
+
+          $flipboxMarkup = Keep($flipboxMarkup);
           $text = substr_replace($text, $flipboxMarkup, $pos-strlen($imgUrl)+$extLen, strlen($imgUrl));
-        
           $pos = $pos+strlen($flipboxMarkup)-strlen($imgUrl)+$extLen;
           $imgCount++;
         }
@@ -888,38 +903,31 @@ function replaceImgUrlWithSizeToggle($text)
       }
       else { break; }
     }
-
   }
-  
-  // This is very ugly... 
-  // Add the action of setting the cursor style in the event of window.onload
+
+  // Add the action of setting the cursor style
   global $HTMLHeaderFmt;
   $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
-  function setImgCursor()
-  {
-  ";
+  window.addEventListener('load', function(){";
   for ($i=0;$i<$imgCount;$i++)
   {
     $j = $i+1;
-    $HTMLHeaderFmt[] .= "document.getElementById('_isti$j').style.cursor = 'pointer';
-    ";
+    $HTMLHeaderFmt[] .= "document.getElementById('_isti$j').style.cursor = 'pointer';";
   }
-  $HTMLHeaderFmt[] .= "}
-
-  window.addEventListener('load', setImgCursor, false);
-
+  $HTMLHeaderFmt[] .= "}, false);
   --></script>";
-  
+
   return $text;
 }
 
-// Return the full URL of images put in the diary photo directory based on the image filename.
-// The filename has to follow a specific format as YYYYMMDD_HHMMSS.jpg
+// Return the full URL of images put in the diary photo directory based on the image
+// filename, and the given year/month.
+// The filename has to follow a specific format, e.g., YYYYMMDD_HHMMSS.jpg or DD_X...XX.jpg
 // An empty string is returned if the format doesn't check.
-function getDiaryImgUrl($img)
-{  
+function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
+{
   // Check if it has the correct image extension.
-  $supportImgExtList = array('.jpg', '.png', '.jpeg');
+  $supportImgExtList = array('.jpg', '.png', '.jpeg', '.mp4');
   $NUM_IMGEXT = count($supportImgExtList);
   $EXT_LEN = 0;
   for ($iExt=0;$iExt<$NUM_IMGEXT;$iExt++)
@@ -934,92 +942,38 @@ function getDiaryImgUrl($img)
   }
   
   // No valid extension found.
-  if ($EXT_LEN == 0) { return ""; }
+  if ($EXT_LEN == 0)
+  {
+    if ($img != "" && $img != "..")
+    { echo "Unexpected extension for \"$img\" in getDiaryImgUrl()!<br>"; }
+    return "";
+  }
 
   // Format check by examining the underscore and the character right before the filename. 
-  // "sameTimeChar" is to handle photos taken at exactly the same time so that the file name
-  // is appended by an English letter.
-  $isImgFileNameValid = 0;
   $IMG_NAME_LEN = strlen("YYYYMMDD_HHMMSS");
-  $sameTimeChar = "";
   if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
   {
-    if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN)
-    {
-      $isImgFileNameValid = 1;
-    }
-    else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1)
-    {
-      $isImgFileNameValid = 1;
-      $sameTimeChar = $img[$IMG_NAME_LEN];
-    }
-    else { return ""; }
+    if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN) {}
+    else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1) {}
+    else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
   }
   // For downloaded images that cannot be automatically renamed, D_X.jpg DD_X.jpg are valid 
   // image name format. The length and type of "X" is not limited, i.e., can be non-numeric.
   else if ($img[2] == "_" && is_numeric($img[0]) && is_numeric($img[1]) ) { $isImgFileNameValid = 1; }
   else if ($img[1] == "_" && is_numeric($img[0])) { $isImgFileNameValid = 1; }
-  else { return ""; }
+  else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
 
-  if ($isImgFileNameValid == 1)
-  { 
-    global $diaryImgDirURL;
-    global $pagename;
-    $diaryYear = substr($pagename,5,4);  
-    $diaryMonth = (string)(int)substr($pagename,9,2);
-
-    $imgUrl = $diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img;
-
-    return $imgUrl;
-  }
-  else { return ""; }
+	global $diaryImgDirURL;
+	
+	if (strcasecmp($extension,'.mp4') == 0)
+	{ $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
+	else
+	{ $imgUrl = $diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img; }
+	
+	return $imgUrl;
 }
 
-// Return the full URL of video put in the diary photo directory based on the video filename.
-// The video size setting is in "config.php"
-// The filename has to follow a specific format as YYYYMMDD_HHMMSS.mp4
-// An empty string is returned if the format doesn't check.
-function getDiaryVideoUrl($img)
-{  
-  // Check if it has the correct video extension.
-  $pos = stripos($img, ".mp4");
-  if ($pos === false) { return ""; }
-
-  // Format check by examining the underscore and the character right before the filename. 
-  // "sameTimeChar" is to handle photos taken at exactly the same time so that the file name
-  // is appended by an English letter.
-  $isImgFileNameValid = 0;
-  if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
-  {
-    if (strlen($img) == 19)
-    {
-      $isImgFileNameValid = 1;
-    }
-    else { return ""; }
-  }
-  // DD_X.mp4 is also a valid file name format
-  // And the length of "X" is not limited.
-  else if ($img[2] == "_") { $isImgFileNameValid = 1; }
-  else if ($img[1] == "_") { $isImgFileNameValid = 1; }
-  else { return ""; }
-
-  if ($isImgFileNameValid == 1)
-  {        
-    // Take care of the vertical video heading.
-    global $diaryImgDirURL;
-    
-    global $pagename;
-    $diaryYear = substr($pagename,5,4);  
-    $diaryMonth = (string)(int)substr($pagename,9,2);
-
-//    $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth.$img." :)";
-   $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)";
-    
-    return $imgUrl;
-  }
-  else { return ""; }
-}
-
+// Return 3 if this is onThisDay page
 // Return 2 if this is a diary page
 // Return 1 if this is a diary year page
 // Return 0 otherwise
@@ -1027,6 +981,8 @@ function isDiaryPage()
 {
   global $pagename;
 
+  if (strcasecmp($pagename,"Main.OnThisDay") == 0) { return 3; }
+  
   $pageGroup = substr($pagename,0,5);
   if (strcasecmp($pageGroup, "Main.") != 0) { return 0; } 
 
@@ -1048,23 +1004,55 @@ function isDiaryPage()
   else { return 0; }
 }
 
+function isFolderReadableByUserWWW($dir)
+{
+  $perms = fileperms($dir);
+
+  // If readable by everyone 
+  if ($perms & 0x0004) { return true; }
+  else if (posix_getpwuid(fileowner($dir))['name'] == "_www")
+  {
+    // If readable by user
+    if ($perms & 0x0100)
+    { return true; }
+  }
+  else if (posix_getpwuid(filegroup($dir))['name'] == "_www")
+  {
+    // If readable by group
+    if ($perms & 0x0020)
+    { return true; }
+  }
+  
+  return false;
+}
+  
 // For diary pages, automatically read the corresponding photo directory and list the file
 // names of all the images and videos under their recorded date.
 // The year and month of the file name of the image will be ignored actually.
-function pasteImgURLToDiary($text)
+function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 {
-  if (isDiaryPage() != 2) { return $text; }
-
-  global $pagename;
+  $pageType = isDiaryPage();
+  if ($pageType != 2 && ($pageType!=3 || $diaryYear=="")) { return $text; }
   
-  $diaryYear = substr($pagename,5,4);
-  $diaryMonth = (string)(int)substr($pagename,9,2);
+  global $pagename;
 
-  // This function is applied since Nov. 2015
-  if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+11)) { return $text; }
+  if ($diaryYear == "")
+  {
+		$diaryYear = substr($pagename,5,4);
+		$diaryMonth = (string)(int)substr($pagename,9,2);
+  }
+    
+  // This function is applied since Apr. 2015
+  if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+4)) { return $text; }
   
   // Read the photo directory of this month
   $dir = "../Photo/".$diaryYear."/".$diaryMonth;
+  
+  if (!file_exists($dir)) { return $text; }
+
+  if (!isFolderReadableByUserWWW($dir))
+  { echo "Permission for diary photo folder incorrect. It has to be readable by user \"_www\"!<br>"; return $text; } 
+  
   $file = @scandir($dir);
   $N_FILE = count($file);
   
@@ -1074,37 +1062,27 @@ function pasteImgURLToDiary($text)
   {
     // Check if this is a valid image file with correct filename format.
     $imgName = $file[$iFile];
-    $imgUrl = getDiaryImgUrl($imgName);
-    if ($imgUrl == "")
-    {
-      $imgUrl = getDiaryVideoUrl($imgName);
-      if ($imgUrl == "") { continue; }
-    }
+    $imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);
+
+    if ($imgUrl == "") { continue; }
   
     // Get its date & hour
-    // If the 3rd or 2nd position is "_", it's a downloaded pic with manually typed filename.     
-    // Else the file name is automatically given as YYYYMMDD_HHMMSS.jpg
-    if ($imgName[2] == "_")
-    {
-      $imgDay = (int)substr($imgName,0,2);
-      $imgHour = (int)substr($imgName,3,2);
-    }
-    else if ($imgName[1] == "_")
-    {
-      $imgDay = (int)substr($imgName,0,1);
-      $imgHour = (int)substr($imgName,2,2);
-    }
-    else
+    // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
+    // Otherwise the number before the underscore is the date
+    if ($imgName[8] == "_")
     {
       $imgDay = (int)substr($imgName,6,2);
       $imgHour = (int)substr($imgName,9,2);
     }
-    
+    else
+    {
+      $pos = strpos($imgName,"_");
+      $imgDay = (int)substr($imgName,0,$pos);
+    }
+
     // Before 6am, it's still the same day...    
-    // If the image is a downloaded one with a manually typed filename, the 6am rule 
-    // is not applied.
-    if ($imgName[2] == "_" || $imgName[1]) { $imgHour = ($imgHour+6) % 24; }
-    if ($imgHour<6)
+    // This rule applies to images with filename format YYYYMMDD_HHMMSS.jpg only
+    if ($imgName[8] == "_" && $imgHour<6)
     {
        if ($imgDay>1)
        {
@@ -1130,7 +1108,13 @@ function pasteImgURLToDiary($text)
     }
     else { $dayImgList[$imgDay] .= $imgUrl." "; }
   }
-
+  
+  // Remove the ending mark added by default first, then remove all the empty spaces
+  // and newlines at the end of the text. Finally we add two newlines to facilitate 
+  // the following script.
+  $text = rtrim(str_replace('(:groupfooter:)', '', $text));
+  $text .= "\n\n";
+  
   for ($iDay=1; $iDay<=31; $iDay++)
   {
     if ($dayImgList[$iDay] !== "")
@@ -1141,99 +1125,52 @@ function pasteImgURLToDiary($text)
       {
         $dayEndPos = strpos($text,"\n\n",$dayHeadPos);
         if ($dayEndPos !== false)
-        {
-          $text = substr_replace($text, "\n** ".$dayImgList[$iDay]."\n", $dayEndPos, 0);
-        }
-        // Deal with the last day of the month without enough newline.
-        else
-        { $text .= "\n** ".$dayImgList[$iDay]."\n"; }
+        { $text = substr_replace($text, "\\\\\n".$dayImgList[$iDay]."\n", $dayEndPos, 0); }
       }
     }
   }
-  
-  return $text;
+
+  return $text.'(:groupfooter:)';
 }
 
 /****************************************************************************************/
 
-// Java logout timer is more accommodative if physically connected to the home wifi BS and
-// accessed locally.  
-// Sensitive page rule is not applied if connected to the home BS
-$_javaLogoutTimer = $javaLogoutTimer;
-if ($isAtHome == 0)
-{ 
-  // Apply the sensitive page timer to diary pages
-  if (isDiaryPage() != 0) { $_javaLogoutTimer = $javaSensitivePageLogoutTimer; }
-  
-  // Apply the sensitive page timer to specified sensitive pages
-  else
-  {
-    for ($i=0;$i<count($sensitivePage);$i++)
-    {  
-      if (strcasecmp($sensitivePage[$i],substr($pagename,0,strlen($sensitivePage[$i]))) == 0)
-      {
-        $_javaLogoutTimer = $javaSensitivePageLogoutTimer;
-        break;
-      }
-    }
-  }
+// Configure and add pageTimer.js. To be called in pmwikiAuth()
+function addPageTimerJs($countdownTimer)
+{
+	// Logout is called 5 mins after the computer standby.
+	// Has to be > countDownTimerUpdateInterval
+	$standbyLogoutDuration = 300;
+	
+	// Java logout timer update period.
+	$countDownTimerUpdateInterval = 1;
+
+  global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
+	$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/PageTimer.js'></script>
+	<script type='text/javascript'>
+	PageTimer.TIMER_EXP_DURATION = $countdownTimer;
+	PageTimer.STANDBY_LOGOUT_DURATION = $standbyLogoutDuration;
+	PageTimer.TIMER_UPDATE_TICK = $countDownTimerUpdateInterval;
+	PageTimer.pagename = '$pagename';
+	PageTimer.ScriptUrl = '$ScriptUrl';
+	PageTimer.action = '$action';
+	</script>";
 }
-
-$timerJavaSrc = "  
-
-//import java.util.Calendar;
-//Date dateobj = new Date();
-
-  var TIMER_EXP_DURATION = $_javaLogoutTimer;
-  var timer;
-
-  function startTimer()
-  {
-      display = document.querySelector('#ID_LOGOUTTIMER');
-      
-      var clock = new Date();
-      timer = Math.ceil(clock.getTime()/1000) + TIMER_EXP_DURATION;
-      
-      setInterval(function ()
-      {
-        var clock = new Date();          
-        var diff = timer - Math.ceil(clock.getTime()/1000);
-
-        if (diff < 0)
-        {
-          httpPageName = 'http://"."$pagename"."';
-          window.location = httpPageName;
-        }
-        
-        hour = parseInt(diff / 3600, 10);
-        minutes = parseInt((diff-hour*3600) / 60, 10);
-        seconds = parseInt(diff % 60, 10);
-
-        hour = hour < 10 ? \"0\" + hour : hour;
-        minutes = minutes < 10 ? \"0\" + minutes : minutes;
-        seconds = seconds < 10 ? \"0\" + seconds : seconds;
-
-        display.textContent = hour +\":\" + minutes + \":\" + seconds;
-    }, 1000);
-  }";
-
-$HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
-  ".$timerJavaSrc."
-  
-  window.addEventListener('load', startTimer, false);
-
-  function resetJavaTimer() { var clock = new Date(); timer = Math.ceil(clock.getTime()/1000) + TIMER_EXP_DURATION; }
-  window.addEventListener('focus', resetJavaTimer, false);
-  window.addEventListener('scroll', resetJavaTimer, false);
-  window.addEventListener('click', resetJavaTimer, false);
-  window.addEventListener('keypress', resetJavaTimer, false);
-  --></script>";
-  
 /****************************************************************************************/
-  
-// Remember the text edit area scroll position.
-if ($action == 'edit')
-{ $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/rememberScroll.js'></script>"; }
+
+$lastEditMark = ' {EDIT}';
+
+if ($action == 'edit' || $action == 'browse' || $action == 'diff')
+{
+	// Memorize and set the scroll position.
+	$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
+	<script type='text/javascript'>
+	ScrollPositioner.pagename = '$pagename';
+	ScrollPositioner.lastEditMark = '$lastEditMark';
+	ScrollPositioner.stationName = '$AuthorLink';
+	ScrollPositioner.action = '$action';
+	</script>";
+}
 
 /****************************************************************************************/
 
@@ -1288,17 +1225,18 @@ $ENC_KEYWORD = "ENC";
 $ENC_KEYWORD_LEN = strlen($ENC_KEYWORD);
 // Set the length of the initialization vector based on encryption method.
 $IV_LEN = openssl_cipher_iv_length($OPENSSL_METHOD);
+$SALT_LEN = 64;
+$PBKDF2_ITERATION_FOR_AES = 1000;
+$PBKDF2_ITERATION_FOR_MASTER_KEY = 100000;
+$NUM_RECENTPAGEAESKEY = 10;
 
+// See if the given text has been encrypted by checking the enc keyword
 function isEncryptStr($text)
 {
   global $ENC_KEYWORD, $ENC_KEYWORD_LEN;
   	
-  // See if the given text has been encrypted by checking the enc keyword
-  // "CRC" is another keyword which means that the string is first protected by CRC before
-  // the encryption
   $heading = substr($text,0,$ENC_KEYWORD_LEN);
   if ($heading === $ENC_KEYWORD) { return 1; }
-  else if ($heading === "CRC") { return 2; }
   else { return 0; }
 }
 
@@ -1331,64 +1269,155 @@ function noEncryptPage($pagename)
 */
 }
 
+// Derive a key using PBKDF2 with the input $key and $salt. The derived key is used as
+// the AES key for later page encryption/decryption.
+function derivePageAESKey($key, $salt)
+{
+	// Derive the encryption key and cache it.
+		global $PBKDF2_ITERATION_FOR_AES;
+		$iteration = $PBKDF2_ITERATION_FOR_AES;
+		$AES_KEY = hash_pbkdf2("sha512", $key, $salt, $iteration, 0, true);
+
+//echo "PAGE KEY generated for password: $key<br>";
+//echo "PAGE KEY generated<br>";
+
+    return $AES_KEY;
+}
+
+// Get recently used encryption key by checking the corresponding cache. Return
+// Key if found
+// empty string otherwise
+function getRecentPageAESKey($arrayIndex)
+{  
+  // If the key was recently used and cached, return it directly.
+  if (@array_key_exists($arrayIndex, $_SESSION['recentPageAESKey']))
+  { return $_SESSION['recentPageAESKey'][$arrayIndex]; }
+  else { return ""; }
+}
+
+// Cache the recently used encryption key. If the key already exists in the cache, move
+// it to the top of the cache. Otherwise insert it at the top of the cache.
+function cacheRecentPageAESKey($AES_KEY, $arrayIndex)
+{
+  @session_start();
+  if (@array_key_exists($arrayIndex, $_SESSION['recentPageAESKey']))
+  {
+    // Move the key to the top
+    $_SESSION['recentPageAESKey'] = array($arrayIndex => $_SESSION['recentPageAESKey'][$arrayIndex]) + $_SESSION['recentPageAESKey'];
+  }
+  else
+  {
+    // Cache the key
+    $_SESSION['recentPageAESKey'] = (!isset($_SESSION['recentPageAESKey'])) ? 
+    array($arrayIndex => $AES_KEY) : array($arrayIndex => $AES_KEY) + $_SESSION['recentPageAESKey'];
+    global $NUM_RECENTPAGEAESKEY;
+    if (count($_SESSION['recentPageAESKey']) > $NUM_RECENTPAGEAESKEY)
+    { array_pop($_SESSION['recentPageAESKey']); }
+  }
+  @session_write_close();
+}
+
+// Get recently decrypted text by checking the corresponding cache. Return
+// the decrypted text if found
+// empty string otherwise
+function getRecentDecryptText($arrayIndex)
+{
+  if (@array_key_exists($arrayIndex, $_SESSION['recentDecryptText']))
+  {
+//echo "get cached decrypted text<br>";
+    return $_SESSION['recentDecryptText'][$arrayIndex];
+  }
+  else { return ""; }
+}
+
+// Cache the recently decrypted text for a few special pages that are loaded every time. 
+// The special page is identified by finding a corresponding string in the decrypted text.
+// If the string is found, which means this is a special page, remove the corresponding 
+// entry in the cache if it exists; then put the new item to the top of the cache.
+function cacheRecentDecryptText($decryptText, $arrayIndex)
+{
+  $sitePagename = array("\nname=Main.GroupAttributes\n", "\nname=Site.SideBar\n", "\nname=Site.PageActions\n", "\nname=Site.Editform\n");
+  $NUM_SITEPAGE = count($sitePagename);
+  
+  for ($i=0;$i<$NUM_SITEPAGE;$i++)
+  {
+		if (stripos($decryptText, $sitePagename[$i]) !== false)
+		{
+			@session_start();
+
+		  // Run through the cache to see if the keyword has been registered already, if yes 
+		  // remove the entry
+      $textArrayValue = @array_values($_SESSION['recentDecryptText']);
+			for ($j=0;$j<count($_SESSION['recentDecryptText']);$j++)
+			{
+				if (strpos($textArrayValue[$j], $sitePagename[$i]) !== false)
+				{ unset($_SESSION['recentDecryptText'][ array_search($textArrayValue[$j], $_SESSION['recentDecryptText']) ]); }
+			}
+    
+      // Put the input decrypted text to the top of the cache.
+			$_SESSION['recentDecryptText'] = (!isset($_SESSION['recentDecryptText'])) ? 
+			array($arrayIndex => $decryptText) : array($arrayIndex => $decryptText) + $_SESSION['recentDecryptText'];	
+			if (count($_SESSION['recentDecryptText']) > $NUM_SITEPAGE)
+			{ array_pop($_SESSION['recentDecryptText']); }
+			@session_write_close();
+			
+			return true;
+		}
+  }
+  
+  return false;
+}
+
 // String encryption. The content of the encrypted string will be preceded by a predefined
 // keyword for indicating the fact that it has been encrypted, followed
-// by its encryption method, which is also encrypted using a one-way encryption mechanism,
-// followed by the initialization vector used for encryption.
+// by its encryption method, which is hashed, 
+// followed by the salt used to generate the encryption key,
+// followed by the initialization vector used to generate the encryption key.
 // Return
 // encrypted text if successfully encrypted;
 // false on error, already encrypted, or empty string provided.
-function encryptStr($text)
+function encryptStr($text, $key = "")
 {
-  // Get the pass phrase. It should be set right after a successful login.
-  global $OPENSSL_PASS;
-  if ($OPENSSL_PASS == "") { return false; }
-//  { echo "empty pass no encrypt for $file! "; return false; }
-
-  global $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
-
-  // Configure whether CRC is used for checking if the encryption key is correct.
-  $EnableCRC = 0;
-  
   if ($text == "") { return false; }
-  else
-  {    
-    // Don't encrypt the page if it's been encrypted already.
-    if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
-    else
-    {
-      // Using pagename as part of the passphrase gives me some trouble. Give up this 
-      // feature for the time being.
-      $pagename = "";
-      
-      // Generate a random initialization vector. It is then put before the encrypted  
-      // text.
-      global $IV_LEN;
-      $iv = openssl_random_pseudo_bytes($IV_LEN);
-      
-      // Calculate CRC if enabled. Prepend the text with the CRC.
-      if ($EnableCRC) { $text = (string)crc32($text)."\n".$text; }
-
-      // Compute the encryption key. The encryption key for a specific page is set to the 
-      // following pass phrase appended by its pagename and then hashed using crypt() with
-      // crypt($OPENSSL_METHOD) being its salt.
-      $cryptMethod = crypt($OPENSSL_METHOD);
-      $salt = $cryptMethod;  
-      $encryptionKey = crypt($OPENSSL_PASS.strtoupper($pagename), $salt);
- 
-      $encryptText = openssl_encrypt ($text, $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
-      if ($encryptText === false) { Abort("$pagename encryption error!"); }
-
-      // If CRC is prepended before encrypting, prepend the encrypted text with "CRC"; 
-      // otherwise prepend it with a predefined keyword for encryption, currently set to
-      // "ENC" and should have the same length with "CRC".
-      if ($EnableCRC) { $KEYWORD = "CRC"; }
-      else { $KEYWORD = $ENC_KEYWORD; }
-      $encryptText = $KEYWORD."\n".$cryptMethod."\n".$iv.$encryptText;
-      
-      return $encryptText;
-    }
+  
+  // If the passphrase for encryption is not provided, get the passphrase from cache, 
+  // this is the intended operation mode. The cache should be set right after a successful
+  // login.
+	if ($key == "")
+	{
+    if (!isset($_SESSION['MASTER_KEY'])) { return false; }
+    else { $key = $_SESSION['MASTER_KEY'][0]; }
   }
+
+  // Don't encrypt the text if it's been encrypted already.  
+  global $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
+  if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
+
+	// Generate a random salt for deriving the encryption key and IV
+	global $SALT_LEN;
+	$salt = openssl_random_pseudo_bytes($SALT_LEN);
+
+	// Derive encryption key based on the salt
+	$AES_KEY = derivePageAESKey($key, $salt);
+	
+	// Derive IV based on the salt
+	global $IV_LEN;
+	$iv = openssl_random_pseudo_bytes($IV_LEN);
+	
+	$encryptText = openssl_encrypt ($text, $OPENSSL_METHOD, $AES_KEY, OPENSSL_RAW_DATA, $iv);
+	if ($encryptText === false) { Abort("$pagename encryption error!"); }
+	
+	$KEYWORD = $ENC_KEYWORD;      
+	$cryptMethod = crypt($OPENSSL_METHOD);
+	// Base64 encode the output so that we can copy/paste the ciphertext for debugging 
+	// purpose.
+	$encryptText = $KEYWORD."\n".$cryptMethod."\n".base64_encode($salt.$iv.$encryptText);
+	
+  // Cache the AES key for quick access later. Using the concatenated string "$key.$salt"
+  // as the array index.
+  cacheRecentPageAESKey($AES_KEY, $key.$salt);
+  
+	return $encryptText;
 }
 
 // String decryption. Decrypt the string if the keyword for encryption has been found,
@@ -1397,66 +1426,80 @@ function encryptStr($text)
 // "$text" if not encrypted, i.e., "$text" is plain text/empty passphrase provided
 // 0 if encrypted but empty passphrase provided
 // -1 for decryption error, e.g., wrong key or settings
-function decryptStr($text)
+function decryptStr($text, $key = "")
 {
   global $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
 
-  // See if this page has been encrypted   
+  // Return the original text if $text is unencrypted
   if (isEncryptStr($text) == false) { return $text; }
-  else
+
+  // If the passphrase for encryption is not provided, get the passphrase from cache, 
+  // this is the intended operation mode. The cache should be set right after a successful
+  // login.
+  if ($key == "")
   {
-    $cryptMethodLen = strpos($text,"\n",$ENC_KEYWORD_LEN+1) - $ENC_KEYWORD_LEN - 1; // -1 is for \n
-    $cryptMethod = substr($text,$ENC_KEYWORD_LEN+1,$cryptMethodLen); 
+		if (!isset($_SESSION['MASTER_KEY'])) { return 0; }
+		else { $key = $_SESSION['MASTER_KEY'][0]; }
+  }   
+  
+	$cryptMethodLen = strpos($text,"\n",$ENC_KEYWORD_LEN+1) - $ENC_KEYWORD_LEN - 1; // -1 is for \n
+	$cryptMethod = substr($text,$ENC_KEYWORD_LEN+1,$cryptMethodLen); 
 
-    // Decrypt the page if the encryption method checks
-    if (crypt($OPENSSL_METHOD,$cryptMethod) !== $cryptMethod)
-    { echo "$file was encrypted using a different cipher!"; return -1; }
-    else
-    {
-      // Using pagename as part of the passphrase gives me some trouble. Give up this 
-      // feature for the time being.
-      $pagename = "";
-        
-      // Retrieve the initialization vector.
-      global $IV_LEN;
-      $iv = substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2, $IV_LEN);
+	// Decrypt the page if the encryption method checks
+	if (crypt($OPENSSL_METHOD,$cryptMethod) !== $cryptMethod)
+	{ echo "$file was encrypted using a different cipher!"; return -1; }
+	
+	$text = substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2);
+	$text = base64_decode($text);
+	
+	// Retrieve the salt.
+	global $SALT_LEN;
+	$salt = substr($text,0,$SALT_LEN);
+	
+	// See if the recently used salt equals the retrieved salt
+	// If found, use the cached derived key and skip the follow KDF
+	$decryptText = getRecentDecryptText($key.$salt);
+	if ($decryptText != "") { return $decryptText; }
+	   
+	// Retrieve the initialization vector.
+	global $IV_LEN;
+	$iv = substr($text,$SALT_LEN,$IV_LEN);
 
-      // Retrieve the salt and compute the encryption key; decrypt.
-      $salt = $cryptMethod;
-      global $OPENSSL_PASS;
-      if ($OPENSSL_PASS == "") { return 0; }
-      $encryptionKey = crypt($OPENSSL_PASS.strtoupper($pagename),$salt);
-      $decryptText = openssl_decrypt (substr($text,$ENC_KEYWORD_LEN+$cryptMethodLen+2+$IV_LEN), $OPENSSL_METHOD, $encryptionKey, OPENSSL_RAW_DATA, $iv);
-      if ($decryptText === false)
-      { echo "$pagename decryption fails at openssl_decrypt(). Possibly a wrong passphrase!"; return -1; }
+	// Derive the encryption key
+  $AES_KEY = getRecentPageAESKey($key.$salt);
+	if ($AES_KEY == "")	{	$AES_KEY = derivePageAESKey($key, $salt); }
 
-      // Check CRC to see if the correct passphrase is used.
-      if (isEncryptStr($text) == 2)
-      {
-        $pos = strpos($decryptText,"\n");
-        $crc = substr($decryptText,0,$pos);          
-        $decryptText = substr($decryptText,$pos+1);
-          
-        if ((string)crc32($decryptText) != $crc)
-        { echo "CRC doen't check. $file was encrypted using a different passphrase!"; return -1; }                  
-      }
+	// Get the cached recently decrypted text using the salt as the array key.
+	// Basically this trades memory off the CPU usage.
+	$decryptText = openssl_decrypt(substr($text,$SALT_LEN+$IV_LEN), $OPENSSL_METHOD, $AES_KEY, OPENSSL_RAW_DATA, $iv);
+  
+	if ($decryptText === false)
+	{
+	  global $pagename;
+	  echo "Using key: $key <br>";
+	  echo "$pagename decryption fails at openssl_decrypt(). Possibly a wrong passphrase!<br>"; return -1;
+	}
 
-      return $decryptText;        
-    }
-  }
+	// Cache the decrypted text, or the AES KEY
+	if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
+	else
+	{ cacheRecentPageAESKey($AES_KEY, $key.$salt); }
+
+	return $decryptText;
 }
 
 /****************************************************************************************/
 
-// Reconstruct pageindex if nonexistent by performing an empty search.
+// Reconstruct pageindex by first deleting the current file and then performing an empty
+// search.
+$FmtPV['$reconstructPageindex'] = 'reconstructPageindex()';
 function reconstructPageindex()
 {
   global $PageIndexFile;
-  if (file_exists($PageIndexFile) === false)
-  {  
-    $opt['action'] = 'search';
-    MakePageList("Main.Homepage", $opt, 0, 1);
-  }
+  if (file_exists($PageIndexFile)) { unlink($PageIndexFile); }
+  
+	$opt['action'] = 'search';
+	MakePageList("Main.Homepage", $opt, 0, 1);
 }
 
 // Check the last time we modify this page, and the last time we update the page index for this page
@@ -1471,26 +1514,36 @@ function updatePageindexOnBrowse($pagename, $page)
   global $Now;
   $pageLastModTime = $page['time'];
   $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
-
+  
   // See if the time attribute has been set. If not, then this page is most likely invalid.
   if (isset($pageLastModTime) && noEncryptPage($pagename) == 0)
   {
     // See if the "lastPageindexUpdateTime" has been set. If not, then this page is from 
     // previous releases. Update the pageindex depending on its last modified time.
-    // On 2nd thought, normally lastPageindexUpdateTime should be set already when viewed
-    if (!isset($lastPageindexUpdateTime) || $pageLastModTime <= $lastPageindexUpdateTime) {}
+    // On 2nd thought, normally lastPageindexUpdateTime should be set already when viewed   
+    if (!isset($lastPageindexUpdateTime) || ($pageLastModTime < $lastPageindexUpdateTime)) {}
+    
     else
-    {
+    {  
+      // Free riding the PostRecentChanges functionality here. It appears that the 2nd and
+      // 3rd input parameters are not used at all in PostRecentChanges().
+      PostRecentChanges($pagename, NULL, NULL);
+
       // Update pageindex file.
       Meng_PageIndexUpdate($pagename);
 
+      // Get the full page file content
       $pageContent = fileGetContentsWait($file);
       $pageContent = decryptStr($pageContent);
       if ($pageContent === -1) { echo "Read page error on updatePageindexOnBrowse()"; return; }
 
       // This field should exist according to the parent if else condition.
       $pos = strpos($pageContent,$lastPageindexUpdateTime);
-      if ($pos === false) { echo "In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!"; }
+      if ($pos === false)
+      {
+//        echo "In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!";
+        return ;
+      }
       else { $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime)); }
 
       global $EnableEncryption;      
@@ -1506,25 +1559,315 @@ function updatePageindexOnBrowse($pagename, $page)
 
 /****************************************************************************************/
 
-// Cookie verification
+// The change password process. Called within PmWikiAuth()
+function changePassword($PageStartFmt, $PageEndFmt)
+{
+  $passwd = $_POST['passwdVerify'];
+  $newPasswd = $_POST['newPasswd'];
+  $newPasswdConfirm = $_POST['newPasswd2'];
 
-//$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/userVerify.js'></script>";
+  // If the current password entered last time matches, prompt for entering new password.
+  if ($passwd != "" && isPasswdCorrect($passwd))
+  {
+    $AuthPromptFmt = array(&$PageStartFmt,
+    "<p><b></b></p>
+     <form name='authform' method='post'>
+     Enter new PW: <input type='password' name='newPasswd' /><br><br>
+     
+     Confirm PW: <input hspace='19' type='password' name='newPasswd2' />
+     <input type='submit' value='OK'/></form>
+            
+     <script language='javascript' type='text/javascript'>
+        document.authform.newPasswd.focus() </script>", &$PageEndFmt);
+        
+    return  $AuthPromptFmt;
+  }
+  // Else if the new password and confirmation entered last time match, begin the change
+  // password procedures.
+  else if ($newPasswd != "" && ($newPasswd === $newPasswdConfirm))
+  {
+    // Create a folder named backup_pwChange_date under the local wiki.d
+    $CurrentTime = strftime('%Y%m%d%H%M%S', time());
+    $backFolder = "wiki.d/backup_pwChange_$CurrentTime";
+    if (mkdir($backFolder) === false)
+    { Abort("Error creating backup folder at changing password!"); }
+    $log .= "Backup folder create succeeded\n";
+    $logFile = $backFolder.'/log.txt';
+    
+    $new_MASTER_KEY = deriveMasterKey($newPasswd);
+    
+    // For each file in $WorkDir, copy it to the backup folder 
+    // get its content, decrypt then encrypt using the new password
+    global $WorkDir;
+    $pagelist = scandir($WorkDir);
+    
+    $N_FILE = count($pagelist);
+    for ($iFile=1; $iFile<=$N_FILE+1; $iFile++)
+    {
+      // The pageindex file are appended to the end of the file list.
+      if ($iFile == $N_FILE+1) { $pagelist[$iFile] = '.pageindex'; $file = 'wiki.d/'.$pagelist[$iFile]; }
+      else { $file = $WorkDir.'/'.$pagelist[$iFile]; }
 
-/****************************************************************************************/
+      // Skip processing .htaccess. Somehow on MAC one of the file has an empty filename.
+      if ($pagelist[$iFile] === ".htaccess")
+      {
+      	$log .= "File \"$file\" skipped\n";
+        continue;
+      }
+      else if ($pagelist[$iFile] == "") { continue; }
 
-// Insert jpg
-/*
-$IMG_PATH = "../../../";
+      // On read error, simply record it in the log file then continue. Abort for pretty
+      // much all other errors.
+      $pageText = @file_get_contents($file);
+      if ($pageText === false)
+      {
+        $log .= "File \"$file\" read error!\n";
+        continue;
+      }
+      
+      // Decrypt and back up the orginial pagefile if it's currently encrypted.
+      $isEncrypt = isEncryptStr($pageText);
+      if ($isEncrypt == true)
+      {
+      	$log .= "File \"$file\" appears to have been encrypted\n";
+        $pageText = decryptStr($pageText);
+        if ($pageText===-1 || $pageText ===0)
+        {
+        	$log .= "File \"$file\" decrypt error!\n";
+          filePutContentsWait($logFile, $log);
+          Abort("Error decrypting \"$file\" at changing password!");
+        }
+        $log .= "File \"$file\" decrypt succeeded\n";
+        
+        // Backup is allowed if the original pagefile is encrypted. 
+        // Pageindex doesn't need to be backed up.
+        // Still, please remove them on a regular basis for better security.
+        if(copy($file, $backFolder.'/'.$pagelist[$iFile]) === false)
+        {
+        	$log .= "File \"$file\" backup error!\n";
+          filePutContentsWait($logFile, $log);
+          Abort("Error backing up \"$file\" at changing password!");
+        }
+        else if ($pagelist[$iFile] !== ".pageindex")
+        { $log .= "File \"$file\" back up succeeded\n"; }
+      }
+      else
+      { $log .= "File \"$file\" appears to be in plain text\n"; }
+      
+      // Encrypt text.
+      global $EnableEncryption;
+      if ($EnableEncryption == 1)
+      {
+        $pageText = encryptStr($pageText, $new_MASTER_KEY);
+        if ($pageText === false)
+        {
+        	$log .= "File \"$file\" re-encrypt error!\n";
+          filePutContentsWait($logFile, $log);
+        	Abort("Error re-encrypting \"$file\" at changing password!");
+        }
+        
+        $log .= "File \"$file\" re-encrypt succeeded\n";
+      }
+      
+      // Replace the pagefile if it has been modified, i.e., it was originally encrypted
+      // or has been re-encrypted using the new password
+      if ($isEncrypt == true || $EnableEncryption == 1)
+      {
+        filePutContentsWait($file, $pageText);
+        chmodForPageFile($file);
+        
+        $log .= "File \"$file\" write succeeded\n";
+      }
+    }
+    
+    @unlink($backFolder.'/.pageindex');
+    
+    $log .= "Passwd change completed!\n";
+    filePutContentsWait($logFile, $log);
 
-function data_uri($file, $mime) 
-{  
-  $contents = file_get_contents($file);
-  $base64   = base64_encode($contents); 
-  return ('data:' . $mime . ';base64,' . $base64);
+    HandleLogoutA("Main.HomePage");
+  }
+  // Prompt for entering the current password. 
+  else
+  {  
+    $AuthPromptFmt = array(&$PageStartFmt,
+    "<p><b></b></p>
+     <form name='authform' method='post'>
+     Current PW: <input type='password' name='passwdVerify' />
+     <input type='submit' value='OK'/></form>
+     <script language='javascript' type='text/javascript'><!--
+        document.authform.passwdVerify.focus() //--></script>", &$PageEndFmt);
+    
+    return  $AuthPromptFmt;
+  }
 }
 
-$test = data_uri($IMG_PATH.'20151202_999999.jpg','image/png');
+/****************************************************************************************/
 
-*/
+function passMAC($text, $key)
+{
+  // Get the MAC part from $text as $MAC
+  
+  // Get the cipherTxt part for authentication from $text as $text
+    // $hash = hash_hmac(SHA512, $text, $key);
+    
+  // Check if they are the same
+    // if ($hash === $MAC) { return true; }
+    // else { return false; }
+}
+
+$HMAC_AUTH = false;
+function generate_HMAC_KEY()
+{}
+
+// Derive the master key used for generating page-specific keys for AES encryption. Use
+// PBKDF2 with hardcoded $salt. 
+function deriveMasterKey($passwd)
+{
+  // Derive MASTER_KEY using pbkdf2
+	$salt = hex2bin("a5309a060550d1a3eda6c59264bfd082f584ee113e8276e0eee710868281e979706d4b606bf772b46b31577273706826ca9a214c345ff5561005f3f399084846");
+	global $PBKDF2_ITERATION_FOR_MASTER_KEY;
+  $iteration = $PBKDF2_ITERATION_FOR_MASTER_KEY;
+  $MASTER_KEY = hash_pbkdf2("sha512", $passwd, $salt, $iteration, 0, true);
+  
+//echo "MASTER KEY generated for password: $passwd<br>";
+  
+  return $MASTER_KEY;
+}
+
+// Use PBKDF2 to derive the master key based on the input password, and
+// then use the master key to decrypt "Main.Homepage"
+// The decryption is successful if the string "version=pmwiki" has been found in the 
+// decrypted text. Upon decryption success, the password and the derived master key are
+//  cached to speed up later authentication requests. Set $cacheCorrectPw to false will
+// skip the cache and force the password Return 
+// true if the input password is correct
+// false otherwise
+function isPasswdCorrect($passwd)
+{
+//  // For some reason, "nopass" is constantly passed by default.
+//  if ($passwd == "nopass") { return false; }
+   
+	if (isset($_SESSION['MASTER_KEY']))
+	{
+		if (strcmp($passwd, $_SESSION['MASTER_KEY'][1]) === 0) { return true; }
+		else { return false; }
+	}
+
+  // Derive MASTER_KEY using pbkdf2
+  $MASTER_KEY = deriveMasterKey($passwd);
+
+  // if ($HMAC_AUTH === true)
+  // {
+    // Derive the HMAC key
+      // Read file as $text from the encrypted HMAC key file
+      // $HMAC_KEY = decryptStr($text, $MASTER_KEY);
+
+    // Use $HMAC_key to check authenticity
+      // Read file as $text from Main.HomePage
+      // if (passMAC($text, $HMAC_KEY) === false) { Abort("Content tampered!"); }
+   // }
+   
+  global $WorkDir;
+  $file = "$WorkDir/Main.HomePage";
+	$text = file_get_contents($file);
+
+	$text = decryptStr($text, $MASTER_KEY);
+	if (stripos($text, "version=pmwiki") !== false)
+	{
+		@session_start();
+		$_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
+		unset($_SESSION['authpw']);
+$_SESSION['authpw'][base64_encode($passwd)] = 1;
+		@session_write_close();
+		return true;
+	}
+	else
+	{
+$firstFewWord = substr($text,0,50);
+echo "First few words: $firstFewWord<br>";
+echo "Wrong passwd: $passwd<br>";
+
+	  return false;
+	}
+}
 
 /****************************************************************************************/
+
+//$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/wiki2html.js'></script>";
+
+if ($action == 'browse')
+{
+  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/AutoRefresher.js'></script>
+  <script type='text/javascript'>
+  AutoRefresher.pagename = '$pagename';
+  </script>";
+}
+
+/****************************************************************************************/
+
+// Preserve a copy of the given page if the specified time period since the last time 
+// the copy was created has elapsed. 
+function preservePageBackup($pagename, $pagefile, $backupDelayHour=6)
+{
+  // check the backup folder
+	$dir = 'wiki.d/backup';
+  $file = scandir($dir);
+  $N_FILE = count($file);
+  for ($iFile=1; $iFile<=$N_FILE; $iFile++)
+  {
+    // find the file with filename beginning with $pagename
+    if (stripos($file[$iFile],$pagename) !== false)
+    {
+      // Get the time stamp in the remaining part of the file name
+      $timeStamp = substr($file[$iFile], strlen($pagename)+1);
+      global $Now;
+      
+      // Compare Now with the time stamp, if a period of $hour has passed, write backup
+      if ((($Now-$timeStamp)/3600) > $backupDelayHour)
+      {
+      	unlink($dir.'/'.$file[$iFile]);
+	      copy($pagefile, $dir.'/'.$pagename.'_'.$Now);
+      }
+    }
+  }
+}
+
+/****************************************************************************************/
+
+// Used as a page variable. Update the page history if the history is not up to date by
+// setting the history update interval to 0 and then call PostPage()
+$FmtPV['$updatePageHistory'] = 'updatePageHistory()';
+function updatePageHistory()
+{
+  global $URI;
+  
+  if (strpos($URI,'?action=diff') !== false)
+  {
+    global $pagename;
+    if (strpos($URI,'?action=diff&updateHistoryNow') !== false)
+    {
+      // Perform an immediate history update
+      // redirect to normal history page
+      
+      // get auth page => page and new
+			$page = RetrieveAuthPage($pagename, 'edit');
+			if (!$page) Abort("Error in updatePageHistory()!");     
+			
+      if ($page['LastVerText'] != $page['text'])
+			{
+				$new = $page;
+			
+				// set page history update interval to 0
+				global $pageHistoryUpdateInterval;
+				$pageHistoryUpdateInterval = 0;
+				
+				PostPage($pagename, $page, $new);
+			}
+			
+			Redirect($pagename.'?action=diff');
+    }
+    else
+    { return ".[[".$pagename."?action=diff&updateHistoryNow|"."Update]]"; }
+  }
+}

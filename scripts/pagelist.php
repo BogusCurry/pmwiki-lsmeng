@@ -186,8 +186,45 @@ function FmtPageList($outfmt, $pagename, $opt) {
 
 ## MakePageList generates a list of pages using the specifications given
 ## by $opt.
-function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0) {
+function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
+{
   global $MakePageListOpt, $PageListFilters, $PCache;
+
+  // Meng. When performing "empty search", encrypt/decrypt the pageindex file appropriately. 
+	global $EnableEncryption, $PageIndexFile;
+	$searchText = $opt['q'];
+	if ($searchText == " ")
+	{
+		$text = file_get_contents($PageIndexFile);
+		$isPageEncrypt = isEncryptStr($text);
+		if ($EnableEncryption==1 && $isPageEncrypt==false)
+		{
+	
+			$text = encryptStr($text);
+			if ($text !== false)
+			{ filePutContentsWait($PageIndexFile, $text); }    
+		}
+		else if ($EnableEncryption==0 && $isPageEncrypt==true)
+		{
+			$text = decryptStr($text);
+			if ($text !== -1)
+			{ filePutContentsWait($PageIndexFile, $text); }
+		}
+	}
+
+	// Meng. For some reason the cookies that I created for remembering the edit box scroll
+	// position appear in $opt. Remove them all since they might have an impact on the search
+	// speed.
+	foreach (array_keys($opt) as $key)
+	{ if (strpos($key, "-scrollY") !== false) { unset($opt[$key]); } }
+
+/*
+// If this is a backlink search, search under the same page group.
+// 5 = strlen("link=")
+$searchText = $opt['q'];
+if (substr($searchText,0,5) === "link=")
+{ $opt['group'] = substr($searchText,5,strpos($searchText,'.')-5); }
+*/
 
   StopWatch('MakePageList pre');
   SDVA($MakePageListOpt, array('list' => 'default'));
@@ -196,16 +233,15 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0) 
   $opt['order'] = preg_replace('/[^-\\w:$]+/', ',', $opt['order']);
 
   ksort($opt); $opt['=key'] = md5(serialize($opt));
-
+  
   $itemfilters = array(); $postfilters = array();
   asort($PageListFilters);
   $opt['=phase'] = PAGELIST_PRE; $list=array(); $pn=NULL; $page=NULL;
   foreach($PageListFilters as $fn => $v) {
     if ($v<0) continue;
-    
     $ret = $fn($list, $opt, $pagename, $page);
     if ($ret & PAGELIST_ITEM) $itemfilters[] = $fn;
-    if ($ret & PAGELIST_POST) $postfilters[] = $fn;
+    if ($ret & PAGELIST_POST) $postfilters[] = $fn;          
   }
 
   StopWatch("MakePageList items count=".count($list).", filters=".implode(',',$itemfilters));
@@ -217,8 +253,6 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0) 
     foreach((array)$itemfilters as $fn) 
     if (!$fn($list, $opt, $pn, $page)) continue 2;
 
-    // Meng: Exclude the draft pages
-//    if (strpos($pn,'-Draft') !== false) continue;
     // Meng: Exclude site.sidebar
     if (stripos($pn,'Site.SideBar') !== false) continue;
     
@@ -228,8 +262,8 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0) 
   }
   $list = $matches;
 
-/* Meng: If there is only one match, go to the page directly. */
-if (count($matches) == 1) { header('Location: pmwiki.php?n='.$matches[0]); }
+  /* Meng: If there is only one match, go to the page directly. */
+  if (count($matches) == 1) { Redirect($matches[0]); }
 
   StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
 
@@ -284,7 +318,6 @@ function PageListProtect(&$list, &$opt, $pn, &$page) {
 
 function PageListSources(&$list, &$opt, $pn, &$page) {
   global $SearchPatterns;
-
   StopWatch('PageListSources begin');
   ## add the list= option to our list of pagename filter patterns
   $opt['=pnfilter'] = array_merge((array)@$opt['=pnfilter'], 
@@ -293,10 +326,12 @@ function PageListSources(&$list, &$opt, $pn, &$page) {
   if (@$opt['group']) $opt['=pnfilter'][] = FixGlob($opt['group'], '$1$2.*');
   if (@$opt['name']) $opt['=pnfilter'][] = FixGlob($opt['name'], '$1*.$2');
 
-  if (@$opt['trail']) {
+  if (@$opt['trail'])
+  {
     $trail = ReadTrail($pn, $opt['trail']);
     $tlist = array();
-    foreach($trail as $tstop) {
+    foreach($trail as $tstop)
+    {
       $n = $tstop['pagename'];
       $tlist[] = $n;
       $tstop['parentnames'] = array();
@@ -305,8 +340,12 @@ function PageListSources(&$list, &$opt, $pn, &$page) {
     foreach($trail as $tstop) 
       $PCache[$tstop['pagename']]['parentnames'][] = 
         @$trail[$tstop['parent']]['pagename'];
+        
     if (!@$opt['=cached']) $list = MatchPageNames($tlist, $opt['=pnfilter']);
-  } else if (!@$opt['=cached']) $list = ListPages($opt['=pnfilter']);
+  }
+  else if (!@$opt['=cached'])
+  { $list = ListPages($opt['=pnfilter'], 1); }
+
   StopWatch("PageListSources end count=".count($list));
   return 0;
 }
@@ -813,7 +852,10 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   {
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
-    if (time() > $timeout) continue;
+    // Meng. The default maximum time for updating pageindex is 10 seconds. This causes
+    // incomplete pageindex at reconstruction. Remove this limit since the maximum php
+    // execution time will be capped by the setting in php.ini anyway
+//    if (time() > $timeout) continue;
     $page = ReadPage($pn, READPAGE_CURRENT);
     if ($page)
     {
@@ -826,7 +868,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     }
     $updatecount++;
   }
-
+  
   // Meng. Change the original read file line by line to read a string line by line
   foreach(preg_split("/((\r?\n)|(\r\n?))/", $pageIndexContent) as $line)
   {
@@ -849,7 +891,11 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 
   // Meng. Suppress the rename warning, and skip the fixperms since they cause errors sometimes
   @rename($file, $PageIndexFile);
-//  fixperms($PageIndexFile);
+
+//  fixperms($PageIndexFile);  
+
+  // Set appropriate permission.
+  chmodForPageFile($PageIndexFile);
 
   StopWatch("PageIndexUpdate end ($updatecount updated)");
   ignore_user_abort($abort);
@@ -886,17 +932,17 @@ function PageIndexGrep($terms, $invert = false)
   {
   	$isPageEncrypt = true;
   	$wholePageText = decryptStr($wholePageText);
-
-	  // Decryption fails. Probably the key has been changed. Delete the pageindex and 
-    // regenerate one.
-    if ($wholePageText === -1)
-    {
-      @unlink($PageIndexFile);
-      global $pagename;
-      redirect($pagename);
-    }
   }
   else { $isPageEncrypt = false; }
+  
+  // Pagefile does not exist or decryption fails. Delete the pageindex and 
+  // regenerate one.
+  if ($wholePageText === false || $wholePageText === -1)
+  {
+    @unlink($PageIndexFile);
+    global $pagename;
+    redirect($pagename);
+  }
 /****************************************************************************************/
 
   StopWatch('PageIndexGrep begin');

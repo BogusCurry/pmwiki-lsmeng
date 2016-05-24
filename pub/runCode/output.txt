@@ -1,4 +1,2 @@
-[@    1| IP=122.147.15.66 LastSeen=2016/2/23_10:43:46 LoginStatus=1 TimeStamp=1456195426 
-    2| IP=localhost LastSeen=2016/2/22_21:56:12 LoginStatus=-1 TimeStamp=1455883632 
-    3| IP=test LastSeen=2016/2/15_15:53:05 LoginStatus=1 TimeStamp=1455522785 
-    4| @]
+[@
+    1| The result is: 12@]

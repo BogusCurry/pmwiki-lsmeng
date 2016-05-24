@@ -4,7 +4,7 @@
 <html>
 <head>
 <!--  <title>$WikiTitle | {$Group} / {$Title} $ActionTitle</title> -->
-  <title>{$Group} / {$Title} $ActionTitle</title>
+  <title>{$Title} / {$Group} $ActionTitle</title>
   <meta http-equiv='Content-Style-Type' content='text/css' />
   <link rel='stylesheet' href='$SkinDirUrl/pmwiki.css' type='text/css' />
   <!--HTMLHeader-->
@@ -36,7 +36,8 @@
         <div id='wikititle'>
 <!--        <div class='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> /  <class='pagetitle'>{$Title} </div> -->
         <div class='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> /  <class='pagetitle'><a href='{$ScriptUrl}/{$Group}.{$Title}'>{$Title}</a> </div>
-<!--Meng-->        <HR size=1 color=black>
+
+        <HR id='HRLine' size=1 color=black>
 
 <!--PageText-->
     </td>
@@ -44,13 +45,16 @@
 <!--PageFooterFmt-->
   <div id='wikifoot'>
     <div class='footnav'>
-      <a rel="nofollow" href='{$PageUrl}?action=edit'>$[Edit]</a> -
-<!--      <a rel="nofollow" href='{$PageUrl}?action=diff'>$[History]</a> --->
-      <a rel="nofollow" href='{$PageUrl}?action=print' target='_blank'>$[Print]</a> 
-<!--      <a href='{$ScriptUrl}/$[{$Group}/RecentChanges]'>$[Recent Changes]</a> - -->
-<!--      <a href='{$ScriptUrl}/$[{$SiteGroup}/Search]'>$[Search]</a></div> -->
+<a rel="nofollow" href='{$PageUrl}?action=edit'>$[Edit]</a> -
+<a rel="nofollow" href='{$PageUrl}?action=print' target='_blank'>$[Print]</a> -
+<a href='{$ScriptUrl}/$[{$Group}/RecentChanges]'>$[Recent Changes]</a> - 
     $[Page last modified on {$LastModified}]. 
-    Closing in <span id="ID_LOGOUTTIMER"></span></div>
+    Closing in <span id="ID_LOGOUTTIMER"></span>
+    </div>
+    
+    <div id='AutosaveMsg'>
+      <!--wiki:{$Group}.AutoaveMsg {$SiteGroup}.AutoaveMsg-->
+    </div> 
 <!--HTMLFooter-->
 
 </body>

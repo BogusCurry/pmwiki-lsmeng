@@ -28,7 +28,7 @@ $WikiTitle = 'PmWiki';
 ## If you want to have a custom skin, then set $Skin to the name
 ## of the directory (in pub/skins/) that contains your skin files.
 ## See PmWiki.Skins and Cookbook.Skins.
-#$Skin = jh;
+#$Skin = pmwiki_original;
 
 ## You'll probably want to set an administrative password that you
 ## can use to get into password-protected pages.  Also, by default 
@@ -146,88 +146,50 @@ $DiffKeepDays=36500;
 #                     '$GUIButtonDirUrlFmt/table.gif"$[Table]"');
 
 /****************************************************************************************/
-// Meng. Configurations for my own plugins/enhancements for PmWiki.
 
-// Path for wiki.d
-SDV($WorkDir,'/Users/Shared/Dropbox/pmwiki/wiki.d');
-//SDV($WorkDir,'D:\Dropbox\pmwiki\wiki.d');
+$enableContentEditable = 0;
 
-// Used for logging in, and encryption.
-$DefaultPasswords['admin'] = '';
+/*
+if ($enableContentEditable == 0)
+{
+  // Go to "codemirror.js" to change "lineWiseCopyCut"
 
-// Various enhancements written by me
-$homeSSID = "Sam Base";
-$currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk '/ SSID/ {print substr($0, index($0, $2))}'");
-$isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
-$pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
-$diaryImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
-$runCodePath = "pub/runCode";
-$timeStampFile = '../../pmwikiTimeStamp/pmwikiTimeStamp.txt';
-$emailAddress1 = "";//"lsmeng@ece.gatech.edu";
-$emailAddress2 = "";
-
-// Php login password. Have to be correct at the $pwRetryLimit+1 th time
-$pwRetryLimit = 1; 
-// Php logout timer. Pw will be requested after the timer expires.
-// No auto logout at home
-$phpLogoutTimer = ($isAtHome) ? INF : 3600;
-// Java logout timer for closing webpages.
-// Set to a more relaxed value if at home.
-$javaLogoutTimer = ($isAtHome) ? 3600*3 : 3600;
-// Define the sensitive pages, which will be closed by java after a very short time.
-// Currently set to 10 min.
-$sensitivePage = array('Main.OnThisDay','Main.PickUp','Main.Girls','Main.NLPickUp','Main.AccountAndPassword');
-$javaSensitivePageLogoutTimer = 600;
-
-// The default image size and enlarged size on click.
-$imgHeightPx = 330;
-$imgHeightPxL = 660;
-
-// Max allowable upload size in bytes. Currently set to 10 MB.
-$maxUploadSize = 10000000; 
-
-// Update the page history and store the difference if the following time period has 
-// elapsed since last editing. 
-$pageHistoryUpdateInterval = 3600;
-
-// If set to 1, unencrypted page files will be encrypted on editing/viewing.
-// If set to 0,   encrypted page files will be decrypted on editing/viewing.
-// The encryption key for a particular page is set to "a certain passphrase appended by
-// its pagename and then hashed using crypt() with crypt($OPENSSL_METHOD) being its salt".
-// => encryption key is crypt($OPENSSL_PASS.$pagename,crypt($OPENSSL_METHOD)) 
-// The passphrase is "DefaultPasswords", and will be set automatically right after a
-// successful login.
-// To encrypt/decrypt all the pages at once, simply perform a search for " ".
-$EnableEncryption = 1;
-$OPENSSL_METHOD = "AES-256-CBC";
-
-// Pageindex
-$pageIndexUpdateInterval = 60;
-
-include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
-
-/****************************************************************************************/
+  $CodeMirrorActivePresets['activeline'] = 1;
+  $CodeMirrorActivePresets['continuelist'] = 0;
+  $CodeMirrorActivePresets['autoresize'] = 1;
+  $CodeMirrorActivePresets['linenumbers'] = 1;
+  $CodeMirrorActivePresets['linewrapping'] = 1;
+  
+  $CodeMirrorBaseUrl = "\$FarmPubDirUrl/codemirror-5.14.2";
+  include_once("$FarmD/cookbook/codemirror.php");
+}
+*/
 
 # Include traditional chinese language
-include_once("$FarmD/scripts/xlpage-utf-8.php"); # optional
-XLPage('zhtw','PmWikiZhTw.XLPage');
+include_once("$FarmD/scripts/xlpage-utf-8.php");
+# Apply Chinese to link names
+//XLPage('zhtw','PmWikiZhTw.XLPage');
 
 # Latex
-include_once("$FarmD/cookbook/MathJax.php");
+$URI = $_SERVER['REQUEST_URI'];
+if (!stripos($URI, '?action=edit') && !stripos($URI, '?action=diff'))
+{ include_once("$FarmD/cookbook/MathJax.php"); }
 
-# For autosave
+# For autosave. Delay is in milliseconds.
 $EnableDrafts = 0;
-$autoSaveDelayHttp = 1;
-$autoSaveDelayHttps = 1;
+$autoSaveDelayHttp = 5000;
+$autoSaveDelayHttps = 1000;
 include_once("$FarmD/cookbook/autosave.php");
 
 # For flipbox
 include_once("$FarmD/cookbook/flipbox.php");
 
+/*
 # For wpap mp3 player
 $wpap_initialvolume = "1";
 $wpap_width = "500";
 include_once("$FarmD/cookbook/wpap/wpap.php");
+*/
 
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
@@ -286,7 +248,7 @@ $ROSPatterns ['/＋/'] = "+";
 $ROSPatterns ['/＼/'] = "\\";
 $ROSPatterns ['/，/'] = ", ";
 $ROSPatterns ['/。/'] = ". ";
-$ROSPatterns ['/：/'] = ":";
+$ROSPatterns ['/：/'] = ": ";
 $ROSPatterns ['/％/'] = "%";
 $ROSPatterns ['/＄/'] = "$";
 $ROSPatterns ['/＆/'] = "&";
@@ -299,7 +261,7 @@ $ROSPatterns ['/｜/'] = "|";
 $ROSPatterns ['/！/'] = "!";
 $ROSPatterns ['/︿/'] = "^";
 $ROSPatterns ['/－/'] = "-";
-$ROSPatterns ['/？/'] = "?";
+$ROSPatterns ['/？/'] = "? ";
 $ROSPatterns ['/～/'] = "~";
 $ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
@@ -309,3 +271,97 @@ $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
+
+// This eliminates redundant newlines each time the page is saved.
+//$ROSPatterns ['/\n\n\n/'] = "\n\n";
+
+/****************************************************************************************/
+// Meng. Configurations for my plugins/enhancements for PmWiki.
+
+// Station name.
+$AuthorLink = "MBA";
+
+// Path for public wiki.d
+SDV($WorkDir,'/Users/Shared/Dropbox/pmwiki/wiki.d');
+if (!file_exists("$WorkDir")) { Abort("Public wiki.d folder does not exist in the specified path \"$WorkDir\"!"); }
+
+// See if local wiki.d folder exists.
+if (!file_exists("wiki.d"))
+{
+  if (mkdir("wiki.d") === false)
+  { Abort("Create a folder named \"wiki.d\" under the folder pmwiki!"); }
+  // Note that the Owner and Group of the foleder created by Apache is assumed to be 
+  // both "_www". For ease of file operations (read/copy/paste) by the account user, 
+  // add your account to the Group "_www".
+  // If $WorkDir is the local wiki.d, the permission of wiki.d has to be rwx by user _www
+  if (chmod("wiki.d", 0370) === false)
+  { Abort("Permission change for \"wiki.d\" failed!"); }
+}
+
+// See if local wiki.d backup folder exists.
+if (!file_exists("wiki.d/backup"))
+{
+  if (mkdir("wiki.d/backup") === false)
+  { Abort("Create a folder named \"backup\" under local folder \"wiki.d\"!"); }
+  if (chmod("wiki.d/backup", 0770) === false)
+  { Abort("Permission change for \"wiki.d/backup\" failed!"); }
+}
+
+// Various enhancements written by me
+$homeSSID = "Sam Base";
+$currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk '/ SSID/ {print substr($0, index($0, $2))}'");
+$isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
+$isAtHome = 0;
+
+$runCodePath = "pub/runCode";
+
+$pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
+$diaryImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
+
+$PhotoPub = str_replace('wiki.d','uploads',$WorkDir).'/';
+$Photo = '/Volumes/wiki/www/pmWiki/Photo/';
+
+$emailAddress1 = "";//"lsmeng@ece.gatech.edu";
+$emailAddress2 = "";
+
+// Php login password. Have to be correct at the $pwRetryLimit th time
+$pwRetryLimit = 2; 
+
+// Idle timer duration for logging out & shutting down the site.
+$siteLogoutIdleDuration = ($isAtHome) ? INF : 3600;
+// Idle timer duration for locking sensitive pages.
+$pageLockIdleDuration = 300;
+
+// The default image size and enlarged size on click.
+$imgHeightPx = 330;
+$imgHeightPxL = 660;
+
+// Max allowable upload size in bytes. Currently set to 10 MB.
+$maxUploadSize = 10000000; 
+
+// Update the page history and store the difference if the following time period has 
+// elapsed since last editing. 
+$pageHistoryUpdateInterval = 3600;
+
+// If set to 1, unencrypted page files will be encrypted on editing/viewing.
+// If set to 0,   encrypted page files will be decrypted on editing/viewing.
+// The encryption key for a particular page is set to "a certain passphrase appended by
+// its pagename and then hashed using crypt() with crypt($OPENSSL_METHOD) being its salt".
+// The passphrase is "DefaultPasswords", and will be set automatically right after a
+// successful login.
+// To encrypt/decrypt all the pages at once, simply perform a search for " ".
+$EnableEncryption = 1;
+$OPENSSL_METHOD = "AES-256-CBC";
+
+// The time period for updating the pageindex file, and the recentChanges pages when 
+// editing. Uncaptured changes will be updated upon the 1st time the page is viewed. 
+$pageIndexUpdateInterval = 120;
+
+include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
+
+// Check OS and set $diaryImgDirURL only if MBA is currently in use.
+// These can only be called after "plugin_LSMENG.php" has been included.
+$obj = new OS_BR();
+$OS = $obj->showInfo('os');   
+$diaryImgDirURL = ($OS === "Mac") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
+$IP = get_client_ip(); 
