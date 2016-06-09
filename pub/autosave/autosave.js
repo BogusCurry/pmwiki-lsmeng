@@ -1,10 +1,12 @@
 /* 
  * Adapted from PmWiki AutoSave <http://www.pmwiki.org/wiki/Cookbook/AutoSave>
- * Autosave the input text in textarea on receiving new input. The delay for autosaving 
- * is configurable, and any new keystroke resets the autosave timer.
- * A special string is inserted at the caret position when autosaving to serve as the 
- * anchor for scrolling when viewing.
- * Closing the page at any time with unsaved changes invokes a synchronous saving
+ * Autosave the input text in textarea on receiving new input. The autosaving delay
+ * is configurable, and any new input within the delay extends it by resetting the timer.
+ * A maximum total delay is also configurable 
+ * When autosaving, the number of bullets appearing before the current caret position is 
+ * calculated and stored in a cookie, which is then used for calculating the corresponding
+ * scroll position when browsing this page.
+ * Closing the page at any time with unsaved changes triggers a synchronous saving
  * (blocking saving). This can cause a bit unresponsiveness.
  * 
  * Author: Ling-San Meng
@@ -16,16 +18,9 @@ var AS =
   savedStatusStr: "<span  style='background-color: lightgreen;'>&nbsp;&nbsp;&nbsp;</span>",
   savingStatusStr: "<span  style='background-color: yellow;'>&nbsp;&nbsp;&nbsp;</span>",
   typingStatusStr: '...',
-
-  noMarkPage1: 'Site.SideBar',
-	noMarkPage2: 'Site.Pageactions',
-	noMarkPage3: 'Site.Editform',
-	noMarkPage4: 'Main.DecryptText',
-	noMarkPage5: 'Main.Runcode',
 	
-  lastEditMark: '',
-  
   lastInputTime: 0,
+  inputBurstStartTime: 0,
   id1: null,
   id2: null,
   textID: null,
@@ -58,33 +53,17 @@ var AS =
 		{
 			case "ok":
         AS.status = AS.savedStatusStr;
-//        AS.status = "<span  style='background-color: lightgreen;'>&nbsp;&nbsp;&nbsp;</span>";
-//        AS.status ="<span  style='background-color: lightgreen; color: black;'>Saved</span>";
-
-				var 
-//				as_action = AS.req.getResponseHeader("X-AutoSaveAction"),
-//				    as_pn = AS.req.getResponseHeader("X-AutoSavePage"),
-				    as_time = AS.req.getResponseHeader("X-AutoSaveTime");
-//				if (as_action) AS.ef.action = as_action;
-//				if (as_pn) AS.ef.n.value = as_pn;
-//				if (as_time) AS.ef.basetime.value = as_time;
-
-//				if (as_time)
-//				{
-					AS.basetime = as_time;
-					AS.setLastModCookies();
-//				}
-
+				var as_time = AS.req.getResponseHeader("X-AutoSaveTime");
+				if (AS.basetime != as_time) { AS.setLastModCookies(); }
+				AS.basetime = as_time;
         break;
         
 			case "Autosaving":
         AS.status = AS.savingStatusStr;
-        
 				break;
 
 			case "Typing":
         AS.status = AS.typingStatusStr;
-
 				break;
 
 			default: // some error
@@ -126,8 +105,7 @@ var AS =
   setTextContent: function(textContent)
   {
     // Codemirror. Defunct.
-		if (AS.textID.codemirror != null)
-		{ }
+		if (AS.textID.codemirror != null) {}
 
     // Legacy textarea.
     else if (AS.ef != null)
@@ -177,21 +155,22 @@ var AS =
   	AS.post_str = AS.prefix+AS.basetime+'&text=';
   	
   	// encodeURIComponent() replace special characters including Chinese and special
-  	// symbols with http symbols. The only changes that matter to me seem to be only the 
-  	// two symbols: & +
+  	// symbols with http symbols. The only changes that matter to me seem to be only these 
+  	// two symbols though: & +
+  	// Replacing encodeURIComponent() with explicit string replace could improve the 
+  	// performance a little bit; however, I am not absolutely sure if this is absolutely 
+  	// safe.
 	  var textContent = AS.ifTextChange();
     if (textContent != null)
     {
       AS.lastTextContent = textContent;
-      AS.post_str = AS.post_str + encodeURIComponent(AS.addMark(AS.lastTextContent));
-//      AS.post_str = AS.post_str + (AS.addMark(AS.lastTextContent)).replace(/&/g, '%26');
+      AS.post_str = AS.post_str + encodeURIComponent(AS.lastTextContent);
       
       return true;
     }
     else
     {
-      AS.post_str = AS.post_str + encodeURIComponent(AS.addMark(AS.lastTextContent));
-//      AS.post_str = AS.post_str + (AS.addMark(AS.lastTextContent)).replace(/&/g, '%26');
+      AS.post_str = AS.post_str + encodeURIComponent(AS.lastTextContent);
       
       return false;
     }
@@ -209,6 +188,7 @@ var AS =
 		AS.req.setRequestHeader( "User-Agent", "XMLHTTP/1.0" );
 		AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
   
+    AS.countBulletWriteCookie();
     AS.setLastModCookies();
 		AS.req.send(AS.post_str);  
 
@@ -228,7 +208,7 @@ var AS =
 */
 	},
 	
-	// For debugging purpose.
+	// This is used for debugging purpose.
 	MarkupToHTML: function()
 	{
 //    var str = AS.ef.elements['text'];	
@@ -266,6 +246,7 @@ var AS =
 				AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
 				AS.req.onreadystatechange = AS.reply;
 				AS.req.send(AS.post_str);
+	      AS.countBulletWriteCookie();
 			}
 			else { AS.set_status("ok"); }
 		}
@@ -297,7 +278,7 @@ var AS =
 	onNewInput: function()
 	{	
 		if (!AS.cb.checked) { return; }
-		
+
 		// If new input hasn't been detected.
 		if (AS.id1 == null)
 		{
@@ -306,109 +287,74 @@ var AS =
 			// and when the process is done waiting, any new input will be saved altogether 
 			// So there is no need to check new input, change status, or set timeout to trigger another saving
 			// process)
-			if (AS.id2 == null)
-			{
+//			if (AS.id2 == null)
+//			{
 				// If not currently saving, change the status text.
 				if (!AS.busy) {	AS.set_status("Typing");	}
         else { AS.set_status("Autosaving"); }
-        
+
+        // Record the starting time of the input burst        
+				var clock = new Date();
+				AS.inputBurstStartTime = clock.getTime();
+
 				// Set a timeout for triggering the saving process.
 				AS.id1 = setTimeout( AS.keydownSave, AS.delay );
-			}
+//			}
+// Debugging
+//			else { AS.txt.innerHTML = 'Already saving'; }
 		}
 		// New input had been detected.
 		else
 		{	
-			if (!AS.busy) {	AS.set_status("Typing");	}
+			if (!AS.busy) {	AS.set_status("Typing"); }
       else { AS.set_status("Autosaving"); }
       
 			var clock = new Date();
 			var inputTime = clock.getTime();
-				
-			var diff = inputTime - AS.lastInputTime;
-			AS.lastInputTime = inputTime;
-		
-			// The current key stroke is continuous typing
-			if (diff < AS.delay)
-			{
-				// Reset the timeout for triggering the saving process.
-				clearTimeout(AS.id1);
-				AS.id1 = setTimeout( AS.keydownSave, AS.delay );   
+
+      // If a prespecified duration (60 sec) has passed since the last autosave
+      if ((inputTime - AS.inputBurstStartTime) > 60000) {}
+      // Else compute the time difference and delay the autosave for continuous inputs
+      else
+      {
+				var diff = inputTime - AS.lastInputTime;
+				AS.lastInputTime = inputTime;
+			
+				// The current key stroke is continuous typing
+				if (diff < AS.delay)
+				{
+					// Reset the timeout for triggering the saving process.
+					clearTimeout(AS.id1);
+					AS.id1 = setTimeout( AS.keydownSave, AS.delay );
+				}
 			}
 		}
 	},
-	
-  // Insert a special string (last edit markt) at the caret position when autosaving to 
-  // serve as the anchor for scrolling when viewing. In order not to corrupt the wiki 
-  // markup to html conversion, the mark must begin with an empty space. Also, depending
-  // on the context where the mark is inserted, the insertion way will be a bit different.
-  // This is also not to mess up the html conversion.
-	addMark: function(textContent)
+
+  // Count the number of bullets appearing before the current caret position, and then 
+  // write the result to a cookie. The cookie is used for scroll positioning when browsing
+	countBulletWriteCookie: function()
 	{ 
-// This is kinda lame. To be improved.
-    var pagenameUpper = AS.pagename.toUpperCase();
-	  if (pagenameUpper == AS.noMarkPage1) { return textContent; }
-	  if (pagenameUpper == AS.noMarkPage2) { return textContent; }
-	  if (pagenameUpper == AS.noMarkPage3) { return textContent; }
-	  if (pagenameUpper == AS.noMarkPage4) { return textContent; }
-	  if (pagenameUpper == AS.noMarkPage5) { return textContent; }
-
-    if (textContent == 'delete') { return textContent; }
-
+    var textContent = AS.getTextContent();
+    
     var caretPos = AS.textID.selectionStart;
+		var HTML = textContent.substring(0,caretPos);
 
-    // Take care of the newline markup. If the caret is right after a wiki newline markup,
-    // insert the mark before it.
-    if (textContent.substring(caretPos-2,caretPos) == '\\\\')
-    { return [textContent .slice(0, caretPos-2), AS.lastEditMark, textContent.slice(caretPos-2)].join(''); }
-    else
+		// This one liner is of course from the Internet. It computes the number of times
+		// the specified string appears in the string "HTML".
+		var numBullet1 = (HTML.match(/\n\*/g) || []).length;
+		var numBullet2 = (HTML.match(/\n\#/g) || []).length;
+		var numBullet = numBullet1+numBullet2;
+		if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#') { numBullet++; }
+
+    if (numBullet != 0)
     {
-      var preChar = textContent.substring(caretPos-1,caretPos);
-      
-      // Take care of the "right before a bullet" case. If the caret is right before a wiki
-      // bullet markup, insert the mark after it.
-      if (preChar == "\n" || preChar == '')
-      {
-        var nextChar = textContent.substring(caretPos,caretPos+1);
-        if (nextChar == '*' || nextChar == '#')
-        {
-          var spacePos = textContent.substring(caretPos,caretPos+150).indexOf(' ');
-          { return [textContent .slice(0, caretPos+spacePos), AS.lastEditMark, textContent.slice(caretPos+spacePos)].join(''); }
-        }
-        // Handle the case the caret is at the beginning of the line followed by newline.
-        // Insert the mark at the end of the last line. 
-        else if (preChar == "\n" && nextChar == "\n")
-        { return [textContent.slice(0, caretPos-1), AS.lastEditMark+"\n", textContent.slice(caretPos)].join(''); }
-      }
-      
-      // Take care of the hyperlink markup. If "]]" is detected within the next 150 
-      // characters, and "[[" is not detected or "[[" appears later than "]]", insert 
-      // the mark after "]]".
-      var bracketEndPos = textContent.substring(caretPos,caretPos+150).indexOf(']]');
-      if (bracketEndPos != -1)
-      {
-        var bracketStartPos = textContent.substring(caretPos,caretPos+150).indexOf('[[');
-        if (bracketStartPos == -1 || bracketStartPos > bracketEndPos)
-        { return [textContent.slice(0, caretPos+bracketEndPos+2), AS.lastEditMark, textContent.slice(caretPos+bracketEndPos+2)].join(''); }
-      }
-
-      // Take care of the latex markup and page var.
-      // If "}" is detected within the next 150 
-      // characters, and "{" is not detected or "{" appears later than "}", insert 
-      // the mark after "}".
-      var latexEndPos = textContent.substring(caretPos,caretPos+150).indexOf('}');
-      if (latexEndPos != -1)
-      {
-        var latexStartPos = textContent.substring(caretPos,caretPos+150).indexOf('{');
-        if (latexStartPos == -1 || latexStartPos > latexEndPos)
-        { return [textContent.slice(0, caretPos+latexEndPos+1), AS.lastEditMark, textContent.slice(caretPos+latexEndPos+1)].join(''); }
-      }
-
-      // Default. Insert the mark at the caret position.
-      return [textContent.slice(0, caretPos), AS.lastEditMark, textContent.slice(caretPos)].join('');
+		  cookieName = ScrollPositioner.pagename.toUpperCase() + '-ScrollY';
+		  document.cookie = cookieName + "=" + escape('n'+numBullet);
     }
 	},
-	
+
+// Remove this after a while
 	// Remove the special string inserted at the last caret position when autosaving.
 	removeMark: function(mark)
 	{
@@ -421,7 +367,11 @@ var AS =
 			AS.setTextContent(textContent);
       AS.textID.selectionStart = caretPos;
       AS.textID.selectionEnd = caretPos;
-//		  alert('found & removed');
+      
+// Remove these after a while
+alert('Mark removed');
+AS.post_str = 'action=edit&n='+AS.pagename+'&basetime=9999999999&text=' + encodeURIComponent(textContent);
+AS.saveOnUnload();
 		}
 	},
 	
@@ -429,15 +379,16 @@ var AS =
 	{
 		if ( !AS.url || !AS.delay || !$("text") ) return;
 		
+		// Check for out-dated text. The built-in navigation mechanism "last page" of browsers
+		// buffers the text content of the textarea, which of course leads to undesirable 
+		// consequences. Fortunately the "true" text content can be obtained by calling
+		// textContent, which is then compared with the current text in the textarea field 
+		// to see if the current text is outdated/buffered.
+    if (document.getElementById('text').textContent != document.getElementById('text').form.text.value)
+    { location.reload(); }
+		
 		AS.textID = document.getElementById('text');
     AS.ef = AS.textID.form;
-
-		AS.noMarkPage1 = AS.noMarkPage1.toUpperCase();
-		AS.noMarkPage2 = AS.noMarkPage2.toUpperCase();
-		AS.noMarkPage3 = AS.noMarkPage3.toUpperCase();
-		AS.noMarkPage4 = AS.noMarkPage4.toUpperCase();
-		AS.noMarkPage5 = AS.noMarkPage5.toUpperCase();
-		AS.removeMark(AS.lastEditMark);
 
     var clock = new Date();
     AS.basetime = Math.floor(clock.getTime()/1000);
@@ -446,6 +397,7 @@ var AS =
 
 		AS.make_new_post_str();
 		AS.req = createXMLHTTPObject();
+
 		if (!AS.req) return;
 		AS.cb = $("autosave-cb");
 		AS.lbl = $("autosave-label");
@@ -454,7 +406,10 @@ var AS =
     AS.status = "Ready";
     AS.status = AS.status + AS.MarkupToHTML();	
     AS.txt.innerHTML = AS.status;
-    
+
+// Remove these after a while
+AS.removeMark(' {EDIT}');
+
 		if (AS.cb)
 		{
 			addEventSimple( AS.cb, "click", function() { AS.ctrl(); AS.set_cookie( AS.cb.checked ? '1' : '0' ); } );
@@ -468,15 +423,7 @@ var AS =
 addEventSimple( window, "load", AS.init );
 addEventSimple( window, "input", AS.onNewInput );
 //addEventSimple( window, "paste", AS.onNewInput );
-addEventSimple( window, "keydown", AS.onKeydown );
-
-/*
-if (document.getElementById('text').codemirror != null)
-{  
-  addEventSimple( window, "keyup", AS.cmEnterDeleteFix );
-	addEventSimple( window, "drop", AS.onNewInput );
-}
-*/
+//addEventSimple( window, "keydown", AS.onKeydown );
 
 // Perform a synchronous saving if there are unsaved changes before the the page is closed
 window.addEventListener("beforeunload", function(event)
@@ -498,8 +445,7 @@ window.addEventListener("beforeunload", function(event)
 			  // simultaneous editing; this might happen because there is already an ongoing 
 			  // saving process.
         AS.basetime = '9999999999';
-		  	AS.post_str = AS.prefix+AS.basetime+'&text=' + encodeURIComponent(AS.addMark(AS.lastTextContent));
-//		  	AS.post_str = AS.prefix+AS.basetime+'&text=' + (AS.addMark(AS.lastTextContent)).replace(/&/g, '%26');
+		  	AS.post_str = AS.prefix+AS.basetime+'&text=' + encodeURIComponent(AS.lastTextContent);
   	 
 			  AS.saveOnUnload();
 			}
@@ -520,17 +466,6 @@ window.addEventListener("beforeunload", function(event)
       // saves from "double input"
 			clearTimeout(AS.id2);			
       if (AS.make_new_post_str()) {	AS.saveOnUnload(); }
-      
-// I think the above is better than below and the functionality is the same. After a while
-// if nothing goes wrong, delete the below.
-/*
-      if (AS.ifTextChange() != null)
-		  {
-  			clearTimeout(AS.id2);
-      	AS.make_new_post_str(); 
-				AS.saveOnUnload();
-		  }
-*/
     }
 	}
 	

@@ -266,11 +266,12 @@ $ROSPatterns ['/～/'] = "~";
 $ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
-$ROSPatterns ['/green_/'] = "%bgcolor=green%";
+$ROSPatterns ['/agree_/'] = "%bgcolor=springgreen%";
 $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
+
 
 // This eliminates redundant newlines each time the page is saved.
 //$ROSPatterns ['/\n\n\n/'] = "\n\n";
@@ -278,11 +279,18 @@ $ROSPatterns ['/”/'] = "\"";
 /****************************************************************************************/
 // Meng. Configurations for my plugins/enhancements for PmWiki.
 
-// Station name.
-$AuthorLink = "MBA";
+// Set the station name and path for public wiki.d
+// On MAC, it appears the environment variable is not working.
+$AuthorLink = getenv('COMPUTERNAME');
+if ($AuthorLink == '')
+{
+  $AuthorLink = 'MBA';
+  $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d';
+}
+else if ($AuthorLink == 'SAM_MENG_W7N')
+{ $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
+else { Abort('Unexpected station name!'); }
 
-// Path for public wiki.d
-SDV($WorkDir,'/Users/Shared/Dropbox/pmwiki/wiki.d');
 if (!file_exists("$WorkDir")) { Abort("Public wiki.d folder does not exist in the specified path \"$WorkDir\"!"); }
 
 // See if local wiki.d folder exists.
@@ -313,13 +321,11 @@ $currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framewor
 $isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
 $isAtHome = 0;
 
-$runCodePath = "pub/runCode";
-
 $pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
-$diaryImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
-
+$diaryImgDirURL = ($AuthorLink == "MBA") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
 $PhotoPub = str_replace('wiki.d','uploads',$WorkDir).'/';
 $Photo = '/Volumes/wiki/www/pmWiki/Photo/';
+$runCodePath = "pub/runCode";
 
 $emailAddress1 = "";//"lsmeng@ece.gatech.edu";
 $emailAddress2 = "";
@@ -328,9 +334,9 @@ $emailAddress2 = "";
 $pwRetryLimit = 2; 
 
 // Idle timer duration for logging out & shutting down the site.
-$siteLogoutIdleDuration = ($isAtHome) ? INF : 3600;
+$siteLogoutIdleDuration = ($isAtHome) ? INF : 7200;
 // Idle timer duration for locking sensitive pages.
-$pageLockIdleDuration = 300;
+$pageLockIdleDuration = 600;
 
 // The default image size and enlarged size on click.
 $imgHeightPx = 330;
@@ -357,11 +363,5 @@ $OPENSSL_METHOD = "AES-256-CBC";
 // editing. Uncaptured changes will be updated upon the 1st time the page is viewed. 
 $pageIndexUpdateInterval = 120;
 
-include_once("$FarmD/cookbook/plugin_LSMENG.php"); 
+require_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
-// Check OS and set $diaryImgDirURL only if MBA is currently in use.
-// These can only be called after "plugin_LSMENG.php" has been included.
-$obj = new OS_BR();
-$OS = $obj->showInfo('os');   
-$diaryImgDirURL = ($OS === "Mac") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
-$IP = get_client_ip(); 

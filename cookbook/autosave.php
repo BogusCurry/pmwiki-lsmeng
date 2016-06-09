@@ -87,16 +87,13 @@ function AutoSaveMarkup( $pagename )
   if ($UrlScheme == 'http') { SDV( $AutoSaveDelay, $autoSaveDelayHttp); }
   else { SDV( $AutoSaveDelay, $autoSaveDelayHttps); }
 /****************************************************************************************/
-  global $lastEditMark;
-  if (!isset($lastEditMark)) { Abort("lastEditMark variable not set in autosave.php!"); }
-  
+
 	SDVA( $AutoSaveFmt, array(
 		'info' => "<label id='autosave-label'><input type='checkbox' checked='1' id='autosave-cb' /><span id='autosave-status'>Ready</span></label>",
 		'util' => "<script type='text/javascript' src='$AutoSavePubDirUrl/util.js'></script>",
 		'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
 		<script type='text/javascript'>
 		AS.pagename = '$pagename';
-		AS.lastEditMark = '$lastEditMark';
 		</script>",
 		'config' => "<script type='text/javascript'>AS.url='$url'; AS.delay=$AutoSaveDelay;</script>"
 	));

@@ -38,12 +38,8 @@ var AutoRefresher =
   	var lastModTime = AutoRefresher.getCookie(AutoRefresher.pagename.toUpperCase() + '-LastMod');
   	if (lastModTime > AutoRefresher.basetime)
   	{	
-  	  // On update, auto scroll to the lastEdit position  
-			if (window.location.href.indexOf('#lastEdit') == -1)
-			{ window.location = window.location.href + '#lastEdit'; }
-  	  
-  	  // With or w/o lastEdit mark, we will need a page refresh to take effect.
-  	  location.reload();
+//      window.location = window.location.href;
+      location.reload();
   	}
   },
   

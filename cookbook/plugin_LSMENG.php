@@ -441,8 +441,8 @@ function getFormatTime()
 // add your account to the Group "_www".
 function chmodForPageFile($file)
 {
-	global $OS;
-	if ($OS === "Mac")
+	global $AuthorLink;
+	if ($AuthorLink == 'MBA')
 	{ 
     @chmod($file, 0440);
   }
@@ -540,6 +540,7 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
 // Borrowed from the Internet.
 // It appears that the IP of localhost will be shown as "::1". Replace it with the string 
 // "localhost".
+$IP = get_client_ip(); 
 function get_client_ip() {
     $ipaddress = '';
     if ($_SERVER['HTTP_CLIENT_IP'])
@@ -1029,6 +1030,7 @@ function isFolderReadableByUserWWW($dir)
 // For diary pages, automatically read the corresponding photo directory and list the file
 // names of all the images and videos under their recorded date.
 // The year and month of the file name of the image will be ignored actually.
+// This function is applied since Apr. 2015
 function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 {
   $pageType = isDiaryPage();
@@ -1125,7 +1127,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
       {
         $dayEndPos = strpos($text,"\n\n",$dayHeadPos);
         if ($dayEndPos !== false)
-        { $text = substr_replace($text, "\\\\\n".$dayImgList[$iDay]."\n", $dayEndPos, 0); }
+        { $text = substr_replace($text, "\n-->".$dayImgList[$iDay]."\n", $dayEndPos, 0); }
       }
     }
   }
@@ -1158,18 +1160,18 @@ function addPageTimerJs($countdownTimer)
 }
 /****************************************************************************************/
 
-$lastEditMark = ' {EDIT}';
-
-if ($action == 'edit' || $action == 'browse' || $action == 'diff')
+if ($action == 'edit' || $action == 'browse')
 {
-	// Memorize and set the scroll position.
-	$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
-	<script type='text/javascript'>
-	ScrollPositioner.pagename = '$pagename';
-	ScrollPositioner.lastEditMark = '$lastEditMark';
-	ScrollPositioner.stationName = '$AuthorLink';
-	ScrollPositioner.action = '$action';
-	</script>";
+  if (substr($pagename,0,4) != 'LOCK')
+  {
+		// Memorize and set the scroll position.
+		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
+		<script type='text/javascript'>
+		ScrollPositioner.pagename = '$pagename';
+		ScrollPositioner.stationName = '$AuthorLink';
+		ScrollPositioner.action = '$action';
+		</script>";
+	}
 }
 
 /****************************************************************************************/
@@ -1248,25 +1250,6 @@ function noEncryptPage($pagename)
 {
 	if (strcasecmp("$pagename","SiteAdmin.Status") == 0) { return 1; }
 	else { return 0; }
-	
-/*
-  $noEncryptPageName = array("SiteAdmin.Status");
-  
-  $NUM = count($noEncryptPageName);
-
-  for ($i=0;$i<$NUM;$i++)
-  {
-    $partPagename = substr($pagename,0,strlen($noEncryptPageName[$i]));
-    if (strcasecmp($partPagename, $noEncryptPageName[$i]) == 0)
-    { return 1; }
-    // The dot will be replaced by slash and called by the system. Have to deal with this
-    // case too.
-    else if (strcasecmp($partPagename, str_replace('.','/',$noEncryptPageName[$i])) == 0)
-    { return 1; }
-  }
-  
-  return 0;
-*/
 }
 
 // Derive a key using PBKDF2 with the input $key and $salt. The derived key is used as
@@ -1277,9 +1260,6 @@ function derivePageAESKey($key, $salt)
 		global $PBKDF2_ITERATION_FOR_AES;
 		$iteration = $PBKDF2_ITERATION_FOR_AES;
 		$AES_KEY = hash_pbkdf2("sha512", $key, $salt, $iteration, 0, true);
-
-//echo "PAGE KEY generated for password: $key<br>";
-//echo "PAGE KEY generated<br>";
 
     return $AES_KEY;
 }
@@ -1323,10 +1303,8 @@ function cacheRecentPageAESKey($AES_KEY, $arrayIndex)
 function getRecentDecryptText($arrayIndex)
 {
   if (@array_key_exists($arrayIndex, $_SESSION['recentDecryptText']))
-  {
-//echo "get cached decrypted text<br>";
-    return $_SESSION['recentDecryptText'][$arrayIndex];
-  }
+  { return $_SESSION['recentDecryptText'][$arrayIndex]; }
+  
   else { return ""; }
 }
 
@@ -1539,11 +1517,7 @@ function updatePageindexOnBrowse($pagename, $page)
 
       // This field should exist according to the parent if else condition.
       $pos = strpos($pageContent,$lastPageindexUpdateTime);
-      if ($pos === false)
-      {
-//        echo "In $pagename, the field \"lastPageindexUpdateTime\" does not exist while it should!";
-        return ;
-      }
+      if ($pos === false) { return; }
       else { $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime)); }
 
       global $EnableEncryption;      
@@ -1721,7 +1695,7 @@ function generate_HMAC_KEY()
 {}
 
 // Derive the master key used for generating page-specific keys for AES encryption. Use
-// PBKDF2 with hardcoded $salt. 
+// PBKDF2 with hardcoded $salt, which in fact doesn't have too much point. 
 function deriveMasterKey($passwd)
 {
   // Derive MASTER_KEY using pbkdf2
@@ -1729,9 +1703,7 @@ function deriveMasterKey($passwd)
 	global $PBKDF2_ITERATION_FOR_MASTER_KEY;
   $iteration = $PBKDF2_ITERATION_FOR_MASTER_KEY;
   $MASTER_KEY = hash_pbkdf2("sha512", $passwd, $salt, $iteration, 0, true);
-  
-//echo "MASTER KEY generated for password: $passwd<br>";
-  
+
   return $MASTER_KEY;
 }
 
@@ -1745,9 +1717,6 @@ function deriveMasterKey($passwd)
 // false otherwise
 function isPasswdCorrect($passwd)
 {
-//  // For some reason, "nopass" is constantly passed by default.
-//  if ($passwd == "nopass") { return false; }
-   
 	if (isset($_SESSION['MASTER_KEY']))
 	{
 		if (strcmp($passwd, $_SESSION['MASTER_KEY'][1]) === 0) { return true; }
@@ -1778,15 +1747,20 @@ function isPasswdCorrect($passwd)
 		@session_start();
 		$_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
 		unset($_SESSION['authpw']);
-$_SESSION['authpw'][base64_encode($passwd)] = 1;
+
+		// This is to copy the master password to the password buffer used by pmwiki. A temp
+		// solution to avoid typing the same pw if the master pw and the page lock pw are the same
+		// To be improved.
+		$_SESSION['authpw'][base64_encode($passwd)] = 1;
+
 		@session_write_close();
 		return true;
 	}
 	else
 	{
-$firstFewWord = substr($text,0,50);
-echo "First few words: $firstFewWord<br>";
-echo "Wrong passwd: $passwd<br>";
+//$firstFewWord = substr($text,0,50);
+//echo "First few words: $firstFewWord<br>";
+//echo "Wrong passwd: $passwd<br>";
 
 	  return false;
 	}
