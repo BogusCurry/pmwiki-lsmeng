@@ -31,9 +31,7 @@ var ScrollPositioner =
   isEditableEnable: false,
   isLegacyTextedit: false,
   lastCaretPos: 0,
-  posAfterPaste: 0,
-  lastScrollHeight: 0,
-  stationName: '',
+  OS: '',
   nWaitForLatex: 0, 
   
   // Delete the cookie with cookie name "name"
@@ -55,11 +53,11 @@ var ScrollPositioner =
 	{
 		if (document.cookie.length>0)
 		{
-			c_start=document.cookie.indexOf(c_name + "=");
+			var c_start=document.cookie.indexOf(c_name + "=");
 			if (c_start!=-1)
 			{
 				c_start=c_start + c_name.length+1;
-				c_end=document.cookie.indexOf(";",c_start);
+				var c_end=document.cookie.indexOf(";",c_start);
 				if (c_end==-1) { c_end=document.cookie.length;}
 				return unescape(document.cookie.substring(c_start,c_end));
 			}
@@ -67,7 +65,7 @@ var ScrollPositioner =
 
 		return "";
 	},
-
+	
 /* The following is for scroll positioning */
 /****************************************************************************************/
 	
@@ -219,7 +217,7 @@ var ScrollPositioner =
 			var caretPosEnd = document.getElementById('text').selectionEnd;
   		var textContent = document.getElementById('text').form.elements['text'].value;			
       
-  		document.getElementById('text').form.elements['text'].value = [textContent .slice(0, caretPosStart), pastedText, textContent.slice(caretPosEnd)].join('');
+  		document.getElementById('text').form.elements['text'].value = [textContent.slice(0, caretPosStart), pastedText, textContent.slice(caretPosEnd)].join('');
             		
 			caretPosStart = caretPosStart+pastedText.length;			
 			document.getElementById('text').selectionStart = caretPosStart;
@@ -233,65 +231,70 @@ var ScrollPositioner =
 		};
   },
   
-  // Insert mark into the given HTML at the given pos and tell the browser to scroll there,
-  // then remove the mark
-  insertMarkAndScroll(HTML, pos)
-  {
-    // Extract the string of this bullet
-    var bulletEndPos = HTML.indexOf('</li>',pos);
-    if (bulletEndPos == -1) { bulletEndPos = pos+1; }
-    var bulletStr = HTML.substring(pos,bulletEndPos);
-
-    // Add location mark and scroll. A dummy string is inserted to make sure there 
-    // is a nonempty string so that the padding-top functions normally.
-    var screenHeightAdj = Math.round(window.innerHeight/3);
-    var dummyStr = 'makeSurePaddingWork';
-	  var markedStr = '<a id="lastEdit" style="padding-top: '+screenHeightAdj+'px;">'+dummyStr+bulletStr+'</a>';
-		HTML = [HTML.slice(0, pos), markedStr, HTML.slice(pos+bulletStr.length)].join('');
-		document.getElementById('wikitext').innerHTML = HTML;
-
-    // The setTimeout with 0 delay is a fix for the case where many images are to be 
-    // arranged by browser, i.e., diary pages. The scrollIntoView() gets disturbed 
-    // in this case without setTimeout. 
-    setTimeout(function(){document.getElementById('lastEdit').scrollIntoView();}, 0);
-
-    // Remove the dummy string, and color the string for easy spotting
-    var coloredStr = '<span style="background-color: yellow;">'+markedStr.replace(dummyStr,'')+'</span>';
-    document.getElementById('wikitext').innerHTML = HTML.replace(markedStr,coloredStr);
-    
-    // Recover the original html if this is a textarea
-    if (ScrollPositioner.action == 'edit')
-    { document.getElementById('wikitext').innerHTML = document.getElementById('wikitext').innerHTML.replace(coloredStr,bulletStr); }
-  },
-  
   // When browsing, replace the special string inserted at the last caret position when
   // autosaving with a predefined html location markup #lastEdit and scroll there, or an
   // empty string depending on the entered url. When viewing the history, simply remove
   // all such special strings.
   setScrollFromEdit: function(value)
   {
-  	  var numBullet = value;
-  	  
-			// Delete the cookie as we would like the press-then-edit to be valid only once
-			// after pressed.
-			var HTML = document.getElementById('wikitext').innerHTML;    
+		if (value.substring(0,1) == 'n') { value = value.slice(1); }
+		else { ScrollPositioner.setScrollPos(value); return; }
+     	  
+		var numBullet = value;
+		
+		// Delete the cookie as we would like the press-then-edit to be valid only once
+		// after pressed.
+		var HTML = document.getElementById('wikitext').innerHTML;    
 
-      // Find the char offset of the numBullet-th <li => pos
-			var L = HTML.length, pos = -1;
-			while(numBullet-- && pos++<L)
-			{
-				var pos = HTML.indexOf('<li', pos);
-				if (pos == -1) { break; }
-			}
-			pos = HTML.indexOf('>',pos) + 1;
+		// Find the char offset of the numBullet-th <li => pos
+		var L = HTML.length, pos = -1;
+		while(numBullet-- && pos++<L)
+		{
+			var pos = HTML.indexOf('<li', pos);
+			if (pos == -1) { break; }
+		}
+		var endPos = HTML.indexOf('>',pos) + 1;
 
-      ScrollPositioner.insertMarkAndScroll(HTML, pos);
+		var screenHeightAdj = Math.round(window.innerHeight/3);
+		var styleMarkupStr = ' style="background-color: yellow;"';
+    var bulletMarkup = HTML.substring(pos,endPos);
+    var idPos = bulletMarkup.indexOf('id=');
+    var idName = '';
+    if (idPos != -1)
+    {
+      var quoteChar = bulletMarkup.substring(idPos+3,idPos+4);
+      idName = bulletMarkup.substring(idPos+4,bulletMarkup.indexOf(quoteChar,idPos+4));
+    }
+		else
+		{
+			idName = 'lastEdit';
+		  styleMarkupStr = ' id="'+idName+'"'+styleMarkupStr;
+		}
+
+		HTML = [HTML.slice(0, endPos-1), styleMarkupStr, HTML.slice(endPos-1)].join('');	
+		document.getElementById('wikitext').innerHTML = HTML;
+
+		// A certain delay is needed when there are a lot of images waiting to be arranged on
+		// the page, i.e., diary pages. A delay of around 1 second is needed for diary page 
+		// with a lot of images. Not satisfied with this solution; there should be a mechanism
+		// for Chrome to notify me when the images are done arranging.
+    var positionDelay = 0;
+    if (ScrollPositioner.isDiaryPage == 2) { positionDelay = 1000; }
+		setTimeout(function()
+		{
+		  // First scroll the lastEdit id into view, then get the id's position relative to 
+		  // the browser window. Adjust the scroll position so that the id is 1/3 of the 
+		  // browser window height.
+			document.getElementById(idName).scrollIntoView();			
+			var idPosRelBrowser = Math.floor(document.getElementById(idName).getBoundingClientRect().top);
+      screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
+			ScrollPositioner.setScrollPos(ScrollPositioner.getScrollPos()-screenHeightAdj);
+		},positionDelay);
   },
-    
 
   // Wait for the LATEX rendering to complete first since it also replaces the page HTML.
   // Then call setScrollFromEdit();
-  waitLatexThenSetScrollFromEdit: function(value)
+  waitLatexThenSetScroll: function(value)
   {
     var HTML = document.getElementById('wikitext').innerHTML;
 
@@ -306,7 +309,7 @@ var ScrollPositioner =
      	  return;
      	}
      		  
-			setTimeout(function(){ScrollPositioner.waitLatexThenSetScrollFromEdit(value)},100);
+			setTimeout(function(){ScrollPositioner.waitLatexThenSetScroll(value)},100);
 		}
 		else
 		{
@@ -324,16 +327,16 @@ var ScrollPositioner =
      		  if (ScrollPositioner.nWaitForLatex > 100)
      		  {
      		    alert('Latex rendering exceeds 10 seconds!');
-     		    ScrollPositioner.setScrollFromEdit(value);
+        	  ScrollPositioner.setScrollFromEdit(value);
      		    return;
      		  }
      		  
-			    setTimeout(function(){ScrollPositioner.waitLatexThenSetScrollFromEdit(value)},100);
+			    setTimeout(function(){ScrollPositioner.waitLatexThenSetScroll(value)},100);
 		    }
 		    else
 		    {
 		      ScrollPositioner.nWaitForLatex = 0;
-		      ScrollPositioner.setScrollFromEdit(value);
+       	  ScrollPositioner.setScrollFromEdit(value);
 		    } 
 		  }
 		  // No primitive markup, no latex header, means no latex on this page
@@ -384,15 +387,15 @@ var ScrollPositioner =
 	// automatically with scroll and caret situated at the beginning of the selected bullet.
 	// Also called the "Edit here" mechanism.
   setScrollFromBrowse: function(value)
-  {
+  {		
     var numBullet = value;
-    
+      
 		// The change from <textarea to <div corrupts the font settings, this affects the
 		// scroll position. Specifically set the font to match the <textarea editing style
 		// to deal with this problem. The font is unfortunately OS dependent.
 		// The line-height can be controlled. Remember to set the textarea line-height
 		// to 1.2em in css.
-		if (ScrollPositioner.stationName == 'MBA')
+		if (ScrollPositioner.OS == 'Mac')
 		{ document.getElementById('text').style.fontFamily = 'Lucida Grande'; }
 		else
 		{ document.getElementById('text').style.fontFamily = 'COURIER'; }
@@ -412,15 +415,22 @@ var ScrollPositioner =
 		// Get charOffset based on numBullet and isFirstLineBullet
 		var pos = ScrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
 
-    ScrollPositioner.insertMarkAndScroll(HTML, pos);
+    var screenHeightAdj = Math.round(window.innerHeight/3);
+    var markedStr = '<a id="lastEdit" style="padding-top: '+screenHeightAdj+'px;">{PAD}</a>';
+		HTML = [HTML.slice(0, pos), markedStr, HTML.slice(pos)].join('');
+		document.getElementById('wikitext').innerHTML = HTML;
+		document.getElementById('lastEdit').scrollIntoView();
+		document.getElementById('wikitext').innerHTML = document.getElementById('wikitext').innerHTML.replace(markedStr,'');
 
 		// Change from div back to textarea
 		HTML = document.getElementById('wikitext').innerHTML;
 		HTML = HTML.replace('<!-- START --><div', '<textarea');
 		HTML = HTML.replace('<!-- END --></div>', '</textarea>');
 		document.getElementById('wikitext').innerHTML = HTML;
+		
 
 		/********************************************************************************/
+
 		// Set caret position 
 		// Somehow calculating from document body and add appropriate offset does not add
 		// up. The difference between charOffset calculated above and below is not a fixed
@@ -434,37 +444,24 @@ var ScrollPositioner =
 		pos = ScrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
     var pos2 = HTML.indexOf("\n",pos);
     if (pos2 == -1) { pos2 = pos+1; }
-    
-		// At the end, set caret then focus
+
 		ScrollPositioner.setCaretPos(pos,pos2);
-		document.getElementById('text').focus();
   },
   
   init: function()
   {
 	  if (ScrollPositioner.action == 'browse')
 	  {
-// Remove this after a while
-if (document.getElementById('wikitext').innerHTML.indexOf('{EDIT}') != -1) { alert('Mark found!'); }
-
 	    ScrollPositioner.isBrowsing = true;
 	    
-	    // Check cookie, if exist
-	    // Call waitLatexThenSetScrollFromEdit
-	    // Else call setFrom cookie
+	    // Check cookie. If the cookie content begins with 'n', the page has just been 
+	    // modified. Delete it and scroll to the modified position.
+	    // For browsing, before any scrolling we have to wait until the latex rendering is 
+	    // completed; otherwise the scroll is not correct.
   	  cookieName = ScrollPositioner.pagename.toUpperCase() + '-ScrollY';
   		var value = ScrollPositioner.getCookie(cookieName);
-  		if (value.substring(0,1) == 'n')
-      {
-      	ScrollPositioner.delCookie(cookieName);
-      	ScrollPositioner.waitLatexThenSetScrollFromEdit(value.slice(1));
-      }
-  		else
-  		{ 
-// Once timeout was necessary for correct functioning for diary pages. Remove it if NGW
-//  			setTimeout(function(){ScrollPositioner.setScrollPos(value)},2000);
-  			ScrollPositioner.setScrollPos(value);
-  		}
+  		if (value.substring(0,1) == 'n') { ScrollPositioner.delCookie(cookieName); }
+     	ScrollPositioner.waitLatexThenSetScroll(value);  
 	  }
 	  
 	  else if (ScrollPositioner.action == 'edit')
@@ -489,11 +486,10 @@ if (document.getElementById('wikitext').innerHTML.indexOf('{EDIT}') != -1) { ale
 	  	  ScrollPositioner.isLegacyTextedit = true;
 	  		document.getElementById('text').focus();	  		
       	textAreaAdjust();
-      	
-//	  		ScrollPositioner.pasteFixForLegacyTextarea();
 	  	}
 	    	    
-	    // Check cookie, if exist
+	    // Check cookie. If the cookie content begins with 'n', texts from browsing have 
+	    // just been selected for editing. Delete it and scroll to the specified position.
 	    cookieName = ScrollPositioner.pagename.toUpperCase() + 'EDIT-ScrollY';
   		var value = ScrollPositioner.getCookie(cookieName);
   		if (value.substring(0,1) == 'n')
@@ -527,7 +523,6 @@ function setScrollAndCaretPosCookie()
   { ScrollPositioner.setCaretPosCookies(); }
 }
 
-
 // On receiving new input, adjust the legacy textarea box size.
 window.addEventListener('input', textAreaAdjust, false);
 function textAreaAdjust()
@@ -552,17 +547,21 @@ window.addEventListener('keydown', function()
 //alert(ScrollPositioner.getScrollPos());
   if (ScrollPositioner.isBrowsing == true)
   {
+    // Spaces are all removed for comparison.
 		if( event.keyCode == 13 )
 		{
+		  // Remove spaces and replace special characters. 
 			var sel = window.getSelection();
-			var selString = sel.toString().replace(/ /g,'');
+			var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 
 			if (selString == '') { return; }
 			if (selString.substring(0,1) == "\n") { selString = selString.slice(1); }
 			var newlinePos = selString.indexOf("\n");
 			if (newlinePos != -1) { selString = selString.substring(0,newlinePos); }
-	
-			var HTML = document.getElementById('wikitext').innerHTML.replace(/ /g,'');       
+
+		  // Remove spaces.
+			var HTML = document.getElementById('wikitext').innerHTML.replace(/ /g,'');
+
 			var selStringPos = HTML.indexOf( selString );
 			HTML = HTML.substring(0,selStringPos);
 

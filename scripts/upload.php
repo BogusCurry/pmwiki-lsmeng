@@ -76,7 +76,10 @@ foreach($UploadExts as $k=>$v)
 SDV($UploadDir,'uploads');
 SDV($UploadPermAdd,0444);
 SDV($UploadPermSet,0);
-SDV($UploadPrefixFmt,'/$Group');
+// Meng. Remove the default behavior where the uploaded files must go to a folder named 
+// after the current group name. The upload folder is now configured in config.php
+//SDV($UploadPrefixFmt,'/$Group');
+SDV($UploadPrefixFmt,'');
 SDV($UploadFileFmt,"$UploadDir$UploadPrefixFmt");
 $v = preg_replace('#^/(.*/)#', '', $UploadDir);
 SDV($UploadUrlFmt,preg_replace('#/[^/]*$#', "/$v", $PubDirUrl, 1));
@@ -132,12 +135,20 @@ SDV($UploadVerifyFunction, 'UploadVerifyBasic');
 
 function MakeUploadName($pagename,$x) {
   global $UploadNameChars, $MakeUploadNamePatterns;
+
+  // Meng. UploadNameChars controls the set of characters allowed in upload names.
+  // Defaults to "-\w. ", which means alphanumerics, hyphens, underscores, dots, and
+  // spaces can be used in upload names, and everything else will be stripped.
+  // The line below allows Unicode  
+  $UploadNameChars = "-\\w. \\x80-\\xff";
+  
   SDV($UploadNameChars, "-\\w. ");
   SDV($MakeUploadNamePatterns, array(
     "/[^$UploadNameChars]/" => '',
     '/\\.[^.]*$/' => PCCF('return strtolower($m[0]);'),
     '/^[^[:alnum:]_]+/' => '',
     '/[^[:alnum:]_]+$/' => ''));
+//die(PPRA($MakeUploadNamePatterns, $x));
    return PPRA($MakeUploadNamePatterns, $x);
 }
 
@@ -154,6 +165,7 @@ function LinkUpload($pagename, $imap, $path, $alt, $txt, $fmt=NULL) {
   $FmtV['$LinkUpload'] =
     FmtPageName("\$PageUrl?action=upload&amp;upname=$encname", $pagename);
   $FmtV['$LinkText'] = $txt;
+      
   if (!file_exists($filepath)) 
     return FmtPageName($LinkUploadCreateFmt, $pagename);
   $path = PUE(FmtPageName(IsEnabled($EnableDirectDownload, 1) 
@@ -224,7 +236,15 @@ function HandleDownload($pagename, $auth = 'read') {
   exit();
 }
 
-function HandlePostUpload($pagename, $auth = 'upload') {
+// Meng. Should be obvious. Borrowed from the Internet. 
+function png2jpg($originalFile, $outputFile, $quality)
+{
+    $image = imagecreatefrompng($originalFile);
+    imagejpeg($image, $outputFile, $quality);
+    imagedestroy($image);
+}
+
+function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload') {
   global $UploadVerifyFunction, $UploadFileFmt, $LastModFile, 
     $EnableUploadVersions, $Now, $RecentUploadsFmt, $FmtV,
     $NotifyItemUploadFmt, $NotifyItemFmt, $IsUploadPosted,
@@ -234,11 +254,54 @@ function HandlePostUpload($pagename, $auth = 'upload') {
   $upname = $_REQUEST['upname'];
   if ($upname=='') $upname=$uploadfile['name'];
   $upname = MakeUploadName($pagename,$upname);
+
+  // Convert the uploaded image from png to jpg if it's a pasted image matching the
+  // a specific filename format given in fileUpload.js
+//  if (function_exists(imagecreatetruecolor) && preg_match('/\d{8}_\d{6}P\.jpg/',$upname))
+//  { png2jpg($uploadfile['tmp_name'], $uploadfile['tmp_name'], 100); }
+
+  // Meng. Image resize borrowed from the Internet.
+  // Max height or width is now set to 720 px.
+  // gif is not processed as normally it's an animation.
+  if (function_exists(imagecreatetruecolor))
+  {
+		$imgFile = $uploadfile['tmp_name'];
+		$ext = strtolower(substr($upname, strrpos($upname, '.')+1));
+		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png')//|| $ext == 'gif')
+		{
+			$MAXWHPX = 720;
+			list($width,$height)=getimagesize($imgFile);
+			$maxWH = max($width,$height);
+			if ($maxWH > $MAXWHPX)
+			{
+				$scale = $MAXWHPX/$maxWH;	
+				$newwidth=round($width*$scale);
+				$newheight=round($height*$scale);
+				$tmp=imagecreatetruecolor($newwidth,$newheight);
+				if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
+				else if ($ext == 'png') { $src = imagecreatefrompng($imgFile); }
+				else if ($ext == 'gif') { $src = imagecreatefromgif($imgFile); }
+				imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
+				if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
+				else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
+				else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
+				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
+				imagedestroy($src);
+				imagedestroy($tmp);
+			}
+		}
+  }
+
   if (!function_exists($UploadVerifyFunction))
     Abort('?no UploadVerifyFunction available');
   $filepath = FmtPageName("$UploadFileFmt/$upname",$pagename);
+  
+  // Meng. Deal with the Chinese filename on Windows..
+  if (getOS() == 'Windows') { $filepath = iconv('UTF-8','big5',$filepath); }
+  
   $result = $UploadVerifyFunction($pagename,$uploadfile,$filepath);
-  if ($result=='') {
+  if ($result=='')
+  {
     $filedir = preg_replace('#/[^/]*$#','',$filepath);
     mkdirp($filedir);
     if (IsEnabled($EnableUploadVersions, 0))
@@ -268,17 +331,29 @@ function HandlePostUpload($pagename, $auth = 'upload') {
       register_shutdown_function('NotifyUpdate', $pagename, getcwd());
     }
   }
+  
+  if (isset($_SERVER['HTTP_AJAXUPLOAD']))
+  {
+    header("UpResult: $result");
+    return;
+  }
+
   SDV($UploadRedirectFunction, 'Redirect');
-  
-  
+
 /****************************************************************************************/
+/*
+  if ($originalAction == 'edit')
+  {
+    setcookie("upname", '{$PhotoPub}'.substr($pagename, 0, strpos($pagename,'.')).'/'.$upname);
+    Redirect($pagename.'?action=edit');
+  }
+*/
   // Meng. Return to viewing the page on upload success; default action otherwise.
   if ($result == "upresult=success")
-  {
-    Redirect($pagename);
-  }
+  { $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload"); }
   else
   { $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&$result"); }
+
 /****************************************************************************************/
 }
 
@@ -345,8 +420,37 @@ function FmtUploadList($pagename, $args) {
                           : "\$PageUrl?action=download&amp;upname=",
                       $pagename);
 
+  // Meng. Delete an uploaded file.
+	if (isset($_GET["delete"]) && file_exists($uploaddir.'/'.$_GET["delete"]))
+	{
+	  unlink($uploaddir.'/'.$_GET["delete"]);
+    Redirect($pagename.'?action=upload');
+	}
+	// Show the uploaded image.
+  else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
+	{
+	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
+	  global $imgHeightPx;
+	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
+    {
+      echo "<img height=$imgHeightPx src=".getImgFileContent($uploaddir.'/'.$_GET["show"]).'></img>';
+
+      // I have no idea why the image size toggling is not working.
+/*
+      $imgUrl = $uploaddir.'/'.$_GET["show"];
+      $flipboxMarkup = FmtImgSizeToggle('_',$imgCount,$imgUrl);
+			$flipboxMarkupHead = substr($flipboxMarkup,0,strpos($flipboxMarkup,$imgUrl));
+			$flipboxMarkupEnd = substr($flipboxMarkup,strlen($flipboxMarkupHead)+strlen($imgUrl));
+			$flipboxMarkup = $flipboxMarkupHead.getImgFileContent($imgUrl).$flipboxMarkupEnd;
+      echo $flipboxMarkup;
+*/
+    }
+    else { echo 'Not an image!'; }
+	}
+
   $dirp = @opendir($uploaddir);
   if (!$dirp) return '';
+
   $filelist = array();
   while (($file=readdir($dirp)) !== false) {
     if ($file{0} == '.') continue;
@@ -356,23 +460,55 @@ function FmtUploadList($pagename, $args) {
   closedir($dirp);
   $out = array();
   natcasesort($filelist);
+  
   $overwrite = '';
   $fmt = IsEnabled($IMapLinkFmt['Attach:'], $UrlLinkFmt);
-  foreach($filelist as $file=>$encfile) {
-    $FmtV['$LinkUrl'] = PUE("$uploadurl$encfile");
+  foreach($filelist as $file=>$encfile)
+  {
+    // Meng. Change the link.
+    $FmtV['$LinkUrl'] = 
+      FmtPageName("\$PageUrl?action=upload&amp;show=$encfile", $pagename); //PUE("$uploadurl$encfile");
     $FmtV['$LinkText'] = $file;
     $FmtV['$LinkUpload'] =
       FmtPageName("\$PageUrl?action=upload&amp;upname=$encfile", $pagename);
+    // Meng. Delete an uploaded file.
+    $FmtV['$LinkDel'] =
+      FmtPageName("\$PageUrl?action=upload&amp;delete=$encfile", $pagename);      
+
     $stat = stat("$uploaddir/$file");
     if ($EnableUploadOverwrite) 
       $overwrite = FmtPageName("<a rel='nofollow' class='createlink'
         href='\$LinkUpload'>&nbsp;&Delta;</a>",
         $pagename);
-    $lnk = FmtPageName($fmt, $pagename);
-    $out[] = "<li> $lnk$overwrite ... ".
-      number_format($stat['size']) . " bytes ... " . 
-      strftime($TimeFmt, $stat['mtime']) . "</li>";
+        
+		$del = FmtPageName("<a rel='nofollow' class='createlink'
+			href='\$LinkDel'>&nbsp;&Chi;</a>",
+			$pagename);
+			
+		$lnk = FmtPageName($fmt, $pagename);
+
+    // Meng. Get the image dimensions.
+    $imgDimension = '';
+    if (function_exists(getimagesize))
+    {
+      list($width,$height) = getimagesize($uploaddir.'/'.$file);
+      if (isset($width)) { $imgDimension = $width.'x'.$height.' ... '; }
+    }
+		
+	// Meng. Add the symbol for deletion.
+		$out[$stat['mtime'].$file] = "<li> $lnk$overwrite$del ... ". 
+//    $out[] = "<li> $lnk$overwrite ... ".
+		
+		$imgDimension.
+
+		number_format($stat['size']/1000) . " KB ... " . 
+		strftime($TimeFmt, $stat['mtime']) . "</li>";
   }
+
+  // Meng. Sort the filelist by date
+	ksort($out);
+	$out = array_reverse($out);
+	
   return implode("\n",$out);
 }
 

@@ -47,7 +47,7 @@ $WikiTitle = 'PmWiki';
 ##  see PmWiki.UploadsAdmin.
 $EnableUpload = 1;          
 $EnableUploadOverwrite = 1;             
-# $DefaultPasswords['upload'] = crypt('secret');
+$DefaultPasswords['upload'] = '';
 
 ##  Setting $EnableDiag turns on the ?action=diag and ?action=phpinfo
 ##  actions, which often helps the PmWiki authors to troubleshoot 
@@ -147,24 +147,6 @@ $DiffKeepDays=36500;
 
 /****************************************************************************************/
 
-$enableContentEditable = 0;
-
-/*
-if ($enableContentEditable == 0)
-{
-  // Go to "codemirror.js" to change "lineWiseCopyCut"
-
-  $CodeMirrorActivePresets['activeline'] = 1;
-  $CodeMirrorActivePresets['continuelist'] = 0;
-  $CodeMirrorActivePresets['autoresize'] = 1;
-  $CodeMirrorActivePresets['linenumbers'] = 1;
-  $CodeMirrorActivePresets['linewrapping'] = 1;
-  
-  $CodeMirrorBaseUrl = "\$FarmPubDirUrl/codemirror-5.14.2";
-  include_once("$FarmD/cookbook/codemirror.php");
-}
-*/
-
 # Include traditional chinese language
 include_once("$FarmD/scripts/xlpage-utf-8.php");
 # Apply Chinese to link names
@@ -184,17 +166,17 @@ include_once("$FarmD/cookbook/autosave.php");
 # For flipbox
 include_once("$FarmD/cookbook/flipbox.php");
 
-/*
+
 # For wpap mp3 player
-$wpap_initialvolume = "1";
-$wpap_width = "500";
-include_once("$FarmD/cookbook/wpap/wpap.php");
-*/
+#$wpap_initialvolume = "1";
+#$wpap_width = "500";
+#include_once("$FarmD/cookbook/wpap/wpap.php");
+
 
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
 
-/* Neo mp3 and video player. */
+# Neo mp3 and video player.
 $EnableDirectDownload = 1;
 include_once("$FarmD/cookbook/flashmediaplayer.php");
 $FlashMediaPlayerInfo['neo_mp3'] = array(
@@ -241,6 +223,15 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 #'srt'=>1
 ));
 
+/*
+// Embed youtube, TED, facebook, and vimeo videos, as well as pdfs.
+if($action=="browse" || $_REQUEST['preview']) 
+{
+  $HTMLFooterFmt['ape'] = '<script type="text/javascript" 
+	 src="$PubDirUrl/ape/ape.js"></script>';
+}
+*/
+
 # Replace some never-used full-width characters on saving.
 $ROSPatterns ['/＊/'] = "*";
 $ROSPatterns ['/＃/'] = "#";
@@ -272,9 +263,9 @@ $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
 
-
 // This eliminates redundant newlines each time the page is saved.
 //$ROSPatterns ['/\n\n\n/'] = "\n\n";
+
 
 /****************************************************************************************/
 // Meng. Configurations for my plugins/enhancements for PmWiki.
@@ -291,7 +282,8 @@ else if ($AuthorLink == 'SAM_MENG_W7N')
 { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
 else { Abort('Unexpected station name!'); }
 
-if (!file_exists("$WorkDir")) { Abort("Public wiki.d folder does not exist in the specified path \"$WorkDir\"!"); }
+if (!file_exists("$WorkDir"))
+{ Abort("Public wiki.d folder does not exist in the specified path \"$WorkDir\"!"); }
 
 // See if local wiki.d folder exists.
 if (!file_exists("wiki.d"))
@@ -342,9 +334,6 @@ $pageLockIdleDuration = 600;
 $imgHeightPx = 330;
 $imgHeightPxL = 660;
 
-// Max allowable upload size in bytes. Currently set to 10 MB.
-$maxUploadSize = 10000000; 
-
 // Update the page history and store the difference if the following time period has 
 // elapsed since last editing. 
 $pageHistoryUpdateInterval = 3600;
@@ -365,3 +354,25 @@ $pageIndexUpdateInterval = 120;
 
 require_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
+// Max allowable upload size in bytes. Currently set to 100 MB.
+$maxUploadSize = 100000000;
+$groupName = substr($pagename, 0, strpos($pagename,'.'));
+// The folder for storing the uploaded files. Default to the "$WorkDir" in dropbox.
+// For diary pages, the uploaded files go to the diary photo folder.
+$UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
+if (isDiaryPage() === 2) 
+{
+  // Use regex to get year & mon from pagename. Not satisfied with the mon; there should 
+  // be a way not to repeat the look behind part (?<=\.\d{4}0)
+  preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
+  preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
+  $UploadDir = "$Photo/$year/$mon";
+}
+
+
+/*
+// For debugging
+
+//file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
+file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent);
+*/

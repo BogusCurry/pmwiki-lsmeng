@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+  <title>OpenStreetMap for PmWiki</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <link rel="stylesheet" href="leaflet.css" />
+  <script type="text/javascript" src="leaflet.js"></script>
+</head>
+<body style="width:100%; height: 100%; padding:0; margin: 0;">
+  <div id="map" style="width:100%; height:100%; padding:0; margin:0; text-align:center; background-color:#888;">Embedding...</div>
+  <script type="text/javascript">
+  /**
+    Ape - Automatic Embedding of OpenStreetMaps for PmWiki
+    Written by (c) Petko Yotov 2011-2015    www.pmwiki.org/Petko
+
+    This text is written for PmWiki; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published
+    by the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version. See pmwiki.php for full details
+    and lack of warranty.
+
+    Version 20150809
+  */
+
+  function initmap() {
+    if(!location.hash) return;
+    var hash = location.hash.substring(1);
+
+    var el = parent.document.getElementById(hash);
+    var fr = parent.document.getElementById('iframe_'+hash);
+
+    if(! (el && fr)) return;
+
+    var h = fr.style.height;
+    var map = document.getElementById("map");
+    map.style.height = h;
+    
+    var html = '<object width="100%" height="'+h+'">'
+     + '<param name="movie" value="'+el.href+'">'
+     + '<param name="play" value="false"/>'
+     + '<param name="autoplay" value="false"/>'
+     + '<param name="autostart" value="0"/>'
+     + '<embed src="'+el.href+'" width="100%" height="'+h+'" play="false" flashvars="play=false"></embed>'
+     + '</object>';
+    
+    map.innerHTML = html;
+  }
+  initmap();
+  </script>
+</body>
+</html>

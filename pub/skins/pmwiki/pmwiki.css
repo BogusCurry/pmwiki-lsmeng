@@ -122,15 +122,14 @@ h6 { font-size:1.0em; }
 /* These are for the edit form. */
 #wikiedit form
 {
-  white-space: pre-wrap;
-  
   margin:0px; 
   margin-top:-42px;
+/*  margin-top:0px;*/
   width:100%;
 }
 #wikiedit textarea
 {
-  white-space: pre-wrap;
+  white-space: normal;
 
   font-family: Lucida Grande, Courier;
   line-height: 1.2em;

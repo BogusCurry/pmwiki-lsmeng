@@ -1,22 +1,17 @@
 <?php
 /*
- * Image size toggling written by Ling-San Meng (Sam Meng).
+ * Image size toggling.
  * Almost entirely adapted from "flipbox".
  * 
+ * Author: Ling-San Meng
  * Email: f95942117@gmail.com
- * Last Modified: 2015/12/13
  */
 
 SDV($imgFlipboxChoices, 'x_');
 SDV($imgFlipboxHTML, '<img id="_isti%1$s" height="%2$s" src="%3$s" title="%1$s" alt="%1$s" %4$s/>'); # id, url, onclick, state
 SDV($imgQualifyPatterns["/\\[([$imgFlipboxChoices])\\]/"], '[$1$1$1]');
 
-function FmtImgSizeToggle($_x, $id, $imgFilePath)
-{
-  global $HTMLHeaderFmt, $imgFlipboxChoices, $imgFlipboxHTML;
-  global $imgHeightPx, $imgHeightPxL;
-  
-  $javaSrc = "imgSizeToggleStatus = new Array();
+$ImgToggleJavaSrc = "imgSizeToggleStatus = new Array();
 
 function _idImgSizeToggle(id)
 {
@@ -54,8 +49,14 @@ function imgSizeToggle(id, st, update)
   $HTMLHeaderFmt['imgSizeToggle'] = "<script type='text/javascript'><!--
   var imgFlipboxChoices = \"$imgFlipboxChoices$imgFlipboxChoices\";
   //--></script><script type='text/javascript'><!--
-  ".$javaSrc."
+  ".$ImgToggleJavaSrc."
   --></script>";
+  
+function FmtImgSizeToggle($_x, $id, $imgFilePath)
+{
+  global $HTMLHeaderFmt, $imgFlipboxChoices, $imgFlipboxHTML;
+  global $imgHeightPx, $imgHeightPxL;
+
 
   $_y = $_x{0};
 

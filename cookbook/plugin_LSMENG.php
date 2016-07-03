@@ -9,10 +9,15 @@
  * Email: f95942117@gmail.com
  */
 
-function echo_($str)
+// Return a string of the current operating system.
+// Mac, Windows, Linux, etc.
+function getOS()
 {
-	echo $str."<br>";
+  $obj = new OS_BR();
+  return $obj->showInfo('os');
 }
+
+function echo_($str) { echo $str."<br>"; }
 
 /****************************************************************************************/
 
@@ -27,8 +32,7 @@ function getPageNameFromURI()
   
   $pagename = substr($URI,$pos+3);
   $pos = strpos($pagename,"?");
-  if ($pos !== false)
-  { $pagename = substr($pagename,0,$pos); }
+  if ($pos !== false) { $pagename = substr($pagename,0,$pos); }
   
   return $pagename;
 }
@@ -440,13 +444,7 @@ function getFormatTime()
 // both "_www". For ease of file operations (read/copy/paste) by the account user, 
 // add your account to the Group "_www".
 function chmodForPageFile($file)
-{
-	global $AuthorLink;
-	if ($AuthorLink == 'MBA')
-	{ 
-    @chmod($file, 0440);
-  }
-}
+{ if (getOS() == 'Mac') { @chmod($file, 0440); } }
 
 // Handle a timeStamp for different users (uniquely identified by SESSION).
 // Builtin authentication check is performed each time pmwiki is executed. The major 
@@ -459,7 +457,7 @@ function checkTimeStamp()
   // checkTimeStamp() can be the 1st function to call $_SESSION, therefore session_start()
   // has to be called at the outset.
 	@session_start();
-	
+  @session_write_close();
 	if (isset($_SESSION['MASTER_KEY']))
 	{
   	$hasSuccAuthCookie = true;
@@ -475,6 +473,7 @@ function checkTimeStamp()
 	    $currentTime = time();
 	    $lastTime = isset($_SESSION['timeStamp']) ? $_SESSION['timeStamp'] : $currentTime;
 	    $timeDiff = $currentTime - $lastTime;
+	    @session_start();
 	    $_SESSION['timeStamp'] = $currentTime;
 	    @session_write_close();
   
@@ -799,7 +798,7 @@ function getImgFileContent($file, $mime='image/png')
 }
 
 # For img size toggle; adapted from flipbox.
-include_once($FarmD.'/cookbook/imgSizeToggle.php');
+include_once("$FarmD/cookbook/imgSizeToggle.php");
 
 // Find valid image URLs in "$text", replace it with the "image size toggle" function.
 // Furthermore, if the image can be found in the dropbox folder, replace the img url with
@@ -910,11 +909,8 @@ function replaceImgUrlWithSizeToggle($text)
   global $HTMLHeaderFmt;
   $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
   window.addEventListener('load', function(){";
-  for ($i=0;$i<$imgCount;$i++)
-  {
-    $j = $i+1;
-    $HTMLHeaderFmt[] .= "document.getElementById('_isti$j').style.cursor = 'pointer';";
-  }
+  for ($i=1;$i<$imgCount;$i++)
+  { $HTMLHeaderFmt[] .= "document.getElementById('_isti$i').style.cursor = 'pointer';"; }
   $HTMLHeaderFmt[] .= "}, false);
   --></script>";
 
@@ -928,7 +924,7 @@ function replaceImgUrlWithSizeToggle($text)
 function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
 {
   // Check if it has the correct image extension.
-  $supportImgExtList = array('.jpg', '.png', '.jpeg', '.mp4');
+  $supportImgExtList = array('.jpg', '.png', '.gif', '.jpeg', '.mp4');
   $NUM_IMGEXT = count($supportImgExtList);
   $EXT_LEN = 0;
   for ($iExt=0;$iExt<$NUM_IMGEXT;$iExt++)
@@ -1164,11 +1160,14 @@ if ($action == 'edit' || $action == 'browse')
 {
   if (substr($pagename,0,4) != 'LOCK')
   {
+    $isDiaryPage = isDiaryPage();
+    $OS = getOS();
 		// Memorize and set the scroll position.
 		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
 		<script type='text/javascript'>
 		ScrollPositioner.pagename = '$pagename';
-		ScrollPositioner.stationName = '$AuthorLink';
+		ScrollPositioner.isDiaryPage = '$isDiaryPage';		
+		ScrollPositioner.OS = '$OS';
 		ScrollPositioner.action = '$action';
 		</script>";
 	}
@@ -1196,13 +1195,14 @@ function bookKeepProcess($pagename,&$text)
       {
         $_line = substr($textLineArray[$i],strpos($textLineArray[$i]," ",2));
 
-        // This supports negative numbers but not decimal
-        preg_match_all('/-?[0-9]+/', $_line, $matches);
-
-        // This supports decimal numbers but not negative
-//        preg_match_all('#\d+(?:\.\d{1,2})?#', $_line, $matches);
-                
-        $expense[$iMon] += array_sum($matches[0]);        
+        // Regex
+        // The leading negative sign can either be present or not
+        // followed by at least one digit
+        // followed by a dot which can be present or not
+        // followed by digits
+        preg_match_all('/\-?\d+\.?\d*/', $_line, $matches);
+                  
+        $expense[$iMon] += array_sum($matches[0]);
       }
     }
   }
@@ -1451,12 +1451,12 @@ function decryptStr($text, $key = "")
 	// Basically this trades memory off the CPU usage.
 	$decryptText = openssl_decrypt(substr($text,$SALT_LEN+$IV_LEN), $OPENSSL_METHOD, $AES_KEY, OPENSSL_RAW_DATA, $iv);
   
-	if ($decryptText === false)
-	{
-	  global $pagename;
-	  echo "Using key: $key <br>";
-	  echo "$pagename decryption fails at openssl_decrypt(). Possibly a wrong passphrase!<br>"; return -1;
-	}
+//	if ($decryptText === false)
+//	{
+//	  global $pagename;
+//	  echo "Using key: $key <br>";
+//	  echo "$pagename decryption fails at openssl_decrypt(). Possibly a wrong passphrase!<br>"; return -1;
+//	}
 
 	// Cache the decrypted text, or the AES KEY
 	if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
@@ -1691,8 +1691,7 @@ function passMAC($text, $key)
 }
 
 $HMAC_AUTH = false;
-function generate_HMAC_KEY()
-{}
+function generate_HMAC_KEY() {}
 
 // Derive the master key used for generating page-specific keys for AES encryption. Use
 // PBKDF2 with hardcoded $salt, which in fact doesn't have too much point. 
@@ -1766,9 +1765,39 @@ function isPasswdCorrect($passwd)
 	}
 }
 
-/****************************************************************************************/
+// Defunct. Attempt to clear and/or authenticate the Apache htaccess passwords.
+function httpAuth()
+{
+//	@session_start();
+//	@session_write_close();	
+//	if (isset($_SESSION['MASTER_KEY'])) { return; }
 
-//$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/wiki2html.js'></script>";
+//  echo password_hash("secret", PASSWORD_DEFAULT, ['cost' => 14]);
+  $username = 'Meng';
+  $passwordHash = '$2y$14$Ik4w14kTQWKppNY2FMLh7ehjsvMSplovbqcgOzkrzNizVGV3/6oV6';
+
+  if (isset($_SERVER['PHP_AUTH_USER']) && 
+           isset($_SERVER['PHP_AUTH_PW']))
+  {
+    if (password_verify($_SERVER['PHP_AUTH_PW'], $passwordHash) && 
+        $_SERVER['PHP_AUTH_USER'] == $username) {}
+    else
+    {
+      header('WWW-Authenticate: Basic realm="Restricted Section"');
+      header('HTTP/1.0 401 Unauthorized');
+      die ("Not Authorized!");
+    }
+  }
+  else
+  {
+//die ("here");
+    header('WWW-Authenticate: Basic realm="Restricted Section"');
+    header('HTTP/1.0 401 Unauthorized');
+    die ("Not Authorized!");
+  }
+}
+
+/****************************************************************************************/
 
 if ($action == 'browse')
 {
@@ -1844,4 +1873,49 @@ function updatePageHistory()
     else
     { return ".[[".$pagename."?action=diff&updateHistoryNow|"."Update]]"; }
   }
+}
+
+
+/****************************************************************************************/
+
+// Add the JS for drag & drop uploading multiple files, and direct copy & paste uploading
+// a single image. The assignment of "uploadDirUrlHeader" has been done in a special 
+// way to prevent the php variable $PhotoPub or $Photo getting evaluated by PHP.
+if ($action == 'edit')
+{
+	$handleUploadUrl = $ScriptUrl.'?n='.$pagename.'?action=postupload';
+	
+	if (isDiaryPage() === 2) 
+  {
+		// Use regex to get year & mon from pagename. Not satisfied with the mon; there should 
+		// be a way not to repeat the look behind part (?<=\.\d{4}0)
+		preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
+		preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
+		$uploadDirUrlHeader = "Photo}$year/$mon/";
+  }
+  else
+  {
+  	$groupName = substr($pagename, 0, strpos($pagename,'.'));
+		$uploadDirUrlHeader = "PhotoPub}$groupName/";
+	}
+  $HTMLHeaderFmt[] .= '<script type=\'text/javascript\' src="$PubDirUrl/fileUpload.js"></script>
+		<script type=\'text/javascript\'>
+    handleUploadUrl = "$ScriptUrl?n=$pagename?action=postupload";
+    uploadDirUrlHeader = "{$" + "$uploadDirUrlHeader";
+		</script>';
+}
+
+// Edit button: F1
+if ($action != 'edit')
+{
+  $HTMLHeaderFmt[] .= 
+  "<script type='text/javascript'>
+		window.addEventListener('keydown', function()
+		{
+			if (event.keyCode == 112)
+			{
+				window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit';
+			}
+		}, false);
+	</script>";
 }

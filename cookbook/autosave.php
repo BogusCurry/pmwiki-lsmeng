@@ -104,13 +104,11 @@ function AutoSaveMarkup( $pagename )
 
 function HandleAutoSave( $pagename, $auth = 'edit' )
 {
-//sleep(3);
-
 	global
 		$DraftRecentChangesFmt, $DraftSuffix, $EditFunctions, $DeleteKeyPattern,
 		$EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
 
-// Meng. Comment out the line below as it quits autosave on empty draft suffix.
+  // Meng. Comment out the line below as it quits autosave on empty draft suffix.
 //	if (empty( $DraftSuffix )) { echo XL('ASnosuffix'); return; }
 
 	$basename = preg_replace("/$DraftSuffix\$/", '', $pagename);
@@ -120,10 +118,9 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
 	$_POST['postdraft'] = 1;
 	SDV( $DraftRecentChangesFmt, array(''=>'') );
 
-// Meng. Comment out the line below as it causes errors.
+  // Meng. Comment out the line below as it causes errors.
 //	array_unshift( $EditFunctions, 'EditDraft' );
-
-	$DeleteKeyPattern = '.^'; // page deletion disabled
+//	$DeleteKeyPattern = '.^'; // page deletion disabled
 
 	Lock(2);
 		$page = RetrieveAuthPage($pagename, $auth, false);
@@ -132,8 +129,6 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
   // Meng. The original code for obtaining $draftmodtime is incorrect and has been
   // changed to the following line.
   $draftmodtime = $page['time'];
-
-//echo $_POST['text'];
 
 /* Meng: The following controls simultaneous editing. */
 	if ( ( $draftmodtime != $Now) && ( $_POST['basetime'] < $draftmodtime ) )
@@ -171,10 +166,3 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
 	  echo XL('ASnowrite');
 	}
 }
-
-/*
-function HandleAutoSaveRender( $pagename, $auth = 'edit' )
-{
-    echo MarkupToHTML($pagename, $_POST['text']);
-}
-*/

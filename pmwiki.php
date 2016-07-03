@@ -29,6 +29,7 @@
 /****************************************************************************************/
 /* Sam Meng: To my surprise that the default timezone is not sync to that of the laptop */
 date_default_timezone_set('Asia/Taipei');
+ini_set("memory_limit","1024M");
 /****************************************************************************************/
 
 error_reporting((E_ALL ^ E_NOTICE) & ~E_DEPRECATED);
@@ -1915,13 +1916,14 @@ $hash = hash_pbkdf2("sha512", $password, $salt, $iterations, 0, true);
 $time_elapsed_secs = microtime(true) - $start;
 echo $time_elapsed_secs."<br>";
 */
+
 			
 		// If page doesn't exist, open the editing page
 		if (PageExists($pagename) != 1) { Redirect($pagename."?action=edit"); }
 	
 		// Reconstruct the pageindex file if it's missing.
-		global $PageIndexFile;
-		if (!file_exists($PageIndexFile)) { reconstructPageindex(); }
+//		global $PageIndexFile;
+//		if (!file_exists($PageIndexFile)) { reconstructPageindex(); }
 	
 		// Update the pageindex if the pageindex does not reflect the newest changes in this 
 		// page based on some timestamps. The field and hence the page itself will also be updated.
@@ -1991,7 +1993,6 @@ echo $time_elapsed_secs."<br>";
 			// html in replaceImgUrlWithSizeToggle()
 			syncFileFromDropbox($text);
 		}
-		
 		
 		$text = @str_replace('(:groupfooter:)',"\n\n(:groupfooter:)",$text);
 /****************************************************************************************/
@@ -2212,10 +2213,7 @@ function PostPage($pagename, &$page, &$new)
           unset($new[$k]);
       }
 
-    // Meng. Somehow the following check for delete key pattern doesn't work after autosave 
-    // without Draft is used. Change it to the simple string compare "strcmp" solves the problem.
-//    if (preg_match("/$DeleteKeyPattern/", $new['text']))
-    if ( strcmp('delete', $new['text']) == 0)
+    if (preg_match("/$DeleteKeyPattern/", $new['text']))
     {
       if(@$new['passwdattr']>'' && !CondAuth($pagename, 'attr'))
         Abort('$[The page has an "attr" attribute and cannot be deleted.]');
@@ -2287,7 +2285,7 @@ function HandleEdit($pagename, $auth = 'edit') {
   global $IsPagePosted, $EditFields, $ChangeSummary, $EditFunctions, 
     $EnablePost, $FmtV, $Now, $EditRedirectFmt, 
     $PageEditForm, $HandleEditFmt, $PageStartFmt, $PageEditFmt, $PageEndFmt;
-  
+
   SDV($EditRedirectFmt, '$FullName');
   if (@$_POST['cancel']) 
     { Redirect(FmtPageName($EditRedirectFmt, $pagename)); return; }
@@ -2318,6 +2316,8 @@ function HandleEdit($pagename, $auth = 'edit') {
       Abort("?unable to retrieve edit form $efpage", 'editform');
     $FmtV['$EditForm'] = MarkupToHTML($pagename, $form['text']);
   }
+
+/*************************************************************************/
 
   SDV($PageEditFmt, "<div id='wikiedit'>
     <h2 class='wikiaction'>$[Editing {\$FullName}]</h2>
@@ -2353,7 +2353,7 @@ function HandleSource($pagename, $auth = 'read') {
 ## page accessed), we cache the results of site passwords and 
 ## GroupAttribute pages to be able to speed up subsequent calls.
 function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
-{ 
+{
 	// On access, if the user is authenticated, and pmwiki hasn't been accessed for a
 	// duration longer than a prespecified value, passwords are cleared or a full logout is
 	// called on the next access, depending on the time duration that the user has been idle.
@@ -2761,4 +2761,3 @@ function HandleLoginA($pagename, $auth = 'login')
   $page = RetrieveAuthPage($pagename, $auth, $prompt, READPAGE_CURRENT);
   Redirect($pagename);
 }
-

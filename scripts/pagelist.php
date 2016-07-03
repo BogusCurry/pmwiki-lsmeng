@@ -939,7 +939,7 @@ function PageIndexGrep($terms, $invert = false)
   // regenerate one.
   if ($wholePageText === false || $wholePageText === -1)
   {
-    @unlink($PageIndexFile);
+//    @unlink($PageIndexFile);
     global $pagename;
     redirect($pagename);
   }

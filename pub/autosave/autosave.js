@@ -15,8 +15,8 @@
 
 var AS = 
 {
-  savedStatusStr: "<span  style='background-color: lightgreen;'>&nbsp;&nbsp;&nbsp;</span>",
-  savingStatusStr: "<span  style='background-color: yellow;'>&nbsp;&nbsp;&nbsp;</span>",
+  savedStatusStr: "<span style='background-color: lightgreen;'>&nbsp;&nbsp;&nbsp;</span>",
+  savingStatusStr: "<span style='background-color: yellow;'>&nbsp;&nbsp;&nbsp;</span>",
   typingStatusStr: '...',
 	
   lastInputTime: 0,
@@ -35,7 +35,7 @@ var AS =
 	req: null, id: null,  status: '',
   
   basetime: 0,
-
+	
   // Set a cookie recording the current time. This is to work with the AutoRefresher.js
 	setLastModCookies: function()
 	{
@@ -91,7 +91,7 @@ var AS =
 			AS.busy = false;
 			AS.set_status(AS.req.responseText);
 		} 
-/* Meng: Change the "else" statement below. Now it won't stop on autosave failure. */
+    // Meng. Change the "else" statement below. Now it won't stop on autosave failure.
 //		else AS.set_status("Autosave failed (HTTP status " + AS.req.status + ')');
 		else
 		{
@@ -185,7 +185,6 @@ var AS =
 	saveOnUnload: function()
 	{
 		AS.req.open("POST",AS.url,false);
-		AS.req.setRequestHeader( "User-Agent", "XMLHTTP/1.0" );
 		AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
   
     AS.countBulletWriteCookie();
@@ -242,7 +241,6 @@ var AS =
 				
 				AS.busy = true;
 				AS.req.open("POST",AS.url,true);
-				AS.req.setRequestHeader( "User-Agent", "XMLHTTP/1.0" );
 				AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
 				AS.req.onreadystatechange = AS.reply;
 				AS.req.send(AS.post_str);
@@ -354,27 +352,6 @@ var AS =
     }
 	},
 
-// Remove this after a while
-	// Remove the special string inserted at the last caret position when autosaving.
-	removeMark: function(mark)
-	{
-    var textContent = AS.getTextContent();
-    var pos = textContent.indexOf(mark);
-		if ( pos != -1 )
-		{
-      var caretPos = AS.textID.selectionStart;			
-      textContent = [textContent.slice(0, pos), textContent.slice(pos+mark.length)].join('');
-			AS.setTextContent(textContent);
-      AS.textID.selectionStart = caretPos;
-      AS.textID.selectionEnd = caretPos;
-      
-// Remove these after a while
-alert('Mark removed');
-AS.post_str = 'action=edit&n='+AS.pagename+'&basetime=9999999999&text=' + encodeURIComponent(textContent);
-AS.saveOnUnload();
-		}
-	},
-	
 	init: function()
 	{
 		if ( !AS.url || !AS.delay || !$("text") ) return;
@@ -386,7 +363,7 @@ AS.saveOnUnload();
 		// to see if the current text is outdated/buffered.
     if (document.getElementById('text').textContent != document.getElementById('text').form.text.value)
     { location.reload(); }
-		
+
 		AS.textID = document.getElementById('text');
     AS.ef = AS.textID.form;
 
@@ -407,22 +384,18 @@ AS.saveOnUnload();
     AS.status = AS.status + AS.MarkupToHTML();	
     AS.txt.innerHTML = AS.status;
 
-// Remove these after a while
-AS.removeMark(' {EDIT}');
-
 		if (AS.cb)
 		{
 			addEventSimple( AS.cb, "click", function() { AS.ctrl(); AS.set_cookie( AS.cb.checked ? '1' : '0' ); } );
-			var asc = AS.get_cookie();
-			if (asc!==null) AS.cb.checked = (asc=='1') ? true : false;
-		}
+		} 
 	}
 };
 
 
-addEventSimple( window, "load", AS.init );
-addEventSimple( window, "input", AS.onNewInput );
-//addEventSimple( window, "paste", AS.onNewInput );
+addEventSimple(window, "load", AS.init);
+addEventSimple(window, "input", AS.onNewInput);
+addEventSimple(window, "paste", AS.onNewInput);
+addEventSimple(window, "drop", AS.onNewInput);
 //addEventSimple( window, "keydown", AS.onKeydown );
 
 // Perform a synchronous saving if there are unsaved changes before the the page is closed
