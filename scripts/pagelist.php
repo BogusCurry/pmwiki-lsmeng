@@ -129,8 +129,9 @@ function SearchBox($pagename, $opt) {
     $k = str_replace("'", "&#039;", $k);
     $out .= "<input type='hidden' name='$k' value='$v' />";
   }
-  $out .= "<input type='text' name='q' value='{$opt['value']}' 
-    class='inputbox searchbox' size='{$opt['size']}' /><input type='submit' 
+  // Meng. Auto focus the search box.
+  $out .= "<input autofocus type='text' name='q' value='{$opt['value']}' 
+    class='inputbox searchbox' size='{$opt['size']}' /><input style='margin-left:5px;' type='submit' 
     class='inputbutton searchbutton' value='{$opt['label']}' />";
   return '<form '.Keep($out).'</form>';
 }

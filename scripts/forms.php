@@ -294,12 +294,20 @@ SDVA($InputTags['e_form'], array(
     /><input type='hidden' name='n' value='{\$FullName}' 
     /><input type='hidden' name='basetime' value='\$EditBaseTime' 
     />"));
+// Meng. Remove the onkeydown for esc button. Its purpose is unclear. Also disable the 
+// spellchecker to speed up text typing responsiveness.
+SDVA($InputTags['e_textarea'], array(
+  ':html' => "<textarea style='height:1234px;' spellcheck='false' \$InputFormArgs >\$EditText</textarea>",
+  'name' => 'text', 'id' => 'text', 'accesskey' => XL('ak_textedit'),
+  'rows' => XL('e_rows'), 'cols' => XL('e_cols')));
+/*
 SDVA($InputTags['e_textarea'], array(
   ':html' => "<textarea \$InputFormArgs 
-    onkeydown='if (event.keyCode==27) event.returnValue=false;' 
+    onkeydown='if (event.keyCode==278) event.returnValue=false;' 
     >\$EditText</textarea>",
   'name' => 'text', 'id' => 'text', 'accesskey' => XL('ak_textedit'),
   'rows' => XL('e_rows'), 'cols' => XL('e_cols')));
+*/
 SDVA($InputTags['e_author'], array(
   ':html' => "<input type='text' \$InputFormArgs />",
   'name' => 'author', 'value' => $Author));

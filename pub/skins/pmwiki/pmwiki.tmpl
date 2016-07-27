@@ -10,6 +10,7 @@
   <!--HTMLHeader-->
 </head>
 <body>
+  <div id='wikileftShadow'></div>
 <!--PageHeaderFmt-->
   <div id='wikihead'>
   <form action='{$ScriptUrl}'>
@@ -24,10 +25,10 @@
 <!--/PageHeaderFmt-->
       <table id='wikimid' width='100%' cellspacing='0' cellpadding='0'><tr>
 <!--PageLeftFmt-->
-      <td id='wikileft' valign='top'>
+      <td id='wikileft'>
         <!--wiki:{$Group}.SideBar {$SiteGroup}.SideBar--></td>
 <!--/PageLeftFmt-->
-      <td id='wikibody' valign='top'>
+      <td id='wikibody'>
 <!--PageActionFmt-->
         <div id='wikicmds'><!--wiki:{$Group}.PageActions {$SiteGroup}.PageActions--></div>
 <!--PageTitleFmt-->
@@ -35,25 +36,20 @@
 <!--        <div class='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> /  <class='pagetitle'>{$Title} </div> -->
         <div class='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> /  <class='pagetitle'><a href='{$ScriptUrl}/{$Group}.{$Title}'>{$Title}</a> </div>
 
-        <HR id='HRLine' size=1 color=black>
-
+        {$HRLine}
+        
 <!--PageText-->
     </td>
     </tr></table>
 <!--PageFooterFmt-->
   <div id='wikifoot'>
     <div class='footnav'>
-<a rel="nofollow" href='{$PageUrl}?action=edit'>$[Edit]</a> -
 <a rel="nofollow" href='{$PageUrl}?action=print' target='_blank'>$[Print]</a> -
-<a href='{$ScriptUrl}/$[{$Group}/RecentChanges]'>$[Recent Changes]</a> - 
-    $[Page last modified on {$LastModified}]. 
+<a href='{$ScriptUrl}/$[{$Group}/RecentChanges]'>$[GRC]</a> - 
+    $[Last modified: {$LastModified}]. 
     Closing in <span id="ID_LOGOUTTIMER"></span>
     </div>
-    
-    <div id='AutosaveMsg'>
-      <!--wiki:{$Group}.AutoaveMsg {$SiteGroup}.AutoaveMsg-->
-    </div> 
-<!--HTMLFooter-->
-
+  </div>
 </body>
+
 </html>

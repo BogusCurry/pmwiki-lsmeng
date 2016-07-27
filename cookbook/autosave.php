@@ -23,146 +23,75 @@
 
 $RecipeInfo['AutoSave']['Version'] = '2009-05-28-2';
 
-// Meng. Comment out the line below as it quits autosave if draft is not enabled.
-//if ( !IsEnabled($EnableDrafts,0) ) return;
-
-$DraftSuffix = "";
-
 SDVA( $HandleAuth, array(
-	'deldraft' => $HandleAuth['edit'],
 	'autosave' => $HandleAuth['edit'] ));
 SDVA( $HandleActions, array(
-	'deldraft' => 'HandleDeleteDraft',
 	'autosave' => 'HandleAutoSave' ));
 
-XLSDV( 'en', array(
-	'ASnosuffix' => '<span  style=\'background-color: red; color: white;\'>Autosave error: non-empty $DraftSuffix required</span>',
-	'ASnoread' => '<span  style=\'background-color: red; color: white;\'>Autosave read error</span>',
-	'ASnowrite' => '<span  style=\'background-color: red; color: white;\'>Autosave write error</span>',
-	'ASsimuledit' => '<span  style=\'background-color: red; color: white;\'>Autosave disabled: simultaneous editing</span>'
-));
-
-
-SDVA($InputTags['e_deldraftbutton'], array(
-    ':html' => "<input type='button' \$InputFormArgs onclick=\"self.location='{\$PageUrl}?action=deldraft';\" />",
-    'name' => 'deldraft',
-	'value' => ' '.XL('Delete draft').' ',
-    'accesskey' => XL('ak_deldraft') ));
-
-// based on Cookbook/DeleteAction
-function HandleDeleteDraft( $pagename, $auth = 'edit' ) {
-	global $WikiDir, $LastModFile, $DraftSuffix;
-	if (empty( $DraftSuffix )) { Abort('?action=deldraft requires a non-empty $DraftSuffix'); return; }
-	$basename = preg_replace("/$DraftSuffix\$/", '', $pagename);
-	$draftname = $basename . $DraftSuffix;
-	$page = RetrieveAuthPage( $draftname, $auth, true, READPAGE_CURRENT );
-	if (!$page) { Abort("?cannot delete $draftname"); return; }
-	Lock(2);
-		$WikiDir->delete($draftname);
-		if ($LastModFile) { touch($LastModFile); fixperms($LastModFile); }
-	Lock(0);
-	Redirect("$basename?action=edit");
-	exit;
-}
-
-
-Markup( 'autosave', 'directives', '/\\(:autosave:\\)/ei', "Keep(AutoSaveMarkup(\$pagename))" );
-function AutoSaveMarkup( $pagename )
+if($action == "edit")
 {
-  // Meng. Return the autosave markup only when editing.
-  global $action;
-  if ($action != "edit") { return; }
-  global $pagename;
-  if (substr($pagename,0,4) == 'LOCK') { return; }
-  
 	global $PubDirUrl, $AutoSaveFmt, $AutoSavePubDirUrl, $AutoSaveDelay;
 
-	$url = PageVar($pagename,'$PageUrl');
-	$url .= ( strpos($url,'?') ? '&' : '?' ) . "action=autosave";
-
 	SDV( $AutoSavePubDirUrl, "$PubDirUrl/autosave" );
-/****************************************************************************************/
-/*Meng: Autosave timer. Setting to 1 sec pretty much means saving continuously.*/
+
+  // Meng: Autosave timer. Setting to 1 sec pretty much means saving continuously.
   global $UrlScheme, $autoSaveDelayHttp, $autoSaveDelayHttps;
   if ($UrlScheme == 'http') { SDV( $AutoSaveDelay, $autoSaveDelayHttp); }
   else { SDV( $AutoSaveDelay, $autoSaveDelayHttps); }
-/****************************************************************************************/
 
+  global $ScriptUrl;
+  $url = "$ScriptUrl?n=$pagename&action=autosave";
+  
 	SDVA( $AutoSaveFmt, array(
-		'info' => "<label id='autosave-label'><input type='checkbox' checked='1' id='autosave-cb' /><span id='autosave-status'>Ready</span></label>",
-		'util' => "<script type='text/javascript' src='$AutoSavePubDirUrl/util.js'></script>",
+		'info' => "<div style='position:fixed; z-index:9;' id='autosaveSemaphore'></div>",
 		'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
 		<script type='text/javascript'>
 		AS.pagename = '$pagename';
 		</script>",
-		'config' => "<script type='text/javascript'>AS.url='$url'; AS.delay=$AutoSaveDelay;</script>"
+		'config' => "<script type='text/javascript'> AS.delay=$AutoSaveDelay; AS.url='$url'; </script>"
 	));
 
-
-	return "{$AutoSaveFmt['info']}\n{$AutoSaveFmt['util']}\n{$AutoSaveFmt['js']}\n{$AutoSaveFmt['config']}";
+	$HTMLHeaderFmt['autosave'] = "
+	{$AutoSaveFmt['info']}\n{$AutoSaveFmt['js']}\n{$AutoSaveFmt['config']}
+  <link rel=\"stylesheet\" href=\"$PubDirUrl/autosave/autosave.css\" type=\"text/css\">
+	";
 }
 
 function HandleAutoSave( $pagename, $auth = 'edit' )
 {
 	global
-		$DraftRecentChangesFmt, $DraftSuffix, $EditFunctions, $DeleteKeyPattern,
+		$EditFunctions,
 		$EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
-
-  // Meng. Comment out the line below as it quits autosave on empty draft suffix.
-//	if (empty( $DraftSuffix )) { echo XL('ASnosuffix'); return; }
-
-	$basename = preg_replace("/$DraftSuffix\$/", '', $pagename);
-	$draftname = $basename . $DraftSuffix;
-		
-	$pagename = $basename;
-	$_POST['postdraft'] = 1;
-	SDV( $DraftRecentChangesFmt, array(''=>'') );
-
-  // Meng. Comment out the line below as it causes errors.
-//	array_unshift( $EditFunctions, 'EditDraft' );
-//	$DeleteKeyPattern = '.^'; // page deletion disabled
 
 	Lock(2);
 		$page = RetrieveAuthPage($pagename, $auth, false);
-		if (!$page) { echo XL('ASnoread'); return; }
-
-  // Meng. The original code for obtaining $draftmodtime is incorrect and has been
-  // changed to the following line.
-  $draftmodtime = $page['time'];
-
-/* Meng: The following controls simultaneous editing. */
-	if ( ( $draftmodtime != $Now) && ( $_POST['basetime'] < $draftmodtime ) )
+		if (!$page) { echo 'Autosave read error'; return; }
+		
+  // Meng: The following controls simultaneous editing. 
+	if ( ( $page['time'] != $Now) && ( $_POST['basetime'] < $page['time'] ) )
 	{
-	  echo XL('ASsimuledit');
+	  echo 'Simultaneous editing';
 	  return;
 	}
-		
-		PCache($pagename,$page);
 
-		$new = $page;
-		foreach((array)$EditFields as $k)
-			if (isset( $_POST[$k] )) {
-				$new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
-				if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
-			}
-		$new["csum:$Now"] = $new['csum'] = "[autosave] $ChangeSummary";
+	PCache($pagename,$page);
 
-		UpdatePage($pagename, $page, $new);
+	$new = $page;
+	foreach((array)$EditFields as $k)
+		if (isset( $_POST[$k] ))
+		{
+			$new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
+			if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
+		}
+	$new["csum:$Now"] = $new['csum'] = "[autosave] $ChangeSummary";
+
+	UpdatePage($pagename, $page, $new);
 	Lock(0);
-  
-	if ($IsPagePosted || true)
+
+	if ($IsPagePosted)
 	{
-		$url = PageVar($draftname,'$PageUrl');
-		$url .= ( strpos($url,'?') ? '&' : '?' ) . "action=edit";
-		header("X-AutoSaveAction: $url" );
-		header("X-AutoSavePage: $draftname");
 		header("X-AutoSaveTime: $Now");
-		
-		echo 'ok';
+	  echo 'Saved';
 	} 
-	else
-	{
-	  global $simultEdit;
-	  echo XL('ASnowrite');
-	}
+	else { echo 'Autosave write error'; }
 }

@@ -1,0 +1,17 @@
+
+/*autosave-status*/
+.AutosaveMsg
+{   
+	border-radius: 50%;
+	height: 25px;
+	width: 25px;
+  cursor: move;
+}
+
+/* The style signifying saving in progress. */
+@-webkit-keyframes savingPulse
+{
+  from { background-color: white; }
+  50% { background-color: #ff3; background:-webkit-linear-gradient(right, #fc3, #ff6); -webkit-filter:drop-shadow(0 0 1px silver); }
+  to { background-color: #fc0; background:-webkit-linear-gradient(right, #fc0, #ff1); -webkit-filter:drop-shadow(0 0 1px sliver); }
+}

@@ -92,8 +92,8 @@ window.addEventListener('load', function ()
 	
 	document.body.appendChild(uploadImgDiv);
 
-	// Access to clipboard seems to be quite restricted due to security reasons, and is
-	// to what extent the clipboard can be manipulated is highly browse dependent. In 
+	// Access to clipboard seems to be quite restricted due to security reasons, and 
+	// to what extent the clipboard can be manipulated is highly browser dependent. In 
 	// Chrome, only text and images copied to clipboard can be access, and clipboard
 	// content is readonly. It seems Chrome will convert images copied to clipboard to png
 	// automatically even if the original image format is already png (therefore
@@ -133,7 +133,6 @@ window.addEventListener('load', function ()
 			var req = new XMLHttpRequest();
 			req.open('POST',handleUploadUrl,true);
 			req.send(formData);
-
   		insertText(uploadDirUrlHeader+fileName+' ');
       showUploadImg(1,0);
 
@@ -147,9 +146,9 @@ window.addEventListener('load', function ()
 // function.
 function slideUpElement(element, startPx, endPx, duration)
 {
-	try { clearInterval(slideTimer); }
+	try { clearInterval(slideTimerID); }
 	catch(errorMsg) {}
-	try { clearInterval(fadeTimer); }
+	try { clearInterval(fadeTimerID); }
 	catch(errorMsg2) {}
 	
   var stepDuration = 20;
@@ -158,41 +157,40 @@ function slideUpElement(element, startPx, endPx, duration)
 	var diff = endPx-startPx;
 	element.style.bottom = position+'px';	
   element.style.opacity = 1;
+  var stepPosition = diff*(stepDuration/(duration*1000));
   
-	slideTimer = setInterval(function ()
+	slideTimerID = setInterval(function ()
 	{	
 		if (position > endPx)
 		{
-			clearInterval(slideTimer);
-      fadeElement(element, 4);
+			clearInterval(slideTimerID);
+      fadeElement(element, 'out', 4);
 		}
 
 		element.style.bottom = position+'px';
-		position += diff*(stepDuration/(duration*1000));
+		position += stepPosition;
 	}, stepDuration);
 }
 
+
 // Fade out an element by changing its style property "opacity" from 1.0 to 0 within 
 // "duration".
-function fadeElement(element, duration)
+function fadeElement(element, style ,duration)
 {
-  var stepDuration = 50;
-	var op = 1;  // initial opacity
+  var stepDuration = 20;
+	var op = 0;
+	if (style == 'out') { op = 1; }
+	element.style.opacity = op;
 	element.style.display = 'initial';
-	try { clearInterval(slideTimer); }
-	catch(errorMsg) {}
+  var stepOp = stepDuration/(duration*1000);
 
-	fadeTimer = setInterval(function ()
+	fadeTimerID = setInterval(function ()
 	{	
-		if (op < 0)
-		{
-			clearInterval(fadeTimer);
-			element.style.display = 'none';
-		}
+		if (op > 1 || op < 0) { clearInterval(fadeTimerID); }
 
 		element.style.opacity = op;
-		element.style.filter = 'alpha(opacity=' + op * 100 + ")";
-		op -= (stepDuration/(duration*1000));
+   	if (style == 'in') { op += stepOp; }
+   	else               { op -= stepOp; }		
 	}, stepDuration);
 }
 

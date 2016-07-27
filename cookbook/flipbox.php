@@ -37,13 +37,11 @@ function FmtPreFlipbox($_1, $_2) {
   return "$_1\t\t\t$id\t\t\t$_2";
 }
 
-/* Meng: Create one more var "FlipboxPageUrlDraft". */
 function FmtFlipbox($pagename, $_x, $id) {
   global $FlipboxPubDirUrl, $FlipboxIcon, $FlipboxWikiStyle, $HTMLHeaderFmt, $FlipboxChoices, $FlipboxHTML;
   $HTMLHeaderFmt['flipbox'] = "<script type='text/javascript'><!--
   var FlipboxPubDirUrl = \"$FlipboxPubDirUrl\";
   var FlipboxPageUrl = \"\$PageUrl?action=flipbox&box=\";
-  var FlipboxPageUrlDraft = \"\$PageUrl-Draft?action=flipbox&box=\";
   var FlipboxChoices = \"$FlipboxChoices$FlipboxChoices\";
   var FlipboxIcon = new Array('{$FlipboxIcon[0]}', '{$FlipboxIcon[1]}');
   //--></script><script type='text/javascript' src='$FlipboxPubDirUrl/flipbox.js'></script>";

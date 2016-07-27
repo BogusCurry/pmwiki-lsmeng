@@ -28,7 +28,7 @@ $WikiTitle = 'PmWiki';
 ## If you want to have a custom skin, then set $Skin to the name
 ## of the directory (in pub/skins/) that contains your skin files.
 ## See PmWiki.Skins and Cookbook.Skins.
-#$Skin = pmwiki_original;
+#$Skin = pmwiki_default;
 
 ## You'll probably want to set an administrative password that you
 ## can use to get into password-protected pages.  Also, by default 
@@ -157,21 +157,19 @@ $URI = $_SERVER['REQUEST_URI'];
 if (!stripos($URI, '?action=edit') && !stripos($URI, '?action=diff'))
 { include_once("$FarmD/cookbook/MathJax.php"); }
 
-# For autosave. Delay is in milliseconds.
-$EnableDrafts = 0;
-$autoSaveDelayHttp = 5000;
-$autoSaveDelayHttps = 1000;
-include_once("$FarmD/cookbook/autosave.php");
+// Embed youtube, TED, facebook, and vimeo videos, as well as pdfs.
+if($action=="browse" || $_REQUEST['preview']) {
+   $HTMLFooterFmt['ape'] = '<script type="text/javascript" 
+     src="$FarmPubDirUrl/ape/ape.js"></script>';
+ }
 
 # For flipbox
 include_once("$FarmD/cookbook/flipbox.php");
-
 
 # For wpap mp3 player
 #$wpap_initialvolume = "1";
 #$wpap_width = "500";
 #include_once("$FarmD/cookbook/wpap/wpap.php");
-
 
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
@@ -222,15 +220,6 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 #'showswitchsubtitles'=>1,
 #'srt'=>1
 ));
-
-/*
-// Embed youtube, TED, facebook, and vimeo videos, as well as pdfs.
-if($action=="browse" || $_REQUEST['preview']) 
-{
-  $HTMLFooterFmt['ape'] = '<script type="text/javascript" 
-	 src="$PubDirUrl/ape/ape.js"></script>';
-}
-*/
 
 # Replace some never-used full-width characters on saving.
 $ROSPatterns ['/＊/'] = "*";
@@ -313,7 +302,7 @@ $currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framewor
 $isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
 $isAtHome = 0;
 
-$pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
+//$pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
 $diaryImgDirURL = ($AuthorLink == "MBA") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
 $PhotoPub = str_replace('wiki.d','uploads',$WorkDir).'/';
 $Photo = '/Volumes/wiki/www/pmWiki/Photo/';
@@ -332,7 +321,6 @@ $pageLockIdleDuration = 600;
 
 // The default image size and enlarged size on click.
 $imgHeightPx = 330;
-$imgHeightPxL = 660;
 
 // Update the page history and store the difference if the following time period has 
 // elapsed since last editing. 
@@ -350,7 +338,7 @@ $OPENSSL_METHOD = "AES-256-CBC";
 
 // The time period for updating the pageindex file, and the recentChanges pages when 
 // editing. Uncaptured changes will be updated upon the 1st time the page is viewed. 
-$pageIndexUpdateInterval = 120;
+$pageIndexUpdateInterval = 300;
 
 require_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
@@ -358,9 +346,9 @@ require_once("$FarmD/cookbook/plugin_LSMENG.php");
 $maxUploadSize = 100000000;
 $groupName = substr($pagename, 0, strpos($pagename,'.'));
 // The folder for storing the uploaded files. Default to the "$WorkDir" in dropbox.
-// For diary pages, the uploaded files go to the diary photo folder.
+// For diary pages, the uploaded files go to the diary photo folder if it's MBA.
 $UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
-if (isDiaryPage() === 2) 
+if (isDiaryPage() === 2 && $AuthorLink == 'MBA') 
 {
   // Use regex to get year & mon from pagename. Not satisfied with the mon; there should 
   // be a way not to repeat the look behind part (?<=\.\d{4}0)
@@ -369,7 +357,35 @@ if (isDiaryPage() === 2)
   $UploadDir = "$Photo/$year/$mon";
 }
 
+$ImgfocusFadeInTime = 125;
+$ImgFocusFadeOutTime = 200;
+$ImgfocusZoomToFitTime = 0;
+$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', '12270-piirhi.jpg', 'Google-Chrome-logo-mark.jpg');
+include_once("$FarmD/cookbook/imgfocus.php"); 
 
+# For autosave. Delay is in milliseconds.
+$autoSaveDelayHttp = 5000;
+$autoSaveDelayHttps = 1000;
+include_once("$FarmD/cookbook/autosave.php");
+
+if ($action == 'edit' || $action == 'browse')
+{
+  if (substr($pagename,0,4) != 'LOCK')
+  {
+    $isDiaryPage = isDiaryPage();
+    $OS = getOS();
+		// Memorize and set the scroll position.
+		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
+		<script type='text/javascript'>
+		ScrollPositioner.pagename = '$pagename';
+		ScrollPositioner.isDiaryPage = '$isDiaryPage';		
+		ScrollPositioner.OS = '$OS';
+		ScrollPositioner.action = '$action';
+		</script>";
+	}
+}
+
+ 
 /*
 // For debugging
 

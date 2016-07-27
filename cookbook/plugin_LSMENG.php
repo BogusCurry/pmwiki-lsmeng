@@ -240,7 +240,6 @@ function nextMonth()
   else { return ""; }
 }
 
-
 // Return a string of year month date time.
 $FmtPV['$showDateTime'] = 'showDateTime($pn)';
 function showDateTime($pagename)
@@ -745,9 +744,10 @@ function runCode($pagename)
 function syncFileFromDropbox($text)
 {
 	global $pubImgDirURL, $WorkDir;
-	if (!isset($pubImgDirURL) || !isset($WorkDir))
+	
+	if (!isset($WorkDir))
 	{
-	  echo 'Either $pubImgDirURL or $WorkDir is not set!<br>';
+	  echo '$WorkDir is not set!<br>';
 	  return;
 	}
 	
@@ -793,129 +793,39 @@ function syncFileFromDropbox($text)
 function getImgFileContent($file, $mime='image/png') 
 {  
   $contents = @file_get_contents(str_replace('%20',' ',$file));
+  if ($contents === false) { return ''; }
   $base64   = base64_encode($contents); 
   return ('data:' . $mime . ';base64,' . $base64);
 }
 
-# For img size toggle; adapted from flipbox.
-include_once("$FarmD/cookbook/imgSizeToggle.php");
+// Search for all image elements in the given HTML and add a default size property to 
+// them if no width/height specified.
+function formatImgSize($HTML)
+{
+  // Regex: match <img, then nongreedy match any number of char except either width or
+  // height, then match http
+	return preg_replace_callback("/<img[^(width|height)]*?http/",function($match)
+	{
+    global $imgHeightPx;
+	  return str_replace("<img ", "<img height='$imgHeightPx' ", $match[0]);
+	},$HTML);
+}   
 
-// Find valid image URLs in "$text", replace it with the "image size toggle" function.
-// Furthermore, if the image can be found in the dropbox folder, replace the img url with
-// its file contents read directly from the dropbox folder.
-// If the img URL is preceded by "%", the image size is 
-// being adjusted explicitly by the user and the size toggle is not applied.
-// If the img URL is preceded by "[[", the image is a link; the whole function is not applied.
-function replaceImgUrlWithSizeToggle($text)
-{   
-  $supportImgExtList = array('.jpg','.png','.jpeg','.gif');
-  $NUM_IMGEXT = count($supportImgExtList);
-
-  $imgCount = 1;
-  
-  for ($iExt=0;$iExt<$NUM_IMGEXT;$iExt++)
-  {  
-    $extension = $supportImgExtList[$iExt];
-    $extLen = strlen($extension);
-    $pos = 0;
-    while(1)
-    {
-      $pos = @stripos($text, $extension, $pos);
-      
-      // Valid img extension found
-      if ($pos !== false)
-      {
-        // check if this is a valid image url
-        $isImgFileNameValid = 0;
-        $imgUrl = "";
-        $roughInterceptImgUrl = substr($text,0,$pos+$extLen);        
-        global $UrlScheme;
-        $httpPos = strrpos($roughInterceptImgUrl,$UrlScheme.'://'.$_SERVER['HTTP_HOST']);
-        // The keyword http is found, and this is not a link
-        if ($httpPos !== false && substr($roughInterceptImgUrl,$httpPos-2,2) !== "[[")
-        {
-          $spacePos = strpos($roughInterceptImgUrl,' ',$httpPos);
-          // If there is no space between http and the img extension, this is
-          // considered a valid img url 
-          if ($spacePos === false)
-          {
-            $imgUrl = substr($roughInterceptImgUrl, $httpPos, strlen($roughInterceptImgUrl)-$httpPos);
-  
-						// If the img url points to the $pubImgDirURL
-						global $pubImgDirURL, $PhotoPub;
-						if (strpos($imgUrl, $pubImgDirURL) !== false)
-						{
-							// See if we can find it in the dropbox folder
-							$imgFilename = substr($imgUrl,strlen($pubImgDirURL)); 
-							if (file_exists($PhotoPub.$imgFilename))
-							{
-								if ( $roughInterceptImgUrl[$httpPos-1] !== "%" )
-								{ $isImgFileNameValid = 2; }
-								else { $isImgFileNameValid = 3; }
-							}
-							// This is a public img but only exists in the local upload folder.
-              else
-							{
-								if ( $roughInterceptImgUrl[$httpPos-1] !== "%" )
-								{ $isImgFileNameValid = 1; }
-							}
-						}
-						// WWW images or diary photos.
-            else
-            {
-              if ( $roughInterceptImgUrl[$httpPos-1] !== "%" )
-              { $isImgFileNameValid = 1; }
-            }
-          }
-        }
-
-        // If valid img url has been found.
-        if ($isImgFileNameValid != 0)
-        { 
-   				// By default, the image is replaced with size toggle html.
-          $flipboxMarkup = FmtImgSizeToggle('_',$imgCount,$imgUrl);
-
-  				// Replace image with its file content and size toggle.
-          if ($isImgFileNameValid == 2)
-          {
-            global $PhotoPub;
-						$flipboxMarkupHead = substr($flipboxMarkup,0,strpos($flipboxMarkup,$imgUrl));
-						$flipboxMarkupEnd = substr($flipboxMarkup,strlen($flipboxMarkupHead)+strlen($imgUrl));
-						$flipboxMarkup = $flipboxMarkupHead.getImgFileContent($PhotoPub.$imgFilename).$flipboxMarkupEnd;
-					}
-
-  				// Replace image with its file content and explicit scale.
-          else if ($isImgFileNameValid == 3)
-          {
-            global $PhotoPub;
-            $imgPathSymPos = $pos - (strlen($imgUrl) - $extLen);
-            $percentSymPos = strrpos(substr($roughInterceptImgUrl,0,$imgPathSymPos-1),'%');
-            $scale = substr($roughInterceptImgUrl, $percentSymPos+1, $imgPathSymPos-$percentSymPos-2);
-						$flipboxMarkup = '<img '.$scale.' src='.getImgFileContent($PhotoPub.$imgFilename).'></img>';
-					}
-
-          $flipboxMarkup = Keep($flipboxMarkup);
-          $text = substr_replace($text, $flipboxMarkup, $pos-strlen($imgUrl)+$extLen, strlen($imgUrl));
-          $pos = $pos+strlen($flipboxMarkup)-strlen($imgUrl)+$extLen;
-          $imgCount++;
-        }
-        else { $pos = $pos+$extLen; }
-      }
-      else { break; }
-    }
-  }
-
-  // Add the action of setting the cursor style
-  global $HTMLHeaderFmt;
-  $HTMLHeaderFmt[] .= "<script type='text/javascript'><!--
-  window.addEventListener('load', function(){";
-  for ($i=1;$i<$imgCount;$i++)
-  { $HTMLHeaderFmt[] .= "document.getElementById('_isti$i').style.cursor = 'pointer';"; }
-  $HTMLHeaderFmt[] .= "}, false);
-  --></script>";
-
-  return $text;
-}
+// Replace a public image with its file content. Public images are identified by 
+// the keyword "http://replaceWithImgData/", so that the default pmwiki markup will 
+// process them as images. 
+function replaceImgWithDataContent($HTML)
+{
+  // Regex: match http://replaceWithImgData, then nongreedy match at least one arbitrary 
+  // char util the the ahead being ' or "
+	return preg_replace_callback("/http:\/\/replaceWithImgData\/.+?(?='|\")/",function($match)
+	{
+    // Replace the dummy url with the img's file content
+		global $PhotoPub;	  
+	  $srcContent = getImgFileContent(str_replace('http://replaceWithImgData/', $PhotoPub, $match[0]));
+		return $srcContent;
+	},$HTML);
+}   
 
 // Return the full URL of images put in the diary photo directory based on the image
 // filename, and the given year/month.
@@ -1063,7 +973,10 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
     $imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);
 
     if ($imgUrl == "") { continue; }
-  
+    
+    // If the filename has been explicitly typed on the page, skip auto pasting.
+    if (strpos($text, $imgName) !== false) { continue; }
+    
     // Get its date & hour
     // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
     // Otherwise the number before the underscore is the date
@@ -1133,44 +1046,25 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
 /****************************************************************************************/
 
+
 // Configure and add pageTimer.js. To be called in pmwikiAuth()
 function addPageTimerJs($countdownTimer)
 {
 	// Logout is called 5 mins after the computer standby.
-	// Has to be > countDownTimerUpdateInterval
-	$standbyLogoutDuration = 300;
-	
-	// Java logout timer update period.
-	$countDownTimerUpdateInterval = 1;
+	// Has to be > countDownTimerUpdateInterval+1 for correct behavior due to jitters in the
+	// timer update
+	SDV($standbyLogoutDuration, 300);
 
+	// Java logout timer update period.
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
-	$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/PageTimer.js'></script>
+	$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pagetimer.js'></script>
 	<script type='text/javascript'>
 	PageTimer.TIMER_EXP_DURATION = $countdownTimer;
 	PageTimer.STANDBY_LOGOUT_DURATION = $standbyLogoutDuration;
-	PageTimer.TIMER_UPDATE_TICK = $countDownTimerUpdateInterval;
 	PageTimer.pagename = '$pagename';
 	PageTimer.ScriptUrl = '$ScriptUrl';
 	PageTimer.action = '$action';
 	</script>";
-}
-/****************************************************************************************/
-
-if ($action == 'edit' || $action == 'browse')
-{
-  if (substr($pagename,0,4) != 'LOCK')
-  {
-    $isDiaryPage = isDiaryPage();
-    $OS = getOS();
-		// Memorize and set the scroll position.
-		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
-		<script type='text/javascript'>
-		ScrollPositioner.pagename = '$pagename';
-		ScrollPositioner.isDiaryPage = '$isDiaryPage';		
-		ScrollPositioner.OS = '$OS';
-		ScrollPositioner.action = '$action';
-		</script>";
-	}
 }
 
 /****************************************************************************************/
@@ -1480,15 +1374,52 @@ function reconstructPageindex()
 	MakePageList("Main.Homepage", $opt, 0, 1);
 }
 
-// Check the last time we modify this page, and the last time we update the page index for this page
-// If the last modification time is after the pageindex update time, update the pageindex,
-// and replace the page with an updated pageindex update time.
-// Return 
+// Check the last time the page is modified, and the last time pageindex is updated for 
+// this page. If after the page was last modified, the pageindex hasn't been updated for
+// it, a special link will be visited in an async way which triggera a pageindex update
+// in the background. The page's corresponding field is also updated in the background.
 function updatePageindexOnBrowse($pagename, $page)
 {
-  global $WorkDir;
-  $file = "$WorkDir/$pagename";
+	// If this is an async request for updating pageindex in the background
+  if ($_GET["updatePageIndex"])
+  {
+		// Free riding the PostRecentChanges functionality here. It appears that the 2nd and
+    // 3rd input parameters are not used at all in PostRecentChanges().
+    PostRecentChanges($pagename, NULL, NULL);
+
+		Meng_PageIndexUpdate($pagename);
+	
+		$lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
+		$pageLastModTime = $page['time'];		
+    if (isset($lastPageindexUpdateTime) && $pageLastModTime > $lastPageindexUpdateTime)
+    {
+			global $WorkDir;
+			$file = "$WorkDir/$pagename";
+			
+      // Get the full page file content
+      $pageContent = fileGetContentsWait($file);
+      $pageContent = decryptStr($pageContent);
+      if ($pageContent === -1) { exit; }
+     
+      // This field should exist according to the parent if else condition.
+      $pos = strpos($pageContent,$lastPageindexUpdateTime);
+      if ($pos === false) { exit; }
+      else { $pageContent = substr_replace($pageContent, $pageLastModTime, $pos, strlen($lastPageindexUpdateTime)); }
   
+      global $EnableEncryption;      
+      if ($EnableEncryption == 1) { $pageContent = encryptStr($pageContent); }
+      
+      filePutContentsWait("wiki.d/$pagename", $pageContent);
+
+      unlink("$WorkDir/$pagename");        
+      renameWait("wiki.d/$pagename", "$WorkDir/$pagename");
+    }
+
+    exit;
+  }
+  
+  /******************************************/
+	  
   global $Now;
   $pageLastModTime = $page['time'];
   $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
@@ -1499,34 +1430,10 @@ function updatePageindexOnBrowse($pagename, $page)
     // See if the "lastPageindexUpdateTime" has been set. If not, then this page is from 
     // previous releases. Update the pageindex depending on its last modified time.
     // On 2nd thought, normally lastPageindexUpdateTime should be set already when viewed   
-    if (!isset($lastPageindexUpdateTime) || ($pageLastModTime < $lastPageindexUpdateTime)) {}
-    
-    else
-    {  
-      // Free riding the PostRecentChanges functionality here. It appears that the 2nd and
-      // 3rd input parameters are not used at all in PostRecentChanges().
-      PostRecentChanges($pagename, NULL, NULL);
-
-      // Update pageindex file.
-      Meng_PageIndexUpdate($pagename);
-
-      // Get the full page file content
-      $pageContent = fileGetContentsWait($file);
-      $pageContent = decryptStr($pageContent);
-      if ($pageContent === -1) { echo "Read page error on updatePageindexOnBrowse()"; return; }
-
-      // This field should exist according to the parent if else condition.
-      $pos = strpos($pageContent,$lastPageindexUpdateTime);
-      if ($pos === false) { return; }
-      else { $pageContent = substr_replace($pageContent, $Now, $pos, strlen($lastPageindexUpdateTime)); }
-
-      global $EnableEncryption;      
-      if ($EnableEncryption == 1) { $pageContent = encryptStr($pageContent); }
-      
-      filePutContentsWait("wiki.d/$pagename", $pageContent);
-
-      unlink("$WorkDir/$pagename");        
-      renameWait("wiki.d/$pagename", "$WorkDir/$pagename");
+    if (isset($lastPageindexUpdateTime) && $pageLastModTime > $lastPageindexUpdateTime)
+    { 
+			// Go to a special link address to perform pageindex update in a non-block way.
+			post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
     }
   }
 }
@@ -1569,7 +1476,9 @@ function changePassword($PageStartFmt, $PageEndFmt)
     $logFile = $backFolder.'/log.txt';
     
     $new_MASTER_KEY = deriveMasterKey($newPasswd);
-    
+
+    $startTimeStamp = microtime(true);
+
     // For each file in $WorkDir, copy it to the backup folder 
     // get its content, decrypt then encrypt using the new password
     global $WorkDir;
@@ -1583,7 +1492,8 @@ function changePassword($PageStartFmt, $PageEndFmt)
       else { $file = $WorkDir.'/'.$pagelist[$iFile]; }
 
       // Skip processing .htaccess. Somehow on MAC one of the file has an empty filename.
-      if ($pagelist[$iFile] === ".htaccess")
+      if ($pagelist[$iFile] === ".htaccess" || $pagelist[$iFile] === ".lastmod" ||
+          $pagelist[$iFile] === "..")
       {
       	$log .= "File \"$file\" skipped\n";
         continue;
@@ -1615,7 +1525,6 @@ function changePassword($PageStartFmt, $PageEndFmt)
         
         // Backup is allowed if the original pagefile is encrypted. 
         // Pageindex doesn't need to be backed up.
-        // Still, please remove them on a regular basis for better security.
         if(copy($file, $backFolder.'/'.$pagelist[$iFile]) === false)
         {
         	$log .= "File \"$file\" backup error!\n";
@@ -1656,7 +1565,9 @@ function changePassword($PageStartFmt, $PageEndFmt)
     
     @unlink($backFolder.'/.pageindex');
     
-    $log .= "Passwd change completed!\n";
+    $changePWTime = (microtime(true) - $startTimeStamp);
+
+    $log .= "Passwd change completed in $changePWTime sec!\n";
     filePutContentsWait($logFile, $log);
 
     HandleLogoutA("Main.HomePage");
@@ -1840,19 +1751,22 @@ function preservePageBackup($pagename, $pagefile, $backupDelayHour=6)
 
 // Used as a page variable. Update the page history if the history is not up to date by
 // setting the history update interval to 0 and then call PostPage()
+// This also serves as a manual pageindex update mechanism; pageindex update will be 
+// performed for the current page if called.
 $FmtPV['$updatePageHistory'] = 'updatePageHistory()';
 function updatePageHistory()
 {
   global $URI;
-  
-  if (strpos($URI,'?action=diff') !== false)
+
+  if (strripos($URI,'?action=diff') !== false)
   {
+    // Perform an immediate history update then redirect to normal history page
     global $pagename;
-    if (strpos($URI,'?action=diff&updateHistoryNow') !== false)
+    if (strripos($URI,'?action=diff&updateHistoryNow') !== false)
     {
-      // Perform an immediate history update
-      // redirect to normal history page
-      
+      // Also update the pageindex.
+   		Meng_PageIndexUpdate($pagename);
+   		
       // get auth page => page and new
 			$page = RetrieveAuthPage($pagename, 'edit');
 			if (!$page) Abort("Error in updatePageHistory()!");     
@@ -1884,8 +1798,8 @@ function updatePageHistory()
 if ($action == 'edit')
 {
 	$handleUploadUrl = $ScriptUrl.'?n='.$pagename.'?action=postupload';
-	
-	if (isDiaryPage() === 2) 
+
+	if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   {
 		// Use regex to get year & mon from pagename. Not satisfied with the mon; there should 
 		// be a way not to repeat the look behind part (?<=\.\d{4}0)
@@ -1905,17 +1819,48 @@ if ($action == 'edit')
 		</script>';
 }
 
-// Edit button: F1
+// Edit button: F1 or F4
 if ($action != 'edit')
 {
   $HTMLHeaderFmt[] .= 
   "<script type='text/javascript'>
 		window.addEventListener('keydown', function()
 		{
-			if (event.keyCode == 112)
+			if (event.keyCode == 112 || event.keyCode == 115)
 			{
 				window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit';
 			}
 		}, false);
 	</script>";
+}
+
+/****************************************************************************************/
+
+
+// Basically this opens a socket, send request, then close the socket before getting
+// response from the server. Calling this function therefore executes the functions
+// related to the given url in a non-blocking manner.
+function post_async($url)
+{
+  // This function is mainly for localhost use, and auth is not needed for localhost now. 
+//	$user = $_SERVER['PHP_AUTH_USER'];
+//	$pass = $_SERVER['PHP_AUTH_PW'];
+//	$auth = base64_encode("$user:$pass");
+	
+	// Parse the given url into host, path, etc.
+	$parts = parse_url($url);
+	
+	$port = isset($parts['port']) ? $parts['port'] : (($parts['scheme']=='http') ? 80 : 443);
+
+	$fp = fsockopen($parts['host'], $port);//, $errno, $errstr, 30);
+	$out = "POST ".$parts['path'].'?'.$parts['query']." HTTP/1.1\r\n";    
+	$out.= "Host: ".$parts['host']."\r\n";
+	// This is for the htaccess password
+//	$out.= "Authorization: Basic $auth\r\n";
+	// This is for the pmwiki password
+	$out.= "Cookie: ".urlencode('PHPSESSID') .'='. urlencode($_COOKIE['PHPSESSID'])."; \r\n";
+	$out.= "Connection: Close\r\n\n";
+	
+	fwrite($fp, $out);
+	fclose($fp);
 }

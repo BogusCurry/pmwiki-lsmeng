@@ -4,15 +4,21 @@
  * is able to detect computer sleep on resume. The user is directed to the logout url
  * automatically if the computer sleeps longer than a prespecified time duration.
  * 
- * Author: Ling-San Meng
- * Email: f95942117@gmail.com
+ * This program is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your
+ * option) any later version. Available at
+ * https://www.gnu.org/licenses/gpl.txt
+ *
+ * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
+ * Version 20160725
  */
 
 var PageTimer = 
 {
   TIMER_EXP_DURATION: 0,
   STANDBY_LOGOUT_DURATION: 0,
-  TIMER_UPDATE_TICK: 0,
   ScriptUrl: '',
   pagename: '',
   action: '',
@@ -30,8 +36,8 @@ var PageTimer =
 	  if (PageTimer.timer == 0) { return; }
 	  
     var clock = new Date();
-    var diff = PageTimer.timer - Math.ceil(clock.getTime()/1000);
-
+    var diff = PageTimer.timer - clock.getTime()/1000;
+    
     // Check computer standby and logout
 		if (PageTimer.lastDiff - diff >= PageTimer.STANDBY_LOGOUT_DURATION)
 		{	
@@ -39,6 +45,8 @@ var PageTimer =
 	    return;
 		}
 
+		PageTimer.lastDiff = diff;
+		
     // Timer expires
 		if (diff <= 0)
 		{
@@ -46,52 +54,44 @@ var PageTimer =
 		  return;
 		}
 
-		PageTimer.lastDiff = diff;
-		  	
-		hour = parseInt(diff / 3600, 10);
-		minutes = parseInt((diff-hour*3600) / 60, 10);
-		seconds = parseInt(diff % 60, 10);
+    diff = Math.round(diff);
+		var hour = Math.floor(diff / 3600);
+		diff -= hour*3600;
+		var minutes = Math.floor(diff / 60);
+		diff -= minutes*60;		
+		var seconds = Math.round(diff);
 
 		hour = hour < 10 ? "0" + hour : hour;
 		minutes = minutes < 10 ? "0" + minutes : minutes;
 		seconds = seconds < 10 ? "0" + seconds : seconds;
     
-    display = document.querySelector('#ID_LOGOUTTIMER');	  
-    display.textContent = hour +":" + minutes + ":" + seconds;
+    document.querySelector('#ID_LOGOUTTIMER').textContent = hour +":" + minutes + ":" + seconds;
 	},
 
   // Reset the timer.
   resetTimer: function()
   {
+		document.querySelector('#ID_LOGOUTTIMER').textContent = PageTimer.hourInit + ":" + PageTimer.minutesInit + ":" + PageTimer.secondsInit;
+
 		var clock = new Date();    
-		PageTimer.timer = Math.ceil(clock.getTime()/1000) + PageTimer.TIMER_EXP_DURATION;
-		display = document.querySelector('#ID_LOGOUTTIMER');	  
-		display.textContent = PageTimer.hourInit + ":" + PageTimer.minutesInit + ":" + PageTimer.secondsInit;
+		PageTimer.timer = clock.getTime()/1000 + PageTimer.TIMER_EXP_DURATION;
   },
   
   init: function()
   {
- 		PageTimer.lastDiff = PageTimer.TIMER_EXP_DURATION;
-
-		hour = parseInt(PageTimer.TIMER_EXP_DURATION / 3600, 10);
-		minutes = parseInt((PageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
-		seconds = parseInt(PageTimer.TIMER_EXP_DURATION % 60, 10);
+		var hour = parseInt(PageTimer.TIMER_EXP_DURATION / 3600, 10);
+		var minutes = parseInt((PageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
+		var seconds = parseInt(PageTimer.TIMER_EXP_DURATION % 60, 10);
 
  		PageTimer.hourInit = hour < 10 ? "0" + hour : hour;
 		PageTimer.minutesInit = minutes < 10 ? "0" + minutes : minutes;
 		PageTimer.secondsInit = seconds < 10 ? "0" + seconds : seconds;
-
+  
  	  PageTimer.resetTimer();
-	  setInterval(PageTimer.updateClock, PageTimer.TIMER_UPDATE_TICK*1000);
+	  setInterval(PageTimer.updateClock, 1000);
   }
 };
 
 window.addEventListener('load', PageTimer.init, false);
-
-// On focus, check for logout and shutdown immediately in addition to resetting the timer
-window.addEventListener('focus', PageTimer.updateClock, false);
-
-//window.addEventListener('focus', PageTimer.resetTimer, false);
-//window.addEventListener('wheel', PageTimer.resetTimer, false);
-//window.addEventListener('click', PageTimer.resetTimer, false);
+//window.addEventListener('focus', PageTimer.updateClock, false);
 window.addEventListener('input', PageTimer.resetTimer, false);

@@ -1,5 +1,5 @@
 /* 
- * Auto refresh the page and scroll to the location #lastEdit on focus
+ * Auto refresh the page and scroll to the last modified location on focus
  * if the page has been modified since it was loaded.
  * 
  * Author: Ling-San Meng
@@ -11,23 +11,16 @@ var AutoRefresher =
   basetime: 0,
   pagename: '',
 
-  // Get the value of the cookie "c_name"
-  // Return the cookie value if it exists.
-  //        an empty string otherwise.
-	getCookie: function(c_name)
+	// Get the value of key "key" in local storage item "name"
+	// If "key" is null then the whole content of "name" is returned;
+	getStorageByKey(name, key)
 	{
-		if (document.cookie.length>0)
-		{
-			c_start=document.cookie.indexOf(c_name + "=");
-			if (c_start!=-1)
-			{
-				c_start=c_start + c_name.length+1;
-				c_end=document.cookie.indexOf(";",c_start);
-				if (c_end==-1) { c_end=document.cookie.length;}
-				return unescape(document.cookie.substring(c_start,c_end));
-			}
-		}
-		return "";
+	  if (key == null) 	{ return JSON.parse(localStorage.getItem(name)); }
+	  
+	  try { var value = JSON.parse(localStorage.getItem(name))[key]; }
+	  catch(e) {}
+	  
+	  return value;
 	},
   
   // Refresh and scroll to the location #lastEdit if the last modified time is later 
@@ -35,14 +28,13 @@ var AutoRefresher =
   reloadIfUpdate: function()
   {
   	// Get cookie to obtain the lastModTime;
-  	var lastModTime = AutoRefresher.getCookie(AutoRefresher.pagename.toUpperCase() + '-LastMod');
+  	var lastModTime = AutoRefresher.getStorageByKey('LastMod', AutoRefresher.pagename.toUpperCase());
   	if (lastModTime > AutoRefresher.basetime)
   	{	
-//      window.location = window.location.href;
+//    window.location = window.location.href;
       location.reload();
   	}
   },
-  
   
   init: function()
   {

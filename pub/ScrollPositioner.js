@@ -1,5 +1,5 @@
 /* 
- * Read and set cookies for storing last scroll and caret positions. 
+ * Read and set cookies (local storage) for storing last scroll and caret positions. 
  * 
  * This also works with 'autosave.js', 
  * which sets a cookie storing the number of bullets before the caret position when 
@@ -18,6 +18,13 @@
  * achieve this, however, the textarea has to be dynamically changed to a div component.
  * After the scrolling, the textarea is changed back. 
  *
+ * Before closing, the width of the textarea will be stored in a cookie, for the server
+ * side to read and set an approximate height for the textarea later. This significantly
+ * speeds up setting the textarea height.
+ *
+ * Cookies have been replaced with local storages except textAreaWidth, which has to be
+ * sent to the server side.
+ *
  * Author: Ling-San Meng
  * Email: f95942117@gmail.com
  */
@@ -27,43 +34,55 @@ var ScrollPositioner =
   pagename: '',
   action: '',
   isBrowsing: false,
-  isEmEnable: false,
-  isEditableEnable: false,
-  isLegacyTextedit: false,
   lastCaretPos: 0,
   OS: '',
   nWaitForLatex: 0, 
-  
-  // Delete the cookie with cookie name "name"
-	delCookie: function(name)
+
+  // Set a local storage item "name" with key/value pair "key" and "value".
+  // If "key" is null then the item is treated as a simple variable; otherwise it is an 
+  // array. If "value" is null then the local storage is deleted in the former case; the 
+  // entry is deleted in the later case.
+  setStorageByKey: function(name, key, value)
 	{ 
-		var cval = ScrollPositioner.getCookie(name); 
-		if(cval != null)
-		{
-			var exp = new Date();
-			exp.setTime(exp.getTime() - 1);
-			document.cookie = name + "="+cval+";expires="+exp.toGMTString(); 
+	  if (key == null)
+	  { 
+			if (value == null) { localStorage.removeItem(name); }
+			else
+			{	localStorage.setItem(name, value); }
+	  }
+	  else
+	  {
+			var content = JSON.parse(localStorage.getItem(name));
+
+			if (content == null) { content = new Object(); }
+			if (value == null) { delete content[key]; }
+			else { content[key] = value; }
+			localStorage.setItem(name, JSON.stringify(content));
 		}
 	},
-	
-  // Get the value of the cookie "c_name"
-  // Return the cookie value if it exists.
-  //        an empty string otherwise.
-	getCookie: function(c_name)
-	{
-		if (document.cookie.length>0)
-		{
-			var c_start=document.cookie.indexOf(c_name + "=");
-			if (c_start!=-1)
-			{
-				c_start=c_start + c_name.length+1;
-				var c_end=document.cookie.indexOf(";",c_start);
-				if (c_end==-1) { c_end=document.cookie.length;}
-				return unescape(document.cookie.substring(c_start,c_end));
-			}
-		}
 
-		return "";
+	// Get the value of key "key" in local storage item "name"
+	// If "key" is null then the whole content of "name" is returned;
+	getStorageByKey(name, key)
+	{
+	  if (key == null) 	{ return JSON.parse(localStorage.getItem(name)); }
+	  
+	  try { var value = JSON.parse(localStorage.getItem(name))[key]; }
+	  catch(e) {}
+	  
+	  return value;
+	},
+	
+  // Set a cookie with the given name/value.
+	setCookie: function(name, value)
+	{ document.cookie = name + "=" + escape(value); },
+	
+	// Delete the cookie "name"
+	delCookie: function(name)
+	{ 
+		var exp = new Date();
+		exp.setTime(exp.getTime() - 1);
+		document.cookie = name + "=;expires=" + exp.toGMTString(); 
 	},
 	
 /* The following is for scroll positioning */
@@ -79,213 +98,99 @@ var ScrollPositioner =
 	getScrollPos: function()
 	{ return document.body.scrollTop; },
 
-  // Record the current scroll position in cookie. The scroll positions for browsing and 
-  // editing pages are recorded separately.
-  setScrollPosCookies: function()
+  // Record the current scroll position in local storage. The scroll positions for
+  // browsing and editing pages are stored separately. If null is passed then the entry is
+  // deleted. If the current scroll position is 0, the entry is also deleted.
+  setScrollPosLS: function(value)
 	{
-		cookieName = ScrollPositioner.pagename.toUpperCase();
-
-    // Add 'EDIT' to distinguish between browsing and editing pages.
     if (ScrollPositioner.isBrowsing == false)
-	  { cookieName = cookieName + 'EDIT'; }
-	  
-	  cookieName = cookieName + '-ScrollY';
+      	 { var name = 'EDIT-ScrollY'; }
+	  else { var name = 'VIEW-ScrollY'; }
 
-    // Overwrite the cookie only if its content does not begin with 'n', which is a 
-    // special value used for locating the bullet.
-		var value = ScrollPositioner.getCookie(cookieName);
-		if (value.substring(0,1) != 'n')
-		{
-			var value = ScrollPositioner.getScrollPos();
-			
-			if (value != 0) { document.cookie = cookieName + "=" + escape(value); }
-			else { ScrollPositioner.delCookie(cookieName); }
-		}
+		value = value===null ? value : ScrollPositioner.getScrollPos();
+		value = value==0 ? null : value;
+		{ ScrollPositioner.setStorageByKey(name, ScrollPositioner.pagename, value); }		
+	},
+
+  // Return the scroll position stored in local storage based on the current action.
+  getScrollPosLS: function()
+	{	
+    if (ScrollPositioner.isBrowsing == false)
+      	 { var name = 'EDIT-ScrollY'; }
+	  else { var name = 'VIEW-ScrollY'; }
+
+	  return ScrollPositioner.getStorageByKey(name, ScrollPositioner.pagename);
 	},
 	
-	// Read from cookie to get the last scroll position and set it accordingly.
-  readCookieSetScrollPos: function()
-  {
-		cookieName = ScrollPositioner.pagename.toUpperCase();
-
-    if (ScrollPositioner.isBrowsing == false)
-	  { cookieName = cookieName + 'EDIT'; }
-	  	
-	  cookieName = cookieName + '-ScrollY';
-  
-		var y = ScrollPositioner.getCookie(cookieName);
-		if (y == null || y == "") { y = 0; }
-	
-    ScrollPositioner.setScrollPos(y);
-  },
-
 /* The following is for caret positioning */
 /****************************************************************************************/
-
-  // Set Caret position for contenteditable works fine. Get, however, gives me tons of
-  // trouble and is yet to be solved. Both defunct.
-  getCaretPosForEditable: function()
-  {
-    var pos = window.getSelection().anchorOffset;    
-    ScrollPositioner.lastCaretPos = pos;
-
-// Add this for debugging. If the caret goes around erratically, something is wrong.
-//    ScrollPositioner.setCaretPosForEditable(pos);
-
-    return pos;
-  },
-  setCaretPosForEditable: function(caret)
-  {
-		var node = document.getElementById('text');
-		var textNode = node.firstChild;
-		var range = document.createRange();
-		range.setStart(textNode, caret);
-		range.setEnd(textNode, caret);
-		var sel = window.getSelection();
-		sel.removeAllRanges();
-		sel.addRange(range);
-  },
   
   // Get & set the caret position. Depending on the current editing mechanism (codemirror,
   // div with content editable, legacy textarea), the methods are different.
   getCaretPos: function()
   {
-	  if (ScrollPositioner.isEmEnable == true) {}
-	  
-		else if (ScrollPositioner.isEditableEnable == true)
-		{ return ScrollPositioner.getCaretPosForEditable(); }
-
-    else if (ScrollPositioner.isLegacyTextedit == true)
-		{ return document.getElementById('text').selectionStart; }
-
+	  return document.getElementById('text').selectionStart;
   },
   setCaretPos: function(caret, caret2)
   {
-	  if (ScrollPositioner.isEmEnable == true) {}
-	  
-		else if (ScrollPositioner.isEditableEnable == true)
-		{ ScrollPositioner.setCaretPosForEditable(caret); }
-
-    else if (ScrollPositioner.isLegacyTextedit == true)
-		{
-		  document.getElementById('text').selectionStart = caret;
-      document.getElementById('text').selectionEnd = caret2;
-		}
+    if (caret == null || caret2 == null) { return; }
+		document.getElementById('text').selectionStart = caret;
+		document.getElementById('text').selectionEnd = caret2;
   },  
 
-  // Record the current caret position in cookie.
-  setCaretPosCookies: function()
+  // Record the current caret position in cookie. If the current caret position is 0, the
+  // entry is deleted.
+  setCaretPosLS: function()
   {
-		cookieName = ScrollPositioner.pagename.toUpperCase() + '-Caret';
-
 		var value = ScrollPositioner.getCaretPos();
-		
-		if (value != 0) { document.cookie = cookieName + "=" + escape(value); }
-		else { ScrollPositioner.delCookie(cookieName); }
+		value = value==0 ? null : value;
+    ScrollPositioner.setStorageByKey('Caret', ScrollPositioner.pagename, value);
   },
 
-	// Read from cookie to get the last caret position and set it accordingly.
-  readCookieSetCaretPos: function()
-  {
-		var y = ScrollPositioner.getCookie(ScrollPositioner.pagename.toUpperCase()+'-Caret');
-		
-		if (y == null || y == "") { y = 0; }
+	// Read from local storage to get the last caret position.
+  getCaretPosLS: function()
+  { return ScrollPositioner.getStorageByKey('Caret', ScrollPositioner.pagename); },
 
-		var currentPos = ScrollPositioner.getCaretPos();
-
-    if (currentPos != y) { ScrollPositioner.setCaretPos(y,y); }
-  },
-
-  // Paste in legacy textarea sometimes eat out one more newline character and this has
-  // been bothering me for quite a long time. Intercepting the paste text and composing 
-  // the text after paste can be a solution, but this cripples the builtin undo mechanism.
-  // Strangely, after all the fixes and improvements I have made, the paste problem seems
-  // to disappear somehow. Need to observe for some time.
-  // Declaring this on paste behavior outside the class doesn't seem to work.
-  pasteFixForLegacyTextarea: function()
-  {    
-		document.getElementById('text').onpaste = function(e)
-		{
-			var pastedText = undefined;
-			if (window.clipboardData && window.clipboardData.getData) { // IE
-				pastedText = window.clipboardData.getData('Text');
-			} else if (e.clipboardData && e.clipboardData.getData) {
-				pastedText = e.clipboardData.getData('text/plain');
-			}
-			
-			var caretPosStart = document.getElementById('text').selectionStart;
-			var caretPosEnd = document.getElementById('text').selectionEnd;
-  		var textContent = document.getElementById('text').form.elements['text'].value;			
-      
-  		document.getElementById('text').form.elements['text'].value = [textContent.slice(0, caretPosStart), pastedText, textContent.slice(caretPosEnd)].join('');
-            		
-			caretPosStart = caretPosStart+pastedText.length;			
-			document.getElementById('text').selectionStart = caretPosStart;
-			document.getElementById('text').selectionEnd = caretPosStart;			
-			
-			ScrollPositioner.setCaretPosCookies();
-			textAreaAdjust();
-			
-      // If false the original paste won't go
-			return false; 
-		};
-  },
+/****************************************************************************************/
   
-  // When browsing, replace the special string inserted at the last caret position when
-  // autosaving with a predefined html location markup #lastEdit and scroll there, or an
-  // empty string depending on the entered url. When viewing the history, simply remove
-  // all such special strings.
+  // When browsing, scroll to the position corresponding to the nth bullet stored in
+  // local storage, which is set by the autosaving mechanism whenever a saving is
+  // performed.
   setScrollFromEdit: function(value)
   {
-		if (value.substring(0,1) == 'n') { value = value.slice(1); }
-		else { ScrollPositioner.setScrollPos(value); return; }
-     	  
+		if (value == null) { return; }
+		else if (String(value).substring(0,1) != 'n') { ScrollPositioner.setScrollPos(value); return; }
+		else { value = value.slice(1); }
+		 	  
 		var numBullet = value;
+		var bulletObj = document.getElementById('wikitext').getElementsByTagName("li")[numBullet-1];
 		
-		// Delete the cookie as we would like the press-then-edit to be valid only once
-		// after pressed.
-		var HTML = document.getElementById('wikitext').innerHTML;    
-
-		// Find the char offset of the numBullet-th <li => pos
-		var L = HTML.length, pos = -1;
-		while(numBullet-- && pos++<L)
-		{
-			var pos = HTML.indexOf('<li', pos);
-			if (pos == -1) { break; }
-		}
-		var endPos = HTML.indexOf('>',pos) + 1;
-
-		var screenHeightAdj = Math.round(window.innerHeight/3);
-		var styleMarkupStr = ' style="background-color: yellow;"';
-    var bulletMarkup = HTML.substring(pos,endPos);
-    var idPos = bulletMarkup.indexOf('id=');
-    var idName = '';
-    if (idPos != -1)
-    {
-      var quoteChar = bulletMarkup.substring(idPos+3,idPos+4);
-      idName = bulletMarkup.substring(idPos+4,bulletMarkup.indexOf(quoteChar,idPos+4));
-    }
-		else
-		{
-			idName = 'lastEdit';
-		  styleMarkupStr = ' id="'+idName+'"'+styleMarkupStr;
-		}
-
-		HTML = [HTML.slice(0, endPos-1), styleMarkupStr, HTML.slice(endPos-1)].join('');	
-		document.getElementById('wikitext').innerHTML = HTML;
+		// Leave if undefined; no bullets at all
+    if (typeof bulletObj === 'undefined') { return; }		
+    
+		var idName = 'lastEdit';
+		bulletObj.id = idName;
+		bulletObj.style.backgroundColor = 'yellow';
 
 		// A certain delay is needed when there are a lot of images waiting to be arranged on
 		// the page, i.e., diary pages. A delay of around 1 second is needed for diary page 
 		// with a lot of images. Not satisfied with this solution; there should be a mechanism
 		// for Chrome to notify me when the images are done arranging.
+		// It turns out another fix is needed for embedding youtube using ape.js. Also fix
+		// this by introducing a delay
     var positionDelay = 0;
-    if (ScrollPositioner.isDiaryPage == 2) { positionDelay = 1000; }
+    if (/<[^<]+class="embed"[^>]*>/.test(document.getElementById('wikitext').innerHTML))
+    { positionDelay = Math.max(positionDelay,1000); }
+    if (ScrollPositioner.isDiaryPage == 2) { positionDelay = Math.max(positionDelay,1000); }
+
+  	var screenHeightAdj = Math.round(window.innerHeight/3);
+    
 		setTimeout(function()
 		{
 		  // First scroll the lastEdit id into view, then get the id's position relative to 
 		  // the browser window. Adjust the scroll position so that the id is 1/3 of the 
 		  // browser window height.
-			document.getElementById(idName).scrollIntoView();			
+			document.getElementById(idName).scrollIntoView(true);
 			var idPosRelBrowser = Math.floor(document.getElementById(idName).getBoundingClientRect().top);
       screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
 			ScrollPositioner.setScrollPos(ScrollPositioner.getScrollPos()-screenHeightAdj);
@@ -388,155 +293,115 @@ var ScrollPositioner =
 	// Also called the "Edit here" mechanism.
   setScrollFromBrowse: function(value)
   {		
+    // The number of bullets appearing before the selected text.
     var numBullet = value;
-      
-		// The change from <textarea to <div corrupts the font settings, this affects the
-		// scroll position. Specifically set the font to match the <textarea editing style
-		// to deal with this problem. The font is unfortunately OS dependent.
-		// The line-height can be controlled. Remember to set the textarea line-height
-		// to 1.2em in css.
-		if (ScrollPositioner.OS == 'Mac')
-		{ document.getElementById('text').style.fontFamily = 'Lucida Grande'; }
-		else
-		{ document.getElementById('text').style.fontFamily = 'COURIER'; }
-    document.getElementById('text').style.lineHeight = '1.2em';
 
-		// Force the textarea box to change into a div component.
-		var HTML = document.getElementById('wikitext').innerHTML;
-
-		HTML = HTML.replace('</textarea>', '<!-- END --></div>');
-		HTML = HTML.replace('<textarea', '<!-- START --><div');
-		document.getElementById('wikitext').innerHTML = HTML;
-						
-		// See if the first line of textarea begins with a bullet
-		var isFirstLineBullet = HTML.indexOf('>*');
-		if (isFirstLineBullet == -1) { isFirstLineBullet = HTML.indexOf('>#'); }
-
-		// Get charOffset based on numBullet and isFirstLineBullet
-		var pos = ScrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
-
-    var screenHeightAdj = Math.round(window.innerHeight/3);
-    var markedStr = '<a id="lastEdit" style="padding-top: '+screenHeightAdj+'px;">{PAD}</a>';
-		HTML = [HTML.slice(0, pos), markedStr, HTML.slice(pos)].join('');
-		document.getElementById('wikitext').innerHTML = HTML;
-		document.getElementById('lastEdit').scrollIntoView();
-		document.getElementById('wikitext').innerHTML = document.getElementById('wikitext').innerHTML.replace(markedStr,'');
-
-		// Change from div back to textarea
-		HTML = document.getElementById('wikitext').innerHTML;
-		HTML = HTML.replace('<!-- START --><div', '<textarea');
-		HTML = HTML.replace('<!-- END --></div>', '</textarea>');
-		document.getElementById('wikitext').innerHTML = HTML;
-		
-
-		/********************************************************************************/
-
-		// Set caret position 
-		// Somehow calculating from document body and add appropriate offset does not add
-		// up. The difference between charOffset calculated above and below is not a fixed
-		// value, which I thought it would be.
-		// Let's just calculate it again using the text field then.
-		HTML = document.getElementById('text').textContent;
+		// Compute the caret offset given 'numBullet'.
+		var HTML = document.getElementById('text').textContent;
 		isFirstLineBullet = -1;
 		if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#')
 		{ isFirstLineBullet = 0; }
-		
+
 		pos = ScrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
     var pos2 = HTML.indexOf("\n",pos);
     if (pos2 == -1) { pos2 = pos+1; }
 
+    // It turns out that Chrome will scroll automatically by first setting the caret
+    // position then focusing. For some reason, highlighting a line then focusing
+    // work on MAC but not on Windows. For compatibility, break this into 2 parts.
+    document.getElementById('text').blur();
+		ScrollPositioner.setCaretPos(pos,pos);
+    document.getElementById('text').focus();		
 		ScrollPositioner.setCaretPos(pos,pos2);
   },
-  
+
   init: function()
-  {
+  {  
+    ScrollPositioner.pagename = ScrollPositioner.pagename.toUpperCase();
+  
 	  if (ScrollPositioner.action == 'browse')
 	  {
 	    ScrollPositioner.isBrowsing = true;
 	    
-	    // Check cookie. If the cookie content begins with 'n', the page has just been 
-	    // modified. Delete it and scroll to the modified position.
-	    // For browsing, before any scrolling we have to wait until the latex rendering is 
+	    // Read from the local storage to set the scroll position.
+	    // Before any scrolling we have to wait until the latex rendering is 
 	    // completed; otherwise the scroll is not correct.
-  	  cookieName = ScrollPositioner.pagename.toUpperCase() + '-ScrollY';
-  		var value = ScrollPositioner.getCookie(cookieName);
-  		if (value.substring(0,1) == 'n') { ScrollPositioner.delCookie(cookieName); }
-     	ScrollPositioner.waitLatexThenSetScroll(value);  
+	    // If the local storage content begins with 'n', the page has just been 
+	    // modified. Delete it in such cases.
+  		var value = ScrollPositioner.getScrollPosLS();
+  		if (value != null)
+  		{
+				ScrollPositioner.waitLatexThenSetScroll(value);
+				
+				if (String(value).substring(0,1) == 'n')
+				{ ScrollPositioner.setScrollPosLS(null); }
+			}
 	  }
 	  
 	  else if (ScrollPositioner.action == 'edit')
-	  {  
-	    // Initialize the styles depending on the editing mechanisms
-	    // Codemirror. Defunct.
-	    if (document.getElementById('text').codemirror != null)
-	    {
-  	    ScrollPositioner.isEmEnable = true;
-  	    document.getElementById('text').codemirror.focus();
-	    }
-	    // Div with content editable. Defunct.
-	  	else if (document.getElementById('text').form == null)
-	  	{
-	  	  ScrollPositioner.isEditableEnable = true;
- 	  		document.getElementById('text').style.minHeight = '500px';
-	  	  document.getElementById('text').focus();
-	  	}
-	    // Legacy textarea.
-	  	else
-	  	{
-	  	  ScrollPositioner.isLegacyTextedit = true;
-	  		document.getElementById('text').focus();	  		
-      	textAreaAdjust();
-	  	}
-	    	    
+	  {
+			if (textAreaHeigthtAdjust()) { console.log('Js textAreaHeigthtAdjust() has been called!'); }
+
 	    // Check cookie. If the cookie content begins with 'n', texts from browsing have 
 	    // just been selected for editing. Delete it and scroll to the specified position.
-	    cookieName = ScrollPositioner.pagename.toUpperCase() + 'EDIT-ScrollY';
-  		var value = ScrollPositioner.getCookie(cookieName);
-  		if (value.substring(0,1) == 'n')
-      {
-      	ScrollPositioner.delCookie(cookieName);
-      	ScrollPositioner.setScrollFromBrowse(value.slice(1));
-      }
-  		else
-  		{ 
-  			ScrollPositioner.setScrollPos(value);
-				ScrollPositioner.readCookieSetCaretPos();
-  		}
+	    // focus() is not called before setScrollFromBrowse() in order not to disturb it.
+			var value = ScrollPositioner.getScrollPosLS();
+			value = value==null ? 0 : value;
+			if (String(value).substring(0,1) != 'n')
+			{
+				// Note that the sequence of the following commands matters. If the caret 
+				// positioning comes before the focus, Chrome will scroll so that caret is
+				// centered in the screen, which interferes with the setScroll command.
+				document.getElementById('text').focus();
+				var caretPos = ScrollPositioner.getCaretPosLS();
+				ScrollPositioner.setCaretPos(caretPos, caretPos);
+				ScrollPositioner.setScrollPos(value);
+			}
+			else
+			{
+				ScrollPositioner.setScrollFromBrowse(String(value).slice(1));
+				ScrollPositioner.setScrollPosLS(null);
+			}
 	  }
   }
 }
 
 window.addEventListener('load', ScrollPositioner.init, false);
 
-// Enabling this will lock the scroll and caret positions for the same pages that are opened
-//window.addEventListener('focus', ScrollPositioner.readCookieSetScrollPos, false);
-//window.addEventListener('focus', ScrollPositioner.readCookieSetCaretPos, false);
-
 // Record the scroll and caret position on focusout and page close.
 //window.addEventListener("focusout", setScrollAndCaretPosCookie, false);
 window.addEventListener("beforeunload", setScrollAndCaretPosCookie, false);
 function setScrollAndCaretPosCookie()
 {
-  ScrollPositioner.setScrollPosCookies();
+  var value = ScrollPositioner.getScrollPosLS();
+  if (String(value).substring(0,1) != 'n')
+  { ScrollPositioner.setScrollPosLS(); }
   
   if (ScrollPositioner.isBrowsing == false)
-  { ScrollPositioner.setCaretPosCookies(); }
+  { ScrollPositioner.setCaretPosLS(); }
+
+	// Record the textarea width. 
+	if (ScrollPositioner.action == 'edit')
+	{
+		var value = document.getElementById('text').clientWidth;
+		var name = 'textAreaWidth';
+		ScrollPositioner.setCookie(name, value);
+	}
 }
 
 // On receiving new input, adjust the legacy textarea box size.
-window.addEventListener('input', textAreaAdjust, false);
-function textAreaAdjust()
+window.addEventListener('input', textAreaHeigthtAdjust, false);
+function textAreaHeigthtAdjust()
 {
-  if (ScrollPositioner.isLegacyTextedit == true)
-  {
-    elem = document.getElementById('text');
+	elem = document.getElementById('text');
 
-		if (elem.clientHeight < elem.scrollHeight) 
-		{
-			elem.style.height = 'auto';
-		  elem.style.height = elem.scrollHeight+500+'px';
-		}
+	if (elem.clientHeight < elem.scrollHeight) 
+	{
+		elem.style.height = 'auto';
+		elem.style.height = elem.scrollHeight+500+'px';
+		return true;
 	}
+	return false;
 }
 
 // When enter is pressed, check whether texts are selected. If yes, compute the number of
@@ -544,7 +409,6 @@ function textAreaAdjust()
 // for editing.
 window.addEventListener('keydown', function()
 {
-//alert(ScrollPositioner.getScrollPos());
   if (ScrollPositioner.isBrowsing == true)
   {
     // Spaces are all removed for comparison.
@@ -572,9 +436,8 @@ window.addEventListener('keydown', function()
 	    // "<li" appears in the string "HTML".
 			var numBullet = (HTML.match(/<li/g) || []).length;
 
-			cookieName = ScrollPositioner.pagename.toUpperCase() + 'EDIT-ScrollY';
-			document.cookie = cookieName + "=" + escape('n'+numBullet);
-			
+			ScrollPositioner.setStorageByKey('EDIT-ScrollY', ScrollPositioner.pagename, 'n'+numBullet)
+
 			window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank');
 		}
 		

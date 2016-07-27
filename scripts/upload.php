@@ -244,6 +244,27 @@ function png2jpg($originalFile, $outputFile, $quality)
     imagedestroy($image);
 }
 
+// Meng. Check if the given image has transparency information.
+function hasAlphaColour($r)
+{
+	$x = imagesx($r);
+	$y = imagesy($r);
+	
+	// We only check some of the pixels
+	for ($i = 0; $i < $x; $i += $x/10)
+	{
+		for ($j = 0; $j < $y; $j += $y/10)
+		{	
+			$index = imagecolorat($r, $i, $j);
+			$colors = imagecolorsforindex($r, $index);
+			if (isset($colors['alpha']) && $colors['alpha'] > 0)
+			{ return true; }
+		}
+	}
+	
+	return false;
+}
+
 function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload') {
   global $UploadVerifyFunction, $UploadFileFmt, $LastModFile, 
     $EnableUploadVersions, $Now, $RecentUploadsFmt, $FmtV,
@@ -260,16 +281,32 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
 //  if (function_exists(imagecreatetruecolor) && preg_match('/\d{8}_\d{6}P\.jpg/',$upname))
 //  { png2jpg($uploadfile['tmp_name'], $uploadfile['tmp_name'], 100); }
 
-  // Meng. Image resize borrowed from the Internet.
-  // Max height or width is now set to 720 px.
-  // gif is not processed as normally it's an animation.
+	
+  // Meng. Image processing. For png/gif, if the image is determined not to have 
+  // transparency, the transparency information (alpha) will not be saved.
+  // Next if either the height or the width exceeds a maximum value, the image is resized
+  // to fit the size limit. 
+  // Turns out resizing gif will remove its animation. Skip gif as mostly it's for
+  // animation
   if (function_exists(imagecreatetruecolor))
   {
-		$imgFile = $uploadfile['tmp_name'];
 		$ext = strtolower(substr($upname, strrpos($upname, '.')+1));
-		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png')//|| $ext == 'gif')
+
+    // If this is an image
+		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png')// || $ext == 'gif')
 		{
-			$MAXWHPX = 720;
+			$imgFile = $uploadfile['tmp_name'];
+			
+  		// For png/gif, check for transparency first
+  		if ($ext == 'png' || $ext == 'gif')
+			{
+				if ($ext == 'png') { $src = imagecreatefrompng($imgFile); }
+				else               { $src = imagecreatefromgif($imgFile); }
+				$hasTransparency = hasAlphaColour($src);		
+			}  
+
+      // If the image is oversized
+			$MAXWHPX = 640;
 			list($width,$height)=getimagesize($imgFile);
 			$maxWH = max($width,$height);
 			if ($maxWH > $MAXWHPX)
@@ -278,16 +315,31 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
 				$newwidth=round($width*$scale);
 				$newheight=round($height*$scale);
 				$tmp=imagecreatetruecolor($newwidth,$newheight);
+
 				if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
-				else if ($ext == 'png') { $src = imagecreatefrompng($imgFile); }
-				else if ($ext == 'gif') { $src = imagecreatefromgif($imgFile); }
+
+        // Preserve transparency
+        if (($ext == 'png' || $ext == 'gif') && $hasTransparency)
+        { imagealphablending( $tmp, false ); imagesavealpha( $tmp, true ); }
+				
+        // Resize
 				imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
+				
 				if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
 				else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
 				else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
 				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
 				imagedestroy($src);
 				imagedestroy($tmp);
+			}
+			// Else if the image is png/gif without transparency
+			else if (($ext == 'png' || $ext == 'gif') && !$hasTransparency)
+			{
+   			imagesavealpha($src, false);	
+				if ($ext == 'png') { $result = imagepng($src,$imgFile); }
+				else               { $result = imagegif($src,$imgFile); }
+				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
+				imagedestroy($src);
 			}
 		}
   }
@@ -419,31 +471,50 @@ function FmtUploadList($pagename, $args) {
                           ? "$UploadUrlFmt$UploadPrefixFmt/"
                           : "\$PageUrl?action=download&amp;upname=",
                       $pagename);
-
+                
   // Meng. Delete an uploaded file.
 	if (isset($_GET["delete"]) && file_exists($uploaddir.'/'.$_GET["delete"]))
 	{
-	  unlink($uploaddir.'/'.$_GET["delete"]);
-    Redirect($pagename.'?action=upload');
+	  $delResult = @unlink($uploaddir.'/'.$_GET["delete"]);
+	  // Redirect to the current page again to check the deletion result to prevent the
+	  // current link from deleting the same file again upon refreshing
+	  Redirect("$pagename?action=upload&delResult=$delResult");
 	}
-	// Show the uploaded image.
-  else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
+	else if (isset($_GET["delResult"]))
 	{
+	  if ($_GET["delResult"] === false)
+	  { echo "<span style='color: red;'>Deletion failed. Probably no write access!</span>"; }
+	  else 
+ 	  { echo "<span style='color: green;'>Image deleted successfully!</span>"; }
+ 	}
+	
+	// Meng. Show the selected uploaded image, and the delete link.
+  else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
+	{		
 	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
-	  global $imgHeightPx;
 	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
     {
-      echo "<img height=$imgHeightPx src=".getImgFileContent($uploaddir.'/'.$_GET["show"]).'></img>';
+      $fileName = $_GET['show'];
+      $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
+      global $PubDirUrl;
+      $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
+      $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
 
-      // I have no idea why the image size toggling is not working.
-/*
-      $imgUrl = $uploaddir.'/'.$_GET["show"];
-      $flipboxMarkup = FmtImgSizeToggle('_',$imgCount,$imgUrl);
-			$flipboxMarkupHead = substr($flipboxMarkup,0,strpos($flipboxMarkup,$imgUrl));
-			$flipboxMarkupEnd = substr($flipboxMarkup,strlen($flipboxMarkupHead)+strlen($imgUrl));
-			$flipboxMarkup = $flipboxMarkupHead.getImgFileContent($imgUrl).$flipboxMarkupEnd;
-      echo $flipboxMarkup;
-*/
+      // Meng. The trash can open/close images downloaded from the Internet.
+   		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
+   		<script>
+   		function showTrashClose()
+   		{
+     		document.getElementById('trashCanImg').src='$trashCloseImgUrl';
+   		}
+   		function showTrashOpen()
+   		{
+     		document.getElementById('trashCanImg').src='$trashOpenImgUrl';
+   		}
+   		</script>
+   		", $pagename);
+   		
+			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='float:right; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
     }
     else { echo 'Not an image!'; }
 	}
@@ -464,7 +535,7 @@ function FmtUploadList($pagename, $args) {
   $overwrite = '';
   $fmt = IsEnabled($IMapLinkFmt['Attach:'], $UrlLinkFmt);
   foreach($filelist as $file=>$encfile)
-  {
+  {  
     // Meng. Change the link.
     $FmtV['$LinkUrl'] = 
       FmtPageName("\$PageUrl?action=upload&amp;show=$encfile", $pagename); //PUE("$uploadurl$encfile");
@@ -473,7 +544,7 @@ function FmtUploadList($pagename, $args) {
       FmtPageName("\$PageUrl?action=upload&amp;upname=$encfile", $pagename);
     // Meng. Delete an uploaded file.
     $FmtV['$LinkDel'] =
-      FmtPageName("\$PageUrl?action=upload&amp;delete=$encfile", $pagename);      
+      FmtPageName("\$PageUrl?action=upload&amp;delete=$encfile", $pagename);
 
     $stat = stat("$uploaddir/$file");
     if ($EnableUploadOverwrite) 

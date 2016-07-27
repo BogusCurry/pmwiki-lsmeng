@@ -4,21 +4,28 @@
  * is configurable, and any new input within the delay extends it by resetting the timer.
  * A maximum total delay is also configurable 
  * When autosaving, the number of bullets appearing before the current caret position is 
- * calculated and stored in a cookie, which is then used for calculating the corresponding
- * scroll position when browsing this page.
+ * calculated and stored in a local storage, which is then used for calculating the 
+ * corresponding scroll position when browsing this page.
  * Closing the page at any time with unsaved changes triggers a synchronous saving
  * (blocking saving). This can cause a bit unresponsiveness.
- * 
- * Author: Ling-San Meng
- * Email: f95942117@gmail.com
+ *
+ * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
+ * Version 20160725
  */
 
 var AS = 
 {
-  savedStatusStr: "<span style='background-color: lightgreen;'>&nbsp;&nbsp;&nbsp;</span>",
-  savingStatusStr: "<span style='background-color: yellow;'>&nbsp;&nbsp;&nbsp;</span>",
-  typingStatusStr: '...',
-	
+  status: '',
+  savedStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px #0C0); background-color: #0C0; background:-webkit-linear-gradient(right, #0C0,#cfc);'></div>",
+  savingStatusHtml: "<div class='AutosaveMsg' style='\
+										-webkit-animation-name: savingPulse;\
+										-webkit-animation-duration: 0.5s;\
+										-webkit-animation-iteration-count: infinite;'></div>",
+  disableStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px #666); background-color: #999; background:-webkit-linear-gradient(right, #666, #eee);'></div>",
+  initStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px blue); background-color: blue; background:-webkit-linear-gradient(right, blue, lightblue);'></div>",
+  errStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px red); background-color: red; background:-webkit-linear-gradient(right, red, pink);'></div>",
+  typingStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px silver); background-color: #fc0; background:-webkit-linear-gradient(right, #fc0, #ff1);'></div>",
+  	
   lastInputTime: 0,
   inputBurstStartTime: 0,
   id1: null,
@@ -31,51 +38,83 @@ var AS =
 	url: '',
 	post_str: '',
 	busy: false,
-	ef: null, cb: null, lbl: null, txt: null,
-	req: null, id: null,  status: '',
+	ef: null, txt: null, //lbl: null, 
+	req: null, id: null,
   
   basetime: 0,
-	
-  // Set a cookie recording the current time. This is to work with the AutoRefresher.js
-	setLastModCookies: function()
+
+  // Set a local storage item "name" with key/value pair "key" and "value".
+  // If "key" is null then the item is treated as a simple variable; otherwise it is an 
+  // array. If "value" is null then the local storage is deleted in the former case; the 
+  // entry is deleted in the later case.
+  setStorageByKey: function(name, key, value)
+	{ 
+	  if (key == null)
+	  { 
+			if (value == null) { localStorage.removeItem(name); }
+			else
+			{	localStorage.setItem(name, value); }
+	  }
+	  else
+	  {
+			var content = JSON.parse(localStorage.getItem(name));
+
+			if (content == null) { content = new Object(); }
+			if (value == null) { delete content[key]; }
+			else { content[key] = value; }
+			localStorage.setItem(name, JSON.stringify(content));
+		}
+	},
+
+	// Get the value of key "key" in local storage item "name"
+	// If "key" is null then the whole content of "name" is returned;
+	getStorageByKey(name, key)
 	{
-		cookieName = ScrollPositioner.pagename.toUpperCase() + '-LastMod';
+	  if (key == null) 	{ return JSON.parse(localStorage.getItem(name)); }
+	  
+	  try { var value = JSON.parse(localStorage.getItem(name))[key]; }
+	  catch(e) {}
+	  
+	  return value;
+	},
+
+  // Set a local storage recording the current time. This is to work with AutoRefresher.js
+	setLastModLS: function()
+	{
 	  var clock = new Date();
-    document.cookie = cookieName + "=" + escape(Math.round(clock.getTime()/1000));
+	  AS.setStorageByKey('LastMod', AS.pagename, Math.round(clock.getTime()/1000));
 	},
 
   // Receive a status code/string and reflect on the autosave html field.
 	set_status: function(str)
 	{
-  	if (!AS.cb.checked) { return; }
-  	 
+  	if (AS.status === 'Disabled') { return; }
+  	
+  	AS.status = str;
+  	
 		switch(str)
 		{
-			case "ok":
-        AS.status = AS.savedStatusStr;
+			case "Saved":
+				AS.txt.innerHTML = AS.savedStatusHtml;
 				var as_time = AS.req.getResponseHeader("X-AutoSaveTime");
-				if (AS.basetime != as_time) { AS.setLastModCookies(); }
-				AS.basetime = as_time;
+				if (AS.basetime != as_time) { AS.setLastModLS(); }
+				AS.basetime = as_time;    
         break;
-        
+			        
 			case "Autosaving":
-        AS.status = AS.savingStatusStr;
+        AS.txt.innerHTML = AS.savingStatusHtml;
 				break;
 
 			case "Typing":
-        AS.status = AS.typingStatusStr;
+        AS.txt.innerHTML = AS.typingStatusHtml;
 				break;
 
 			default: // some error
-        AS.status ="<span  style='background-color: red; color: white;'>"+str+"</span>";
-				if (AS.cb)
-				{
-					AS.cb.checked = false;
-					AS.cb.disabled = true;
-				}
+			  AS.status = 'Disabled';
+        AS.txt.innerHTML = AS.errStatusHtml;// + "<span style='margin-left:25px; color: red;'>"+str+"</span>";
+        console.log("Autosave error:\n"+str);
+        alert("Autosave error:\n"+str);
 		}
-    AS.status = AS.status + AS.MarkupToHTML();
-    AS.txt.innerHTML = AS.status;
 	},
 
   // For async http request. This function is called automatically if working with 
@@ -91,11 +130,13 @@ var AS =
 			AS.busy = false;
 			AS.set_status(AS.req.responseText);
 		} 
-    // Meng. Change the "else" statement below. Now it won't stop on autosave failure.
-//		else AS.set_status("Autosave failed (HTTP status " + AS.req.status + ')');
 		else
 		{
-			AS.txt.innerHTML = "<span  style='background-color: red; color: white;'>Autosave failed (HTTP status " + AS.req.status + ')</span>';
+		  AS.status = 'Disabled';
+			AS.txt.innerHTML = AS.errStatusHtml;
+			console.log("Autosave error:\n"+"HTTP status: "+AS.req.status);
+      alert("Autosave error:\n"+"HTTP status: "+AS.req.status);
+
 			AS.busy = false;
 		}
 	},
@@ -104,33 +145,14 @@ var AS =
   // field we are working with.
   setTextContent: function(textContent)
   {
-    // Codemirror. Defunct.
-		if (AS.textID.codemirror != null) {}
-
-    // Legacy textarea.
-    else if (AS.ef != null)
-    {	AS.ef.elements['text'].value = textContent; }
-
-    // Div with content editable. Defunct.
-    else
-    { AS.textID.innerText = textContent; }
+    AS.ef.elements['text'].value = textContent;
   },
 
   // Return the content of the text field depending on which kind of text field we are
   // working with.
   getTextContent: function()
   {
-    // Codemirror. Defunct.
-		if (AS.textID.codemirror != null)
-		{ return AS.textID.codemirror.getValue(); }
-
-    // Legacy textarea.		
-    else if (AS.ef != null)
-    {	return AS.ef.elements['text'].value; }
-
-    // Div with content editable. Defunct.
-    else
-    { return AS.textID.innerText; }
+    return AS.ef.elements['text'].value;
   },
 
   // See if the content of the text field has been changed since the last time 
@@ -179,7 +201,7 @@ var AS =
   // Perform a sync saving (blocking saving) of the autosaving string. This is to be 
   // called when the page is closed with unsaved changes. The saving function 
   // AS.req.send() seems to be glitchy though in the sense that the functions following 
-  // it somethings don't get executed. Moving the setLastModCookies() ahead of it ensures
+  // it somethings don't get executed. Moving the setLastModLS() ahead of it ensures
   // the cookie will be set, but the page might be loaded with incomplete changes when 
   // viewing since the actual last modified time is a bit later.
 	saveOnUnload: function()
@@ -188,44 +210,31 @@ var AS =
 		AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
   
     AS.countBulletWriteCookie();
-    AS.setLastModCookies();
+    AS.setLastModLS();
 		AS.req.send(AS.post_str);  
 
 /*
     // If there are & symbols, scripts after req.send will not be executed.
-    // The best I can do for now is to move setLastModCookies() ahead of req.send 
+    // The best I can do for now is to move setLastModLS() ahead of req.send 
 		if (AS.post_str.indexOf('%26') != -1) 
 		{
-			AS.setLastModCookies();
+			AS.setLastModLS();
 			AS.req.send(AS.post_str);
 		}
 		else
 		{
 			AS.req.send(AS.post_str);
-			AS.setLastModCookies();
+			AS.setLastModLS();
 		}
 */
 	},
-	
-	// This is used for debugging purpose.
-	MarkupToHTML: function()
-	{
-//    var str = AS.ef.elements['text'];	
-//	  var testStr = "tst";
-//	  return "<br>"+str.wiki2html();
-//    return "<br>"+AS.post_str;
-//	  return "<br>"+encodeURIComponent(str);
-
-  	return "";
-	},
-	
 	
 	// Perform an async saving. If there is already an ongoing async saving, wait a short
 	// period (100 ms) and check again. The saving is performed only if the text field 
 	// has been changed since make_new_post_str() was last called.
 	keydownSave: function()
 	{ 
-  	if (!AS.cb.checked) { return; }
+  	if (AS.status === 'Disabled') { return; }
   	
 		AS.id1 = null;
 		
@@ -236,17 +245,18 @@ var AS =
 			
 			var hasNewInput = AS.make_new_post_str(); 
       if (hasNewInput == true)
-			{ 
+			{
+        // Use AJAX xml request to save the string
 				AS.set_status("Autosaving");
-				
 				AS.busy = true;
 				AS.req.open("POST",AS.url,true);
 				AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
 				AS.req.onreadystatechange = AS.reply;
 				AS.req.send(AS.post_str);
-	      AS.countBulletWriteCookie();
+	      AS.countBulletWriteCookie(); 
 			}
-			else { AS.set_status("ok"); }
+			else if (AS.status != 'Init')
+			{ AS.set_status("Saved"); }
 		}
 		else
 		{	
@@ -260,14 +270,8 @@ var AS =
 	// any new keystroke counts as a new input
 	onKeydown: function()
 	{
-		if (AS.status == AS.typingStatusStr) { AS.onNewInput(); }
+		if (AS.status == 'Typing') { AS.onNewInput(); }
 	},
-
-  // Just a fix for codemirror. Defunct.
-  cmEnterDeleteFix: function()
-  {
-		if (AS.ifTextChange() != null) { AS.onNewInput(); }
-  },
 
   // On receiving new input, activate a timer for triggering the saving process
   // (keydownSave). Any new keystrokes resets this timer.
@@ -275,9 +279,9 @@ var AS =
   // a bit complicated.
 	onNewInput: function()
 	{	
-		if (!AS.cb.checked) { return; }
+		if (AS.status === 'Disabled') { return; }
 
-		// If new input hasn't been detected.
+		// If new input hadn't been detected.
 		if (AS.id1 == null)
 		{
 			// If no other saving process is waiting 
@@ -285,27 +289,21 @@ var AS =
 			// and when the process is done waiting, any new input will be saved altogether 
 			// So there is no need to check new input, change status, or set timeout to trigger another saving
 			// process)
-//			if (AS.id2 == null)
-//			{
-				// If not currently saving, change the status text.
-				if (!AS.busy) {	AS.set_status("Typing");	}
-        else { AS.set_status("Autosaving"); }
+  		if (!AS.busy && AS.status != 'Typing') { AS.set_status("Typing");	}
+      else {}//console.log('here'); }
 
-        // Record the starting time of the input burst        
-				var clock = new Date();
-				AS.inputBurstStartTime = clock.getTime();
+      // Record the starting time of the input burst        
+	  	var clock = new Date();
+			AS.inputBurstStartTime = clock.getTime();
 
-				// Set a timeout for triggering the saving process.
-				AS.id1 = setTimeout( AS.keydownSave, AS.delay );
-//			}
-// Debugging
-//			else { AS.txt.innerHTML = 'Already saving'; }
+			// Set a timeout for triggering the saving process.
+			AS.id1 = setTimeout( AS.keydownSave, AS.delay );
 		}
 		// New input had been detected.
 		else
 		{	
-			if (!AS.busy) {	AS.set_status("Typing"); }
-      else { AS.set_status("Autosaving"); }
+			if (!AS.busy && AS.status != 'Typing') {	AS.set_status("Typing"); }
+      else {}//AS.set_status("Autosaving"); }
       
 			var clock = new Date();
 			var inputTime = clock.getTime();
@@ -347,15 +345,14 @@ var AS =
 
     if (numBullet != 0)
     {
-		  cookieName = ScrollPositioner.pagename.toUpperCase() + '-ScrollY';
-		  document.cookie = cookieName + "=" + escape('n'+numBullet);
+		  AS.setStorageByKey('VIEW-ScrollY', AS.pagename, 'n'+numBullet);
     }
 	},
 
 	init: function()
-	{
-		if ( !AS.url || !AS.delay || !$("text") ) return;
-		
+	{ 
+		if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
+
 		// Check for out-dated text. The built-in navigation mechanism "last page" of browsers
 		// buffers the text content of the textarea, which of course leads to undesirable 
 		// consequences. Fortunately the "true" text content can be obtained by calling
@@ -364,44 +361,67 @@ var AS =
     if (document.getElementById('text').textContent != document.getElementById('text').form.text.value)
     { location.reload(); }
 
+    AS.pagename = AS.pagename.toUpperCase();
+    
 		AS.textID = document.getElementById('text');
     AS.ef = AS.textID.form;
-
+    
+    // Read from local storage to set the saving status position
+    // If not set, or the position goes out the visible area,
+    // a default position is set.
+    var top = localStorage.getItem('AutosaveSymTop');
+		var left = localStorage.getItem('AutosaveSymLeft');
+		if (top != null &&
+		    parseInt(top)>0  && parseInt(top) <window.innerHeight &&
+	      parseInt(left)>0 && parseInt(left)< window.innerWidth)
+		{		
+			document.getElementById('autosaveSemaphore').style.top = top;
+		  document.getElementById('autosaveSemaphore').style.left = left;
+		}
+		else
+		{
+			// Move the saving status to the bottom left of the textarea
+		  var rectObject = AS.textID.getBoundingClientRect();
+		  top = document.getElementById('autosaveSemaphore').style.top = Math.min(window.innerHeight-30,rectObject.bottom-30)+'px';
+		  left = document.getElementById('autosaveSemaphore').style.left = rectObject.left+5+'px';
+		  
+      localStorage.setItem('AutosaveSymTop', top);
+      localStorage.setItem('AutosaveSymLeft', left);
+		}
+		
     var clock = new Date();
     AS.basetime = Math.floor(clock.getTime()/1000);
 
 		AS.prefix = 'action=edit&n='+AS.pagename+'&basetime=';
 
 		AS.make_new_post_str();
-		AS.req = createXMLHTTPObject();
+		AS.req = new XMLHttpRequest();
 
 		if (!AS.req) return;
-		AS.cb = $("autosave-cb");
-		AS.lbl = $("autosave-label");
-		AS.txt = $("autosave-status");
+		AS.txt = document.getElementById("autosaveSemaphore");
 
-    AS.status = "Ready";
-    AS.status = AS.status + AS.MarkupToHTML();	
-    AS.txt.innerHTML = AS.status;
-
-		if (AS.cb)
+    AS.status = 'Init';
+    AS.txt.innerHTML = AS.initStatusHtml;
+    
+		var autosaveSwitch = AS.getStorageByKey('Autosave', AS.pagename);
+		if (autosaveSwitch === 'off')
 		{
-			addEventSimple( AS.cb, "click", function() { AS.ctrl(); AS.set_cookie( AS.cb.checked ? '1' : '0' ); } );
-		} 
+			AS.status = 'Disabled';
+			AS.txt.innerHTML = AS.disableStatusHtml;
+		}
 	}
 };
 
 
-addEventSimple(window, "load", AS.init);
-addEventSimple(window, "input", AS.onNewInput);
-addEventSimple(window, "paste", AS.onNewInput);
-addEventSimple(window, "drop", AS.onNewInput);
-//addEventSimple( window, "keydown", AS.onKeydown );
+window.addEventListener("load", AS.init, false);
+window.addEventListener("input", AS.onNewInput, false);
+window.addEventListener("paste", AS.onNewInput, false);
+window.addEventListener("drop", AS.onNewInput, false);
 
 // Perform a synchronous saving if there are unsaved changes before the the page is closed
 window.addEventListener("beforeunload", function(event)
 { 
-  if (AS.cb.checked && AS.status != "")
+  if (AS.status !== 'Disabled')// && AS.txt.innerHTML != "")
 	{
     // If there is an on going saving process.
 		if (AS.busy)
@@ -425,7 +445,7 @@ window.addEventListener("beforeunload", function(event)
 		}
 		
 		// If new input has been detected
-		else if (AS.status == AS.typingStatusStr)
+		else if (AS.status == 'Typing')
     {
 			clearTimeout(AS.id1);
     	if (AS.make_new_post_str()) { AS.saveOnUnload(); }
@@ -441,28 +461,59 @@ window.addEventListener("beforeunload", function(event)
       if (AS.make_new_post_str()) {	AS.saveOnUnload(); }
     }
 	}
-	
 });
 
-// Call async save immediately on focusout
-window.addEventListener('focusout', function()
-{
-  if (AS.cb.checked && AS.status != "")
-	{
-		if (AS.status == AS.typingStatusStr)
-    {
-			clearTimeout(AS.id1);
-			AS.keydownSave();
-    }
-	}
-}, false);
-
-// Save buttons: F2 or alt
+// Set the saving button and saving toggle button
 window.addEventListener('keydown', function()
 {
-  if ((event.keyCode == 18 || event.keyCode == 113) && AS.status != 'Ready')
+  // Save buttons: F2
+  if (event.keyCode == 113)
   {
 		clearTimeout(AS.id1);
 		AS.keydownSave();
   }
+  // Toggle autosave: esc
+  else if (event.keyCode == 27)
+  {
+    if (AS.status !== 'Disabled') 
+    {
+			AS.setStorageByKey('Autosave', AS.pagename, 'off');
+			AS.status = 'Disabled';
+			AS.txt.innerHTML = AS.disableStatusHtml;
+    }
+    else
+    {
+			AS.setStorageByKey('Autosave', AS.pagename, null);
+			AS.status = 'Init';
+			AS.txt.innerHTML = AS.initStatusHtml;
+			AS.keydownSave();
+    }
+  }
 }, false);
+
+// Implement drag and move of the autosaving status
+document.getElementById('autosaveSemaphore').onmouseup = function()
+{
+  var top = this.style.top;
+  var left = this.style.left;
+  
+	localStorage.setItem('AutosaveSymTop', top);
+	localStorage.setItem('AutosaveSymLeft', left);
+	window.onmousemove = '';
+}
+
+document.getElementById('autosaveSemaphore').onmousedown = function(e)
+{
+  var mouseCoordX = e.clientX;
+	var mouseCoordY = e.clientY;
+								
+	var imgCoordX = parseInt(this.style.left);
+	var imgCoordY = parseInt(this.style.top);
+	
+	window.onmousemove = function(e)
+	{
+	  document.getElementById('autosaveSemaphore').style.left = imgCoordX+e.clientX-mouseCoordX+'px';
+		document.getElementById('autosaveSemaphore').style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
+	};
+	return false;
+}
