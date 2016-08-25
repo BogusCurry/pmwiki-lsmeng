@@ -139,9 +139,15 @@ h6 { font-size:1.0em; }
 /* Meng. NOTE that the height of the textarea is configured in the PHP main program to
  * speed up rendering of text box with lots of content.
  */
+#wikiedit form
+{
+	background-image:url('http://localhost/pmwiki/pub/skins/pmwiki_gray/pencil_light.png');
+	background-position:100% 100%;
+	background-repeat:no-repeat;
+}
 #wikiedit textarea
 {
-  background:inherit;
+  background: transparent;
   white-space: pre-wrap;
   word-break: break-all;
   width:100%;
