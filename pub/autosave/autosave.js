@@ -25,7 +25,9 @@ var AS =
   initStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px blue); background-color: blue; background:-webkit-linear-gradient(right, blue, lightblue);'></div>",
   errStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px red); background-color: red; background:-webkit-linear-gradient(right, red, pink);'></div>",
   typingStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px silver); background-color: #fc0; background:-webkit-linear-gradient(right, #fc0, #ff1);'></div>",
-  	
+  
+  cmdKeyDn: false,
+  enableDrag: 0,
   lastInputTime: 0,
   inputBurstStartTime: 0,
   id1: null,
@@ -34,6 +36,7 @@ var AS =
   prefix: '',
   lastTextContent: '',
   pagename: '',
+  pagenameU: '',
 	delay: 0, // in milliseconds
 	url: '',
 	post_str: '',
@@ -82,7 +85,7 @@ var AS =
 	setLastModLS: function()
 	{
 	  var clock = new Date();
-	  AS.setStorageByKey('LastMod', AS.pagename, Math.round(clock.getTime()/1000));
+	  AS.setStorageByKey('LastMod', AS.pagenameU, Math.round(clock.getTime()/1000));
 	},
 
   // Receive a status code/string and reflect on the autosave html field.
@@ -112,8 +115,10 @@ var AS =
 			default: // some error
 			  AS.status = 'Disabled';
         AS.txt.innerHTML = AS.errStatusHtml;// + "<span style='margin-left:25px; color: red;'>"+str+"</span>";
-        console.log("Autosave error:\n"+str);
-        alert("Autosave error:\n"+str);
+				var div = document.createElement("div");
+				div.innerHTML = str;
+        console.log("Autosave error:\n"+div.textContent);
+        alert("Autosave error:\n"+div.textContent);
 		}
 	},
 
@@ -344,11 +349,21 @@ var AS =
 		if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#') { numBullet++; }
 
     if (numBullet != 0)
-    {
-		  AS.setStorageByKey('VIEW-ScrollY', AS.pagename, 'n'+numBullet);
-    }
+    { AS.setStorageByKey('VIEW-ScrollY', AS.pagenameU, 'n'+numBullet); }
 	},
 
+  fixASStatusPos()
+  {
+			// Move the saving status to the bottom left of the textarea, ASSUMING the textarea
+			// height fills the browser area
+		  var rectObject = AS.textID.getBoundingClientRect();
+		  var top = document.getElementById('autosaveStatus').style.top = window.innerHeight-30+'px';
+		  var left = document.getElementById('autosaveStatus').style.left = rectObject.left+'px';
+		  
+      localStorage.setItem('AutosaveSymTop', top);
+      localStorage.setItem('AutosaveSymLeft', left);
+  },
+  
 	init: function()
 	{ 
 		if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
@@ -361,33 +376,34 @@ var AS =
     if (document.getElementById('text').textContent != document.getElementById('text').form.text.value)
     { location.reload(); }
 
-    AS.pagename = AS.pagename.toUpperCase();
+    AS.pagenameU = AS.pagename.toUpperCase();
     
 		AS.textID = document.getElementById('text');
     AS.ef = AS.textID.form;
+    
+    // Set cursor to move it drag is enabled.
+    if (AS.enableDrag)
+    { document.getElementById('autosaveStatus').style.cursor = 'move'; }
     
     // Read from local storage to set the saving status position
     // If not set, or the position goes out the visible area,
     // a default position is set.
     var top = localStorage.getItem('AutosaveSymTop');
 		var left = localStorage.getItem('AutosaveSymLeft');
-		if (top != null &&
+		if (AS.enableDrag && top != null &&
 		    parseInt(top)>0  && parseInt(top) <window.innerHeight &&
 	      parseInt(left)>0 && parseInt(left)< window.innerWidth)
 		{		
-			document.getElementById('autosaveSemaphore').style.top = top;
-		  document.getElementById('autosaveSemaphore').style.left = left;
+			document.getElementById('autosaveStatus').style.top = top;
+		  document.getElementById('autosaveStatus').style.left = left;
 		}
 		else
-		{
-			// Move the saving status to the bottom left of the textarea
-		  var rectObject = AS.textID.getBoundingClientRect();
-		  top = document.getElementById('autosaveSemaphore').style.top = Math.min(window.innerHeight-30,rectObject.bottom-30)+'px';
-		  left = document.getElementById('autosaveSemaphore').style.left = rectObject.left+5+'px';
-		  
-      localStorage.setItem('AutosaveSymTop', top);
-      localStorage.setItem('AutosaveSymLeft', left);
-		}
+		{ AS.fixASStatusPos(); }
+		
+		// If drag is not enabled, auto re-position the AS status ball on
+		// resizing window
+		if (!AS.enableDrag)
+	  { window.addEventListener('resize', AS.fixASStatusPos, false); }
 		
     var clock = new Date();
     AS.basetime = Math.floor(clock.getTime()/1000);
@@ -398,17 +414,46 @@ var AS =
 		AS.req = new XMLHttpRequest();
 
 		if (!AS.req) return;
-		AS.txt = document.getElementById("autosaveSemaphore");
+		AS.txt = document.getElementById("autosaveStatus");
 
     AS.status = 'Init';
     AS.txt.innerHTML = AS.initStatusHtml;
     
-		var autosaveSwitch = AS.getStorageByKey('Autosave', AS.pagename);
+		var autosaveSwitch = AS.getStorageByKey('Autosave', AS.pagenameU);
 		if (autosaveSwitch === 'off')
 		{
 			AS.status = 'Disabled';
 			AS.txt.innerHTML = AS.disableStatusHtml;
 		}
+		
+    // Implement drag and move of the autosaving status
+    if (AS.enableDrag)
+    {  
+      document.getElementById('autosaveStatus').onmouseup = function()
+      {
+      		var top = this.style.top;
+      		var left = this.style.left;
+      		
+      		localStorage.setItem('AutosaveSymTop', top);
+      		localStorage.setItem('AutosaveSymLeft', left);
+      		window.onmousemove = '';
+      }
+      document.getElementById('autosaveStatus').onmousedown = function(e)
+      {
+      		var mouseCoordX = e.clientX;
+      		var mouseCoordY = e.clientY;
+      									
+      		var imgCoordX = parseInt(this.style.left);
+      		var imgCoordY = parseInt(this.style.top);
+      		
+      		window.onmousemove = function(e)
+      		{
+      			document.getElementById('autosaveStatus').style.left = imgCoordX+e.clientX-mouseCoordX+'px';
+      			document.getElementById('autosaveStatus').style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
+      		};
+      		return false;
+      }
+    }
 	}
 };
 
@@ -464,26 +509,32 @@ window.addEventListener("beforeunload", function(event)
 });
 
 // Set the saving button and saving toggle button
+window.addEventListener('keyup', function()
+{ if (event.keyCode == 91) { AS.cmdKeyDn = false; } }, false);
 window.addEventListener('keydown', function()
 {
-  // Save buttons: F2
-  if (event.keyCode == 113)
+  if (event.keyCode == 91) { AS.cmdKeyDn = true; }
+  
+  // Save buttons: Ctrl+s  
+  else if (event.keyCode == 83 && (event.ctrlKey || AS.cmdKeyDn))
   {
+		event.preventDefault();
 		clearTimeout(AS.id1);
 		AS.keydownSave();
+		AS.cmdKeyDn = false;
   }
   // Toggle autosave: esc
   else if (event.keyCode == 27)
   {
     if (AS.status !== 'Disabled') 
     {
-			AS.setStorageByKey('Autosave', AS.pagename, 'off');
+			AS.setStorageByKey('Autosave', AS.pagenameU, 'off');
 			AS.status = 'Disabled';
 			AS.txt.innerHTML = AS.disableStatusHtml;
     }
     else
     {
-			AS.setStorageByKey('Autosave', AS.pagename, null);
+			AS.setStorageByKey('Autosave', AS.pagenameU, null);
 			AS.status = 'Init';
 			AS.txt.innerHTML = AS.initStatusHtml;
 			AS.keydownSave();
@@ -491,29 +542,3 @@ window.addEventListener('keydown', function()
   }
 }, false);
 
-// Implement drag and move of the autosaving status
-document.getElementById('autosaveSemaphore').onmouseup = function()
-{
-  var top = this.style.top;
-  var left = this.style.left;
-  
-	localStorage.setItem('AutosaveSymTop', top);
-	localStorage.setItem('AutosaveSymLeft', left);
-	window.onmousemove = '';
-}
-
-document.getElementById('autosaveSemaphore').onmousedown = function(e)
-{
-  var mouseCoordX = e.clientX;
-	var mouseCoordY = e.clientY;
-								
-	var imgCoordX = parseInt(this.style.left);
-	var imgCoordY = parseInt(this.style.top);
-	
-	window.onmousemove = function(e)
-	{
-	  document.getElementById('autosaveSemaphore').style.left = imgCoordX+e.clientX-mouseCoordX+'px';
-		document.getElementById('autosaveSemaphore').style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
-	};
-	return false;
-}

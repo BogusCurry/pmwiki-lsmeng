@@ -41,7 +41,7 @@ var ScrollPositioner =
   // Set a local storage item "name" with key/value pair "key" and "value".
   // If "key" is null then the item is treated as a simple variable; otherwise it is an 
   // array. If "value" is null then the local storage is deleted in the former case; the 
-  // entry is deleted in the later case.
+  // entry is deleted in the latter case.
   setStorageByKey: function(name, key, value)
 	{ 
 	  if (key == null)
@@ -73,6 +73,26 @@ var ScrollPositioner =
 	  return value;
 	},
 	
+	// Get the value of the cookie "name"
+  // Return the cookie value if it exists.
+  //        an empty string otherwise.
+	getCookie: function(name)
+	{
+		if (document.cookie.length>0)
+		{
+			var start = document.cookie.indexOf(name + "=");
+			if (start != -1)
+			{
+				start = start + name.length+1;
+				end = document.cookie.indexOf(";", start);
+				if (end == -1) { end = document.cookie.length;}
+				return unescape(document.cookie.substring(start, end));
+			}
+		}
+
+		return "";
+	},
+	
   // Set a cookie with the given name/value.
 	setCookie: function(name, value)
 	{ document.cookie = name + "=" + escape(value); },
@@ -91,12 +111,18 @@ var ScrollPositioner =
   // Set the scroll position. Depending on the current pmwiki action (browsing, editing,
   // etc), the method could be different. Currently they are the same.	
 	setScrollPos: function(y)
-	{ document.body.scrollTop = y; },
+	{
+		if (ScrollPositioner.action == 'edit') { document.getElementById('text').scrollTop = y; }
+		else { document.body.scrollTop = y;	}
+	},
 
   // Get the scroll position. Depending on the current pmwiki action (browsing, editing,
   // etc), the method could be different. Currently they are the same.	
 	getScrollPos: function()
-	{ return document.body.scrollTop; },
+	{
+		if (ScrollPositioner.action == 'edit') { return document.getElementById('text').scrollTop; }
+		else { return document.body.scrollTop; }
+	},
 
   // Record the current scroll position in local storage. The scroll positions for
   // browsing and editing pages are stored separately. If null is passed then the entry is
@@ -161,6 +187,11 @@ var ScrollPositioner =
 		if (value == null) { return; }
 		else if (String(value).substring(0,1) != 'n') { ScrollPositioner.setScrollPos(value); return; }
 		else { value = value.slice(1); }
+
+    // Get timestamp, if expired then return	
+    var clock = new Date();
+    var timeDiff = Math.floor(clock.getTime()/1000) - ScrollPositioner.getStorageByKey('LastMod', ScrollPositioner.pagename);
+    if (timeDiff > 600) { return; }
 		 	  
 		var numBullet = value;
 		var bulletObj = document.getElementById('wikitext').getElementsByTagName("li")[numBullet-1];
@@ -204,7 +235,10 @@ var ScrollPositioner =
     var HTML = document.getElementById('wikitext').innerHTML;
 
     // See if the primitive markup for latex equations is still visible in the page HTML
-		if (HTML.indexOf('{$') != -1 && HTML.indexOf('$}') != -1)
+    // This is non-ideal actually, as a fake target could block the the rest
+    var startLatexMarkPos = HTML.indexOf('{$');
+		if (startLatexMarkPos != -1 && HTML.indexOf('$}',startLatexMarkPos+1) != -1 &&
+		    HTML.slice(startLatexMarkPos,HTML.indexOf('$}',startLatexMarkPos+1)+2).indexOf("\n") == -1)
 		{
 			ScrollPositioner.nWaitForLatex++;
      	if (ScrollPositioner.nWaitForLatex > 100)
@@ -317,6 +351,9 @@ var ScrollPositioner =
 
   init: function()
   {  
+//setTimeout("var test='test'; alert(test);",2000);
+
+
     ScrollPositioner.pagename = ScrollPositioner.pagename.toUpperCase();
   
 	  if (ScrollPositioner.action == 'browse')
@@ -336,12 +373,52 @@ var ScrollPositioner =
 				if (String(value).substring(0,1) == 'n')
 				{ ScrollPositioner.setScrollPosLS(null); }
 			}
+						
+      			
+      // When enter is pressed, check whether texts are selected. If yes, compute the number of
+      // html bullets before the selected text, record it in cookie, and then open a new tab
+      // for editing.
+      window.addEventListener('keydown', function()
+      {
+        // Spaces are all removed for comparison.
+    		if( event.keyCode == 13 )
+    		{
+    		  // Remove spaces and replace special characters. 
+    			var sel = window.getSelection();
+    			var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    
+    			if (selString == '') { return; }
+    			if (selString.substring(0,1) == "\n") { selString = selString.slice(1); }
+    			var newlinePos = selString.indexOf("\n");
+    			if (newlinePos != -1) { selString = selString.substring(0,newlinePos); }
+    
+    		  // Remove spaces and newlines, also remove all the tags except <li.
+          var HTML = document.getElementById('wikitext').innerHTML.replace(/ /g,'').replace(/\n/g,'').replace(/<(?!li)[^>]*>/ig, '');
+        
+    			var selStringPos = HTML.indexOf( selString );
+    			HTML = HTML.substring(0,selStringPos);
+    
+    			if (selStringPos == -1)
+    			{ alert('The selected string can\'t be found!'); return; }
+    			
+    	    // This one liner is of course from the Internet. It computes the number of times
+    	    // "<li" appears in the string "HTML".
+    			var numBullet = (HTML.match(/<li/g) || []).length;
+    
+    			ScrollPositioner.setStorageByKey('EDIT-ScrollY', ScrollPositioner.pagename, 'n'+numBullet)
+    
+    			window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank');
+    		}
+    		
+    		return true;
+      }, false);
 	  }
 	  
 	  else if (ScrollPositioner.action == 'edit')
 	  {
-			if (textAreaHeigthtAdjust()) { console.log('Js textAreaHeigthtAdjust() has been called!'); }
-
+	    fixTextareaHeight();
+//      setTimeout(fixTextareaHeight, 2000);
+      
 	    // Check cookie. If the cookie content begins with 'n', texts from browsing have 
 	    // just been selected for editing. Delete it and scroll to the specified position.
 	    // focus() is not called before setScrollFromBrowse() in order not to disturb it.
@@ -362,11 +439,22 @@ var ScrollPositioner =
 				ScrollPositioner.setScrollFromBrowse(String(value).slice(1));
 				ScrollPositioner.setScrollPosLS(null);
 			}
+			
+			window.addEventListener('resize', fixTextareaHeight, false);
 	  }
   }
 }
 
 window.addEventListener('load', ScrollPositioner.init, false);
+
+function fixTextareaHeight()
+{
+	// Check if the textarea height is correct; if not then adjust
+	var rectObject = document.getElementById('text').getBoundingClientRect();
+	var correctTextAreaHeight = window.innerHeight - rectObject.top-4;
+  if (document.getElementById('text').clientHeight != correctTextAreaHeight)
+	{ document.getElementById('text').style.height = correctTextAreaHeight + 'px'; }
+}
 
 // Record the scroll and caret position on focusout and page close.
 //window.addEventListener("focusout", setScrollAndCaretPosCookie, false);
@@ -377,73 +465,19 @@ function setScrollAndCaretPosCookie()
   if (String(value).substring(0,1) != 'n')
   { ScrollPositioner.setScrollPosLS(); }
   
-  if (ScrollPositioner.isBrowsing == false)
+  if (ScrollPositioner.action == 'edit')
   { ScrollPositioner.setCaretPosLS(); }
 
-	// Record the textarea width. 
+	// Record the window height. 
 	if (ScrollPositioner.action == 'edit')
 	{
-		var value = document.getElementById('text').clientWidth;
-		var name = 'textAreaWidth';
+    var rectObject = document.getElementById('text').getBoundingClientRect();
+		var value = window.innerHeight - rectObject.top-4;
+		var name = 'textAreaHeight';
 		ScrollPositioner.setCookie(name, value);
 	}
 }
 
-// On receiving new input, adjust the legacy textarea box size.
-window.addEventListener('input', textAreaHeigthtAdjust, false);
-function textAreaHeigthtAdjust()
-{
-	elem = document.getElementById('text');
-
-	if (elem.clientHeight < elem.scrollHeight) 
-	{
-		elem.style.height = 'auto';
-		elem.style.height = elem.scrollHeight+500+'px';
-		return true;
-	}
-	return false;
-}
-
-// When enter is pressed, check whether texts are selected. If yes, compute the number of
-// html bullets before the selected text, record it in cookie, and then open a new tab
-// for editing.
-window.addEventListener('keydown', function()
-{
-  if (ScrollPositioner.isBrowsing == true)
-  {
-    // Spaces are all removed for comparison.
-		if( event.keyCode == 13 )
-		{
-		  // Remove spaces and replace special characters. 
-			var sel = window.getSelection();
-			var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
-
-			if (selString == '') { return; }
-			if (selString.substring(0,1) == "\n") { selString = selString.slice(1); }
-			var newlinePos = selString.indexOf("\n");
-			if (newlinePos != -1) { selString = selString.substring(0,newlinePos); }
-
-		  // Remove spaces.
-			var HTML = document.getElementById('wikitext').innerHTML.replace(/ /g,'');
-
-			var selStringPos = HTML.indexOf( selString );
-			HTML = HTML.substring(0,selStringPos);
-
-			if (selStringPos == -1)
-			{ alert('The selected string can\'t be found!'); return; }
-			
-	    // This one liner is of course from the Internet. It computes the number of times
-	    // "<li" appears in the string "HTML".
-			var numBullet = (HTML.match(/<li/g) || []).length;
-
-			ScrollPositioner.setStorageByKey('EDIT-ScrollY', ScrollPositioner.pagename, 'n'+numBullet)
-
-			window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank');
-		}
-		
-		return true;
-	}
-}, false);
 
 // Get the indexOf the nth occurrence of either "pat1" or "pat2"
 function nthIndex(str, pat1, pat2, n)

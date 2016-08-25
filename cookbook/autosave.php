@@ -23,6 +23,8 @@
 
 $RecipeInfo['AutoSave']['Version'] = '2009-05-28-2';
 
+SDV($AutoSaveDrag, 0);
+
 SDVA( $HandleAuth, array(
 	'autosave' => $HandleAuth['edit'] ));
 SDVA( $HandleActions, array(
@@ -43,12 +45,17 @@ if($action == "edit")
   $url = "$ScriptUrl?n=$pagename&action=autosave";
   
 	SDVA( $AutoSaveFmt, array(
-		'info' => "<div style='position:fixed; z-index:9;' id='autosaveSemaphore'></div>",
+		'info' => "<div style='position:fixed; z-index:9;' id='autosaveStatus'></div>",
 		'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
 		<script type='text/javascript'>
 		AS.pagename = '$pagename';
 		</script>",
-		'config' => "<script type='text/javascript'> AS.delay=$AutoSaveDelay; AS.url='$url'; </script>"
+		'config' => "
+		<script type='text/javascript'>
+		AS.enableDrag = $AutoSaveDrag;
+		AS.delay = $AutoSaveDelay;
+		AS.url = '$url';
+		</script>"
 	));
 
 	$HTMLHeaderFmt['autosave'] = "

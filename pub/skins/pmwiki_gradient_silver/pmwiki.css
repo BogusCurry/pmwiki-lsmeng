@@ -8,6 +8,10 @@
 **  (at your option) any later version.  See pmwiki.php for full details.
 ***********************************************************************/
 
+/* For the video play image. No visual effects are applied. */
+img[src$='playIcon.png']:hover { -webkit-filter: none; }
+img[src$='playIcon.png']:active { -webkit-transform: none; }
+
 /* Ids beginning with '_fbi' are flipbox images */
 /* Do not apply special visual effects to them */
 img[id^='_fbi']:hover
@@ -16,7 +20,8 @@ img[id^='_fbi']:hover
 /* This sets the overall frame for the site */
 body {
   background: #cce8cf;
-  margin:0px;
+/*  background: -webkit-linear-gradient(left, #cce8cf, white);  */
+  margin: 0;
   font-family:Arial,Helvetica,sans-serif; font-size:11pt;
 }
 
@@ -93,10 +98,13 @@ h6 { font-size:1.0em; }
 /* These affect the main content area. */
 #wikibody
 {
+  background:inherit;
 	position: absolute;
 	height:100%;
-	left:85px;
-	right:5px;
+	left:81px;
+	right: 0;
+	padding-left:4px;
+	padding-right:5px;
 	font-size:21px; 
 }
 #wikicmds
@@ -128,8 +136,7 @@ h6 { font-size:1.0em; }
 /* These are for the edit form. */
 #wikiedit form
 {
-  margin:0px; 
-  margin-top:-33px;
+  margin-top:-19px;
   margin-right:5px;
 }
 /* Meng. NOTE that the height of the textarea is configured in the PHP main program to
@@ -137,21 +144,22 @@ h6 { font-size:1.0em; }
  */
 #wikiedit textarea
 {
+  background:inherit;
   white-space: pre-wrap;
   word-break: break-all;
-  margin-top:14px;
   width:100%;
-  background: #cce8cf;
   font-family: Lucida Grande, Courier;
   font-size:21px;
   line-height: 22px;
-  border:1px #cccccc solid; 
+  border:1px #cccccc solid;
+  resize: none;
 }
 
 .wikimessage { margin-top:4px; margin-bottom:4px; font-style:italic; }
 
-/* These affect the lines at the very bottom. */
-#wikifoot
+/* Turns out the original wikikfoot can not have a fixed/absolute position, otherwise
+   the html body's setting will be corrupted. */
+#MengWikiFoot
 {
   position:fixed; 
   border-top:1px #cccccc solid;
@@ -172,6 +180,6 @@ h6 { font-size:1.0em; }
 @media print {
   body { width:auto; margin:0px; padding:0.5em; }
   #wikihead, #wikileft, #wikicmds, .footnav { display:none; }
-  #wikifoot { padding:2px; }
+/*  #MengWikiFoot { padding:2px; }*/
 }
 

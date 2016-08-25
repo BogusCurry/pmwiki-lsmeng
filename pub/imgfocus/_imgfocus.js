@@ -15,7 +15,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160818
+ * Version 20160728
  */
 
 // Main function handling the popup effects.
@@ -40,7 +40,7 @@ function ImgfocusPopupImgOnClick()
  	  {
  	    if (filename == ImgfocusExceptionList[j])
  	    { isException = true; break; }
- 	  }  
+ 	  }
  	  if (isException) { continue; }
  	  
 		// Skip images that are hyperlinks
@@ -49,7 +49,7 @@ function ImgfocusPopupImgOnClick()
 		// Apply the popup function on clicking the image
 		imgElement[i].onclick = function()
 		{
-			if (document.getElementById('ImgfocusPopupImage') == null)
+      if (document.getElementById('ImgfocusPopupImage') == null)
 			{ 						
 				// Create the popup image
 				var imgEnlarge = document.createElement('img');	
@@ -61,25 +61,33 @@ function ImgfocusPopupImgOnClick()
 				{
 					// Blur all the direct children of the document body.
 					for (var i=0;i<document.body.children.length;i++)
-					{ ImgfocusBlurElement(document.body.children[i]); }
+					{
+						var elementID = document.body.children[i].id;
+						if (elementID=='ImgfocusDimmer' || elementID=='ImgfocusPopupImage') { alert('errro'); }
+						ImgfocusBlurElement(document.body.children[i]);
+					}
 					
 					// Create a new div overlaying the page as the dimmer.
 					var dimmer = document.createElement('div');
 					dimmer.id = 'ImgfocusDimmer';
 					dimmer.style.background = '#000';
-					dimmer.style.opacity = 0.4;
 					dimmer.style.position = 'fixed';
 					dimmer.style.top = 0;
 					dimmer.style.left = 0;
 					dimmer.style.width = '100%';
 					dimmer.style.height = '100%';
 					dimmer.style.zIndex = 9;
-					document.body.appendChild(dimmer);
+dimmer.style.opacity = 0.0;
+document.body.appendChild(dimmer);
+dimmer.style.webkitTransition = "opacity"+(ImgfocusFadeInTime/1000)+"s ease-in-out";
+setTimeout(function(){dimmer.style.opacity = 0.4;},0);
+
 
 					// Disable scrolling for the page so that later when we scroll the image to 
 					// enlarge, the page is not scrolled.
 					document.body.style.overflow = 'hidden';
-
+          imgEnlarge.style.opacity = 0;
+          imgEnlarge.style.webkitFilter = 'drop-shadow(20px 20px 10px black)';
 					document.body.appendChild(imgEnlarge);
 					imgEnlarge.id = 'ImgfocusPopupImage';
 					imgEnlarge.style.zIndex = dimmer.style.zIndex+1;
@@ -89,8 +97,7 @@ function ImgfocusPopupImgOnClick()
 					imgEnlarge.style.left = window.innerWidth/2 + 'px';
 					imgEnlarge.style.top  = window.innerHeight/2 + 'px';
 					imgEnlarge.style.transform = 'translate(-50%, -50%)';
-
-					imgEnlarge.style.visibility = 'hidden';
+//					imgEnlarge.style.visibility = 'hidden';
 					var browserShrinkRatio = 0.8;
 					var aspectRatio = imgEnlarge.clientWidth/imgEnlarge.clientHeight;
 					imgEnlarge.style.width = Math.min(imgEnlarge.clientWidth, window.innerWidth*browserShrinkRatio) +'px';
@@ -103,9 +110,8 @@ function ImgfocusPopupImgOnClick()
 					}
 					
 					// Apply shadow effect & fade in the popup image
-					imgEnlarge.style.webkitFilter = 'drop-shadow(20px 20px 10px black)';
-					
-					ImgfocusFadeElement(imgEnlarge, 0, 1, ImgfocusFadeInTime, NaN);
+					imgEnlarge.style.webkitTransition = "opacity "+(ImgfocusFadeInTime/1000)+"s ease-in-out";
+					setTimeout(function(){imgEnlarge.style.opacity = 1.0;},0);
 
 					// On mouse down, if the popup image is not oversized, implement drag and move
 					// Otherwise, the image is removed by a click.
@@ -130,9 +136,8 @@ function ImgfocusPopupImgOnClick()
 					}
 
 					// On double click anywhere, remove the image
-//					window.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
-//        	imgEnlarge.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
-        	
+					window.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
+					
 					// On wheel, zoom the pop up image
 					window.addEventListener('wheel', ImgfocusWheelZoom, false);
 				}
@@ -237,45 +242,16 @@ function ImgfocusFadeElement(element, startOpacity, endOpacity, duration)
 	}, stepDuration);
 }
 
-
-// Zoom the image to fit the browser visible area
-function ImgfocusZoomToFit()
-{
-	var imgEnlarge = document.getElementById('ImgfocusPopupImage');
-  imgEnlarge.style.cursor = 'move';
-        
-  // Center the image first
-	imgEnlarge.style.left = window.innerWidth/2 + 'px';
-	imgEnlarge.style.top  = window.innerHeight/2 + 'px';
-	imgEnlarge.style.transform = 'translate(-50%, -50%)';
-
-  // Which direction to zoom (width or height) is determined based on comparing the
-  // aspect ratio of the image and the browser.
-  var dimension = window.innerWidth/window.innerHeight > imgEnlarge.clientWidth/imgEnlarge.clientHeight ? 'height' : 'width';
-  var size = dimension == 'width' ? window.innerWidth : window.innerHeight;
-  ImgfocusZoomElement(imgEnlarge, dimension, size, ImgfocusZoomToFitTime, 7, 'true');
-}
-
 // The function to call when the popup image exists and mouse up.
 function ImgfocusMouseUpStopDragOrRemoveImg(e)
 {	
 	if (e.target.id != 'ImgfocusPopupImage')
-	{ ImgfocusRemovePopupImg(); return; }
-
+	{ ImgfocusRemovePopupImg('immediately'); return; }
+	
 	var imgEnlarge = document.getElementById('ImgfocusPopupImage');
-		
-	// Get the last mouse up time on this object. If it's close, then it's a dblclick
-	// Remove the pic and leave
-	var lastClickTime = 0;
-	if (typeof imgEnlarge.lastClickTime != 'undefined') { lastClickTime = imgEnlarge.lastClickTime; }
-  var clock = new Date();
-  var currentClickTime = clock.getTime();
-	if (currentClickTime - lastClickTime < 300) { ImgfocusRemovePopupImg(); return; }
-	else { imgEnlarge.lastClickTime = currentClickTime; }
-
 	if (imgEnlarge.height>=window.innerHeight || imgEnlarge.width>=window.innerWidth)
 	{ window.onmousemove = ''; }
-  else { ImgfocusZoomToFit(); }
+  else { ImgfocusRemovePopupImg(); }
 }
 						
 // Zoom the pop up image on wheel. The visual experience of directly modifying the image
@@ -285,19 +261,29 @@ function ImgfocusMouseUpStopDragOrRemoveImg(e)
 function ImgfocusWheelZoom(e)
 {
   var imgEnlarge = document.getElementById('ImgfocusPopupImage');
-	var minWidth = 50;
-  
+
   // A too small wheelDelta, therefore stepPx, seems to cause problem
 	var stepPx = e.wheelDelta;
-	if (imgEnlarge.clientWidth <= minWidth && stepPx < 0)	{ return; }
-	
-  if (Math.abs(stepPx) < 10) { stepPx = stepPx>0 ? 10 : -10; }
+  if (Math.abs(stepPx) < 10) 
+	{ stepPx = stepPx>0 ? 10 : -10; }
 
 	// Call zoomElement() to smooth the size transition. The minimum possible width is 
 	// set to 50px.
+	var minWidth = 50;
 	var newW = imgEnlarge.clientWidth + stepPx;
 	if (newW > minWidth)
-	{ ImgfocusZoomElement(imgEnlarge, 'width', newW, 20, 0, 'none'); }
+	{
+//	  ImgfocusZoomElement(imgEnlarge, 'width', newW, 20, 0, 'none');
+imgEnlarge.style.width = imgEnlarge.clientWidth+'px';
+imgEnlarge.style.webkitTransition = "width 0.01s linear";
+try {clearTimeout(imgEnlarge.zoomTimerID); } catch(e) {}
+imgEnlarge.zoomTimerID = setTimeout(function()
+{
+	imgEnlarge.style.width = newW+'px';
+	imgEnlarge.style.height = 'auto';
+},0);
+
+	}
   else
   {
     imgEnlarge.style.width = minWidth + 'px';
@@ -328,13 +314,24 @@ function ImgfocusRemovePopupImg(style)
 		for (var i=0;i<document.body.children.length;i++)
 		{ ImgfocusUnBlurElement(document.body.children[i]); }
 
-    if (style == 'immediately' || imgEnlarge.fadeTimerID != null)
-    { imgEnlarge.remove(); }
-    else
-    { ImgfocusFadeElement(imgEnlarge, 1, 0, ImgFocusFadeOutTime); }
+    if (style != 'immediately')
+    {
+//      ImgfocusFadeElement(imgEnlarge, 1, 0, ImgFocusFadeOutTime);
+//					imgEnlarge.style.height = imgEnlarge.clientHeight+'px';
+          imgEnlarge.style.webkitFilter = 'drop-shadow(0 0 0px black)';
+					imgEnlarge.style.webkitTransition = "all "+(ImgFocusFadeOutTime/1000)+"s ease-in-out";
+					setTimeout(function()
+					{
+						imgEnlarge.style.width = imgEnlarge.clientWidth*1.2 + 'px';
+						imgEnlarge.style.height = 'auto';
+						imgEnlarge.style.opacity = 0;
+					},0);
+					
+    }
+    else { imgEnlarge.remove(); }
 
     window.removeEventListener('mouseup', ImgfocusMouseUpStopDragOrRemoveImg, false);
-//    window.removeEventListener('dblclick', ImgfocusRemovePopupImg, false);
+    window.removeEventListener('dblclick', ImgfocusRemovePopupImg, false);
     window.removeEventListener('wheel', ImgfocusWheelZoom, false);
   }
 }
@@ -438,7 +435,42 @@ window.addEventListener('keydown', function()
 		{
       if ((imgEnlarge.clientWidth>=window.innerWidth || imgEnlarge.clientHeight>=window.innerHeight))
       { ImgfocusRemovePopupImg(); }
-      else { ImgfocusZoomToFit(); }
+      else
+      {
+        imgEnlarge.style.cursor = 'move';
+        
+        // Center the image first
+				imgEnlarge.style.left = window.innerWidth/2 + 'px';
+				imgEnlarge.style.top  = window.innerHeight/2 + 'px';
+				imgEnlarge.style.transform = 'translate(-50%, -50%)';
+
+        // Which direction to zoom (width or height) is determined based on comparing the
+        // aspect ratio of the image and the browser.
+        var dimension = window.innerWidth/window.innerHeight > imgEnlarge.clientWidth/imgEnlarge.clientHeight ? 'height' : 'width';
+        var size = dimension == 'width' ? window.innerWidth : window.innerHeight;
+
+				if (dimension == 'width')
+				{
+					imgEnlarge.style.width = imgEnlarge.clientWidth+'px';
+					imgEnlarge.style.webkitTransition = "width "+(ImgfocusZoomToFitTime/1000)+"s ease-in-out";
+					setTimeout(function()
+					{
+						imgEnlarge.style.width = window.innerWidth+'px';
+						imgEnlarge.style.height = 'auto';
+					},0);
+				}
+				else
+				{
+					imgEnlarge.style.height = imgEnlarge.clientHeight+'px';
+					imgEnlarge.style.webkitTransition = "height "+(ImgfocusZoomToFitTime/1000)+"s ease-in-out";
+					setTimeout(function()
+					{
+						imgEnlarge.style.height = window.innerHeight+'px';
+						imgEnlarge.style.width = 'auto';
+					},0);
+				}
+
+      }
 		}
 
 		// Up or Down
