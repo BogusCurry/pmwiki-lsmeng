@@ -15,7 +15,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160727
+ * Version 20160818
  */
 
 // Main function handling the popup effects.
@@ -30,12 +30,15 @@ function ImgfocusPopupImgOnClick()
  		
  	for (var i=0;i<imgElement.length;i++)
  	{
+ 	  // Get the image filename
+ 	  var pos = imgElement[i].src.lastIndexOf('/');
+ 	  var filename = imgElement[i].src.slice(pos+1);
+
  	  // Skip the images specified in the exception list
  	  var isException = false
  	  for (var j=0;j<ImgfocusExceptionList.length;j++)
  	  {
- 	    if (ImgfocusExceptionList[j] == '') { continue; }
- 	    if (imgElement[i].src.lastIndexOf(ImgfocusExceptionList[j]) != -1)
+ 	    if (filename == ImgfocusExceptionList[j])
  	    { isException = true; break; }
  	  }  
  	  if (isException) { continue; }
@@ -58,11 +61,7 @@ function ImgfocusPopupImgOnClick()
 				{
 					// Blur all the direct children of the document body.
 					for (var i=0;i<document.body.children.length;i++)
-					{
-						var elementID = document.body.children[i].id;
-						if (elementID=='ImgfocusDimmer' || elementID=='ImgfocusPopupImage') { alert('errro'); }
-						ImgfocusBlurElement(document.body.children[i]);
-					}
+					{ ImgfocusBlurElement(document.body.children[i]); }
 					
 					// Create a new div overlaying the page as the dimmer.
 					var dimmer = document.createElement('div');
@@ -131,8 +130,9 @@ function ImgfocusPopupImgOnClick()
 					}
 
 					// On double click anywhere, remove the image
-					window.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
-					
+//					window.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
+//        	imgEnlarge.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
+        	
 					// On wheel, zoom the pop up image
 					window.addEventListener('wheel', ImgfocusWheelZoom, false);
 				}
@@ -237,16 +237,45 @@ function ImgfocusFadeElement(element, startOpacity, endOpacity, duration)
 	}, stepDuration);
 }
 
+
+// Zoom the image to fit the browser visible area
+function ImgfocusZoomToFit()
+{
+	var imgEnlarge = document.getElementById('ImgfocusPopupImage');
+  imgEnlarge.style.cursor = 'move';
+        
+  // Center the image first
+	imgEnlarge.style.left = window.innerWidth/2 + 'px';
+	imgEnlarge.style.top  = window.innerHeight/2 + 'px';
+	imgEnlarge.style.transform = 'translate(-50%, -50%)';
+
+  // Which direction to zoom (width or height) is determined based on comparing the
+  // aspect ratio of the image and the browser.
+  var dimension = window.innerWidth/window.innerHeight > imgEnlarge.clientWidth/imgEnlarge.clientHeight ? 'height' : 'width';
+  var size = dimension == 'width' ? window.innerWidth : window.innerHeight;
+  ImgfocusZoomElement(imgEnlarge, dimension, size, ImgfocusZoomToFitTime, 7, 'true');
+}
+
 // The function to call when the popup image exists and mouse up.
 function ImgfocusMouseUpStopDragOrRemoveImg(e)
 {	
 	if (e.target.id != 'ImgfocusPopupImage')
-	{ ImgfocusRemovePopupImg('immediately'); return; }
-	
+	{ ImgfocusRemovePopupImg(); return; }
+
 	var imgEnlarge = document.getElementById('ImgfocusPopupImage');
+		
+	// Get the last mouse up time on this object. If it's close, then it's a dblclick
+	// Remove the pic and leave
+	var lastClickTime = 0;
+	if (typeof imgEnlarge.lastClickTime != 'undefined') { lastClickTime = imgEnlarge.lastClickTime; }
+  var clock = new Date();
+  var currentClickTime = clock.getTime();
+	if (currentClickTime - lastClickTime < 300) { ImgfocusRemovePopupImg(); return; }
+	else { imgEnlarge.lastClickTime = currentClickTime; }
+
 	if (imgEnlarge.height>=window.innerHeight || imgEnlarge.width>=window.innerWidth)
 	{ window.onmousemove = ''; }
-  else { ImgfocusRemovePopupImg(); }
+  else { ImgfocusZoomToFit(); }
 }
 						
 // Zoom the pop up image on wheel. The visual experience of directly modifying the image
@@ -256,15 +285,16 @@ function ImgfocusMouseUpStopDragOrRemoveImg(e)
 function ImgfocusWheelZoom(e)
 {
   var imgEnlarge = document.getElementById('ImgfocusPopupImage');
-
+	var minWidth = 50;
+  
   // A too small wheelDelta, therefore stepPx, seems to cause problem
 	var stepPx = e.wheelDelta;
-  if (Math.abs(stepPx) < 10) 
-	{ stepPx = stepPx>0 ? 10 : -10; }
+	if (imgEnlarge.clientWidth <= minWidth && stepPx < 0)	{ return; }
+	
+  if (Math.abs(stepPx) < 10) { stepPx = stepPx>0 ? 10 : -10; }
 
 	// Call zoomElement() to smooth the size transition. The minimum possible width is 
 	// set to 50px.
-	var minWidth = 50;
 	var newW = imgEnlarge.clientWidth + stepPx;
 	if (newW > minWidth)
 	{ ImgfocusZoomElement(imgEnlarge, 'width', newW, 20, 0, 'none'); }
@@ -298,14 +328,13 @@ function ImgfocusRemovePopupImg(style)
 		for (var i=0;i<document.body.children.length;i++)
 		{ ImgfocusUnBlurElement(document.body.children[i]); }
 
-    if (style != 'immediately')
-    {
-      ImgfocusFadeElement(imgEnlarge, 1, 0, ImgFocusFadeOutTime);
-    }
-    else { imgEnlarge.remove(); }
+    if (style == 'immediately' || imgEnlarge.fadeTimerID != null)
+    { imgEnlarge.remove(); }
+    else
+    { ImgfocusFadeElement(imgEnlarge, 1, 0, ImgFocusFadeOutTime); }
 
     window.removeEventListener('mouseup', ImgfocusMouseUpStopDragOrRemoveImg, false);
-    window.removeEventListener('dblclick', ImgfocusRemovePopupImg, false);
+//    window.removeEventListener('dblclick', ImgfocusRemovePopupImg, false);
     window.removeEventListener('wheel', ImgfocusWheelZoom, false);
   }
 }
@@ -409,21 +438,7 @@ window.addEventListener('keydown', function()
 		{
       if ((imgEnlarge.clientWidth>=window.innerWidth || imgEnlarge.clientHeight>=window.innerHeight))
       { ImgfocusRemovePopupImg(); }
-      else
-      {
-        imgEnlarge.style.cursor = 'move';
-        
-        // Center the image first
-				imgEnlarge.style.left = window.innerWidth/2 + 'px';
-				imgEnlarge.style.top  = window.innerHeight/2 + 'px';
-				imgEnlarge.style.transform = 'translate(-50%, -50%)';
-
-        // Which direction to zoom (width or height) is determined based on comparing the
-        // aspect ratio of the image and the browser.
-        var dimension = window.innerWidth/window.innerHeight > imgEnlarge.clientWidth/imgEnlarge.clientHeight ? 'height' : 'width';
-        var size = dimension == 'width' ? window.innerWidth : window.innerHeight;
-        ImgfocusZoomElement(imgEnlarge, dimension, size, ImgfocusZoomToFitTime, 7, 'true');
-      }
+      else { ImgfocusZoomToFit(); }
 		}
 
 		// Up or Down

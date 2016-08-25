@@ -17,10 +17,10 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160726
+ * Version 20160728
  */
 
-$RecipeInfo['Imgfocus']['Version'] = '20160726';
+$RecipeInfo['Imgfocus']['Version'] = '20160728';
 
 // The popup image fadein time in milliseconds.
 SDV($ImgfocusFadeInTime, 125);
@@ -31,7 +31,7 @@ SDV($ImgFocusFadeOutTime, 200);
 // The popup image zoom to fit browser time in milliseconds.
 SDV($ImgfocusZoomToFitTime, 100);
 
-SDV($ImgfocusExceptionList, '');
+SDVA($ImgfocusExceptionList, array(''));
 $ImgfocusExceptionList = json_encode($ImgfocusExceptionList);
 
 if($action == "browse" || $action == "upload" || $_REQUEST['preview'])

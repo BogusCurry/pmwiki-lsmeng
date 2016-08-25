@@ -257,25 +257,43 @@ function showDateTime($pagename)
 
 // Return true on success.
 // Abort on error.
-function renameWait($oldFile, $newFile, $N_TRY=3)
+function copyWait($oldFile, $newFile, $N_TRY=3)
 { 
-  // check if it's already locked
-  // if yes wait a random time then retry
   $minWaitMicroSec = 1000000;
   $maxWaitMicroSec = 5000000;
   $nTry = 1;
   while (1)
   {
-    // if unlocked, lock it
+    if (file_exists($newFile)) { unlink($newFile); }
+  
+    if (@copy($oldFile,$newFile)) { return true; }
+    
+    $nTry++;
+    if ($nTry>$N_TRY) { Abort("Retry limit reached in copyWait() for $oldFile!"); }
+   
+    usleep(rand($minWaitMicroSec,$maxWaitMicroSec)); 
+  }
+}
+
+/*
+// Return true on success.
+// Abort on error.
+function renameWait($oldFile, $newFile, $N_TRY=3)
+{ 
+  $minWaitMicroSec = 1000000;
+  $maxWaitMicroSec = 5000000;
+  $nTry = 1;
+  while (1)
+  {
     if (@rename($oldFile,$newFile) === true) { return true; }
     
     $nTry++;
     if ($nTry>$N_TRY) { Abort("Retry limit reached in renameWait() for $oldFile!"); }
    
-    $waitMicroSec = rand($minWaitMicroSec,$maxWaitMicroSec);
-    usleep($waitMicroSec); 
+    usleep(rand($minWaitMicroSec,$maxWaitMicroSec)); 
   }
 }
+*/
 
 // Similar to file_get_contents(). Wait a random time duration if the file doesn't exist.
 // A maximum number of retry limit can be set.
@@ -871,9 +889,9 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
 
 	global $diaryImgDirURL;
-	
 	if (strcasecmp($extension,'.mp4') == 0)
 	{ $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
+//	{ $imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
 	else
 	{ $imgUrl = $diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img; }
 	
@@ -974,8 +992,11 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
     if ($imgUrl == "") { continue; }
     
-    // If the filename has been explicitly typed on the page, skip auto pasting.
-    if (strpos($text, $imgName) !== false) { continue; }
+    // If the filename has been explicitly typed on the page, and the header is {$Photo}
+    // skip auto pasting. Also checking for the header is to account for the older stuff
+    // such as $imgpxd
+//    if (strpos($text, $imgName) !== false) { continue; }
+    if (preg_match("/{[$]Photo}\S*?$imgName/", $text)) { continue; }
     
     // Get its date & hour
     // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
@@ -1411,8 +1432,8 @@ function updatePageindexOnBrowse($pagename, $page)
       
       filePutContentsWait("wiki.d/$pagename", $pageContent);
 
-      unlink("$WorkDir/$pagename");        
-      renameWait("wiki.d/$pagename", "$WorkDir/$pagename");
+      copyWait("wiki.d/$pagename", "$WorkDir/$pagename");
+      unlink("wiki.d/$pagename");
     }
 
     exit;
@@ -1722,29 +1743,39 @@ if ($action == 'browse')
 
 // Preserve a copy of the given page if the specified time period since the last time 
 // the copy was created has elapsed. 
+// If "$pagefile" is null, the backup is deleted
 function preservePageBackup($pagename, $pagefile, $backupDelayHour=6)
 {
   // check the backup folder
+  $pagenameU = strtoupper($pagename);
 	$dir = 'wiki.d/backup';
   $file = scandir($dir);
   $N_FILE = count($file);
+  global $Now;
   for ($iFile=1; $iFile<=$N_FILE; $iFile++)
   {
     // find the file with filename beginning with $pagename
-    if (stripos($file[$iFile],$pagename) !== false)
+    if (preg_match("/^$pagenameU\_\d{10}$/", strtoupper($file[$iFile])))
     {
+      if ($pagefile === null)
+      { return unlink($dir.'/'.$file[$iFile]); }
+      
       // Get the time stamp in the remaining part of the file name
       $timeStamp = substr($file[$iFile], strlen($pagename)+1);
-      global $Now;
       
       // Compare Now with the time stamp, if a period of $hour has passed, write backup
       if ((($Now-$timeStamp)/3600) > $backupDelayHour)
       {
       	unlink($dir.'/'.$file[$iFile]);
-	      copy($pagefile, $dir.'/'.$pagename.'_'.$Now);
+	      return copy($pagefile, $dir.'/'.$pagename.'_'.$Now);
       }
+      else { return true; }
     }
   }
+  
+  // No existing backup for the file
+  if ($pagefile === null) { return true; }
+  else { return copy($pagefile, $dir.'/'.$pagename.'_'.$Now); }
 }
 
 /****************************************************************************************/
@@ -1792,33 +1823,6 @@ function updatePageHistory()
 
 /****************************************************************************************/
 
-// Add the JS for drag & drop uploading multiple files, and direct copy & paste uploading
-// a single image. The assignment of "uploadDirUrlHeader" has been done in a special 
-// way to prevent the php variable $PhotoPub or $Photo getting evaluated by PHP.
-if ($action == 'edit')
-{
-	$handleUploadUrl = $ScriptUrl.'?n='.$pagename.'?action=postupload';
-
-	if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
-  {
-		// Use regex to get year & mon from pagename. Not satisfied with the mon; there should 
-		// be a way not to repeat the look behind part (?<=\.\d{4}0)
-		preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
-		preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
-		$uploadDirUrlHeader = "Photo}$year/$mon/";
-  }
-  else
-  {
-  	$groupName = substr($pagename, 0, strpos($pagename,'.'));
-		$uploadDirUrlHeader = "PhotoPub}$groupName/";
-	}
-  $HTMLHeaderFmt[] .= '<script type=\'text/javascript\' src="$PubDirUrl/fileUpload.js"></script>
-		<script type=\'text/javascript\'>
-    handleUploadUrl = "$ScriptUrl?n=$pagename?action=postupload";
-    uploadDirUrlHeader = "{$" + "$uploadDirUrlHeader";
-		</script>';
-}
-
 // Edit button: F1 or F4
 if ($action != 'edit')
 {
@@ -1835,7 +1839,6 @@ if ($action != 'edit')
 }
 
 /****************************************************************************************/
-
 
 // Basically this opens a socket, send request, then close the socket before getting
 // response from the server. Calling this function therefore executes the functions

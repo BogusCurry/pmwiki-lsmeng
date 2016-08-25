@@ -213,12 +213,6 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
 		}
 	}
 
-	// Meng. For some reason the cookies that I created for remembering the edit box scroll
-	// position appear in $opt. Remove them all since they might have an impact on the search
-	// speed.
-	foreach (array_keys($opt) as $key)
-	{ if (strpos($key, "-scrollY") !== false) { unset($opt[$key]); } }
-
 /*
 // If this is a backlink search, search under the same page group.
 // 5 = strlen("link=")

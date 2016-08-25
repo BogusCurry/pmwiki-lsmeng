@@ -28,7 +28,7 @@ $WikiTitle = 'PmWiki';
 ## If you want to have a custom skin, then set $Skin to the name
 ## of the directory (in pub/skins/) that contains your skin files.
 ## See PmWiki.Skins and Cookbook.Skins.
-#$Skin = pmwiki_default;
+$Skin = pmwiki_gray;
 
 ## You'll probably want to set an administrative password that you
 ## can use to get into password-protected pages.  Also, by default 
@@ -147,116 +147,6 @@ $DiffKeepDays=36500;
 
 /****************************************************************************************/
 
-# Include traditional chinese language
-include_once("$FarmD/scripts/xlpage-utf-8.php");
-# Apply Chinese to link names
-//XLPage('zhtw','PmWikiZhTw.XLPage');
-
-# Latex
-$URI = $_SERVER['REQUEST_URI'];
-if (!stripos($URI, '?action=edit') && !stripos($URI, '?action=diff'))
-{ include_once("$FarmD/cookbook/MathJax.php"); }
-
-// Embed youtube, TED, facebook, and vimeo videos, as well as pdfs.
-if($action=="browse" || $_REQUEST['preview']) {
-   $HTMLFooterFmt['ape'] = '<script type="text/javascript" 
-     src="$FarmPubDirUrl/ape/ape.js"></script>';
- }
-
-# For flipbox
-include_once("$FarmD/cookbook/flipbox.php");
-
-# For wpap mp3 player
-#$wpap_initialvolume = "1";
-#$wpap_width = "500";
-#include_once("$FarmD/cookbook/wpap/wpap.php");
-
-# Youtube (the older one).
-include_once("$FarmD/cookbook/swf-sites.php");
-
-# Neo mp3 and video player.
-$EnableDirectDownload = 1;
-include_once("$FarmD/cookbook/flashmediaplayer.php");
-$FlashMediaPlayerInfo['neo_mp3'] = array(
-  'swf' => "neolao/player_mp3_maxi.swf",
-  'objparms' => array(
-    'flashvars' => array('mp3=$url',
-                         '$parms')),
-  'defaults' => array('align' => 'middle',
-                      'width' => 500,
-                      'height' => 20,
-'showstop'=>1,
-#'showvolume'=>1,
-));
-$FlashMediaPlayerInfo['neo_flv'] = array(
-  'swf' => "neolao/player_flv_maxi.swf",
-  'objparms' => array(
-    'flashvars' => array('flv=$url',
-                         '$parms')),
-  'defaults' => array('align' => 'top',
-                      'width' => 579,
-                      'height' => 330,
-                      'showstop'=>1,
-#'showvolume'=>1,
-'autoload'=>0,
-'showtime'=>2,
-'showfullscreen'=>1,
-#'showswitchsubtitles'=>1,
-#'srt'=>1
-));
-$FlashMediaPlayerInfo['neo_flv_V'] = array(
-  'swf' => "neolao/player_flv_maxi.swf",
-  'objparms' => array(
-    'flashvars' => array('flv=$url',
-                         '$parms')),
-  'defaults' => array('align' => 'top',
-                      'width' => 190,
-                      'height' => 330,
-                      'showstop'=>1,
-#'showvolume'=>1,
-'autoload'=>0,
-'showtime'=>2,
-'showfullscreen'=>1,
-#'showswitchsubtitles'=>1,
-#'srt'=>1
-));
-
-# Replace some never-used full-width characters on saving.
-$ROSPatterns ['/＊/'] = "*";
-$ROSPatterns ['/＃/'] = "#";
-$ROSPatterns ['/＋/'] = "+";
-$ROSPatterns ['/＼/'] = "\\";
-$ROSPatterns ['/，/'] = ", ";
-$ROSPatterns ['/。/'] = ". ";
-$ROSPatterns ['/：/'] = ": ";
-$ROSPatterns ['/％/'] = "%";
-$ROSPatterns ['/＄/'] = "$";
-$ROSPatterns ['/＆/'] = "&";
-$ROSPatterns ['/＠/'] = "@";
-$ROSPatterns ['/（/'] = "(";
-$ROSPatterns ['/）/'] = ")";
-$ROSPatterns ['/「/'] = "[";
-$ROSPatterns ['/」/'] = "]";
-$ROSPatterns ['/｜/'] = "|";
-$ROSPatterns ['/！/'] = "!";
-$ROSPatterns ['/︿/'] = "^";
-$ROSPatterns ['/－/'] = "-";
-$ROSPatterns ['/？/'] = "? ";
-$ROSPatterns ['/～/'] = "~";
-$ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
-$ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
-$ROSPatterns ['/red_/'] = "%color=red%";
-$ROSPatterns ['/agree_/'] = "%bgcolor=springgreen%";
-$ROSPatterns ['/‘/'] = "'";
-$ROSPatterns ['/’/'] = "'";
-$ROSPatterns ['/“/'] = "\"";
-$ROSPatterns ['/”/'] = "\"";
-
-// This eliminates redundant newlines each time the page is saved.
-//$ROSPatterns ['/\n\n\n/'] = "\n\n";
-
-
-/****************************************************************************************/
 // Meng. Configurations for my plugins/enhancements for PmWiki.
 
 // Set the station name and path for public wiki.d
@@ -297,6 +187,7 @@ if (!file_exists("wiki.d/backup"))
 }
 
 // Various enhancements written by me
+$URI = $_SERVER['REQUEST_URI'];
 $homeSSID = "Sam Base";
 $currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I | awk '/ SSID/ {print substr($0, index($0, $2))}'");
 $isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
@@ -309,7 +200,7 @@ $Photo = '/Volumes/wiki/www/pmWiki/Photo/';
 $runCodePath = "pub/runCode";
 
 $emailAddress1 = "";//"lsmeng@ece.gatech.edu";
-$emailAddress2 = "";
+$emailAddress2 = "sam_meng@htc.com";
 
 // Php login password. Have to be correct at the $pwRetryLimit th time
 $pwRetryLimit = 2; 
@@ -357,10 +248,10 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   $UploadDir = "$Photo/$year/$mon";
 }
 
-$ImgfocusFadeInTime = 125;
+$ImgfocusFadeInTime = 0;
 $ImgFocusFadeOutTime = 200;
 $ImgfocusZoomToFitTime = 0;
-$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', '12270-piirhi.jpg', 'Google-Chrome-logo-mark.jpg');
+$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg');
 include_once("$FarmD/cookbook/imgfocus.php"); 
 
 # For autosave. Delay is in milliseconds.
@@ -385,10 +276,147 @@ if ($action == 'edit' || $action == 'browse')
 	}
 }
 
- 
+include_once("$FarmD/cookbook/pasteimgupload.php");
+
+if ($action == 'browse' || $_REQUEST['preview'])
+{
+  $HTMLHeaderFmt['html5avctrl'] =
+   "<script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
+
+  $HTMLHeaderFmt['flashCtrl.js'] =
+   "<script type='text/javascript' src='$PubDirUrl/neolao/flashCtrl.js'></script>";
+}
+
+if ($action == 'browse' || $_REQUEST['preview'])
+{
+	include_once("$FarmD/cookbook/HTML5Audio.php");
+	include_once("$FarmD/cookbook/HTML5Video.php");
+}
+
+if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
+{
+  $HTMLHeaderFmt['map'] =
+   "<script src='$PubDirUrl/map/OSC.js'></script>
+    <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
+    <script src='$PubDirUrl/map/map.js'></script>";
+}
+
+
+// Run the memcached service for storing PHP session, and specify to listen to localhost
+// only, and prevent the memory from being paged.
+if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
+
+	
 /*
 // For debugging
 
 //file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
 file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent);
 */
+
+
+/****************************************************************************************/
+
+# Include traditional chinese language
+include_once("$FarmD/scripts/xlpage-utf-8.php");
+# Apply Chinese to link names
+//XLPage('zhtw','PmWikiZhTw.XLPage');
+
+# Latex
+if ($action == 'browse' || $action == 'diff')
+//if (!stripos($URI, '?action=edit') && !stripos($URI, '?action=diff'))
+{ include_once("$FarmD/cookbook/MathJax.php"); }
+
+// Embed youtube, TED, facebook, and vimeo videos, as well as pdfs.
+if($action=="browse" || $_REQUEST['preview']) {
+   $HTMLHeaderFmt['ape'] = '<script type="text/javascript" 
+     src="$PubDirUrl/ape/ape.js"></script>';
+}
+
+# For flipbox
+include_once("$FarmD/cookbook/flipbox.php");
+
+# For wpap mp3 player
+#$wpap_initialvolume = "1";
+#$wpap_width = "500";
+#include_once("$FarmD/cookbook/wpap/wpap.php");
+
+# Youtube (the older one).
+include_once("$FarmD/cookbook/swf-sites.php");
+
+
+# Neo mp3 and video player.
+$EnableDirectDownload = 1;
+include_once("$FarmD/cookbook/flashmediaplayer.php");
+$FlashMediaPlayerInfo['neo_mp3'] = array(
+  'swf' => "neolao/player_mp3_maxi.swf",
+  'objparms' => array(
+    'flashvars' => array('mp3=$url',
+                         '$parms')),
+  'defaults' => array('align' => 'middle',
+                      'width' => 500,
+                      'height' => 20,
+'showstop'=>1,
+#'showvolume'=>1,
+));
+$FlashMediaPlayerInfo['neo_flv_V'] = array(
+  'swf' => "neolao/player_flv_maxi.swf",
+  'objparms' => array(
+    'flashvars' => array('flv=$url',
+                         '$parms')),
+  'defaults' => array('align' => 'top',
+//                      'width' => 190,
+                      'width' => 330,
+                      'height' => 330,
+                      'showstop'=>1,
+#'showvolume'=>1,
+'autoload'=>1,
+'margin'=>1,
+'buffer'=>1,
+'buffermessage'=> '',
+'showiconplay'=>1,
+'iconplaybgalpha'=>20,
+'showtime'=>2,
+'showfullscreen'=>1,
+'ondoubleclick' => 'fullscreen',
+#'showswitchsubtitles'=>1,
+#'srt'=>1
+));
+
+# Replace some never-used full-width characters on saving.
+$ROSPatterns ['/＊/'] = "*";
+$ROSPatterns ['/＃/'] = "#";
+$ROSPatterns ['/＋/'] = "+";
+$ROSPatterns ['/＼/'] = "\\";
+$ROSPatterns ['/，/'] = ", ";
+$ROSPatterns ['/。/'] = ". ";
+$ROSPatterns ['/：/'] = ": ";
+$ROSPatterns ['/％/'] = "%";
+$ROSPatterns ['/＄/'] = "$";
+$ROSPatterns ['/＆/'] = "&";
+$ROSPatterns ['/＠/'] = "@";
+$ROSPatterns ['/（/'] = "(";
+$ROSPatterns ['/）/'] = ")";
+$ROSPatterns ['/「/'] = "[";
+$ROSPatterns ['/」/'] = "]";
+$ROSPatterns ['/｜/'] = "|";
+$ROSPatterns ['/！/'] = "!";
+$ROSPatterns ['/︿/'] = "^";
+$ROSPatterns ['/－/'] = "-";
+$ROSPatterns ['/？/'] = "? ";
+$ROSPatterns ['/～/'] = "~";
+$ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
+$ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
+$ROSPatterns ['/red_/'] = "%color=red%";
+$ROSPatterns ['/agree_/'] = "%bgcolor=springgreen%";
+$ROSPatterns ['/‘/'] = "'";
+$ROSPatterns ['/’/'] = "'";
+$ROSPatterns ['/“/'] = "\"";
+$ROSPatterns ['/”/'] = "\"";
+
+// This eliminates redundant newlines each time the page is saved.
+//$ROSPatterns ['/\n\n\n/'] = "\n\n";
+
+//echo session_save_path();
+
+

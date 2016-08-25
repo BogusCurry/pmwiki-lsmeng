@@ -841,15 +841,8 @@ function PageVar($pagename, $var, $pn = '') {
   global $action;
   if ($var == '$action') { return PUE($action); }
 
-  // For printing a horizontal line
-  else if ($var == '$HRLine')
-  { 
-    global $pagename;
-    if ($action != 'edit' || substr($pagename,0,strlen("LOCK")) == "LOCK")
-  	{ return "<HR style='margin-top:4px;' size=1 color=black>"; }  
-  	else { return; }
-  }
-  
+  else if ($var == '$EditMsg')
+  { if ($action == 'edit') return '&#9999;'; }
 /****************************************************************************************/
 
   if ($pn) {
@@ -1156,29 +1149,37 @@ class PageStore {
       global $EnableEncryption, $WorkDir;
       
       if ($EnableEncryption==1 && noEncryptPage($pagename)==0)      
-//      if ($EnableEncryption==1 && noEncryptPage($pagename)==0 && file_exists("$WorkDir/$pagename"))
       { $updatedText = encryptStr($updatedText); }
 
-      fputs($fp,$updatedText);
+      $s = fputs($fp,$updatedText) && $s;
       $s = fclose($fp) && $s;
-
       $s = $s && (filesize("wiki.d/$pagename,new") > $sz * 0.95);
-      if (file_exists($pagefile)) $s = $s && unlink($pagefile);
+			if (!$s) { Abort("Writing to new file failed for $pagename ($pagefile)"); }
 
-      $s = $s && rename("wiki.d/$pagename,new", "wiki.d/$pagename");
-
-      // Move the pagefile to where it was if it is not specified as a special unencrypted page.
-      if (noEncryptPage($pagename) == 0) { renameWait("wiki.d/$pagename", $pagefile, 10); }
-
-      // Preserve a copy of the modified page. Plaintext is not allowed to be backed up.
-      if ($EnableEncryption == 1) { preservePageBackup($pagename,$pagefile); }
-
+			if (noEncryptPage($pagename) == 0) 
+		  {
+        // Preserve a copy of the modified page. Plaintext is not allowed to be backed up.
+  		  if (file_exists($pagefile) && $EnableEncryption)
+  		  {
+					if (!preservePageBackup($pagename,$pagefile))
+					{ Abort("Preserving backup failed for $pagename ($pagefile)"); }
+  		  }
+  		  
+		    copyWait("wiki.d/$pagename,new", $pagefile);
+		  }
+			else { $s = $s && rename("wiki.d/$pagename,new", "wiki.d/$pagename"); }
+			
       // Set appropriate permission.
       chmodForPageFile($file);
     }
     $s && fixperms($pagefile);
     if (!$s)
       Abort("Cannot write page to $pagename ($pagefile)...changes not saved");
+    
+    // If everything is successful, finally remove the temp new file
+    // Warning is not needed if this step fails
+    if (file_exists("wiki.d/$pagename,new")) { @unlink("wiki.d/$pagename,new"); }
+    
     PCache($pagename, $page);
   }
   function exists($pagename) {
@@ -1909,6 +1910,8 @@ function HandleBrowse($pagename, $auth = 'read') {
 /****************************************************************************************/
 /* Ling-San Meng: */
 
+//var_dump($_SESSION);
+
 // Speed test
 /*
 $testStr = '<img></img>';
@@ -1935,7 +1938,6 @@ echo $time_elapsed_secs."<br>";
 		// page based on some timestamps. The field and hence the page itself will also be
 		// updated. This has to go before "redirecting to the editing page for non-existent 
 		// pages", for a newly constructed page's 1st edit to correctly get a pageindex update
-//		$shallUpdatePageindex = 
     updatePageindexOnBrowse($pagename,$page);
 
 		// If page doesn't exist, open the editing page
@@ -1964,10 +1966,10 @@ echo $time_elapsed_secs."<br>";
 		
 		// If this is the special page "BookKeep", calculate and show the monthly expense at the
 		// at the top of the page
-		else if (stripos($pagename,"Main.BookKeep") !== false) { $text = bookKeepProcess($pagename,$text); }
+		else if (strcasecmp($pagename,"Main.BookKeep") == 0) { $text = bookKeepProcess($pagename,$text); }
 		
 		// Should be clear.
-		else if (stripos($pagename,"Main.Phpinfo") !== false) { phpinfo(); return; }
+		else if (strcasecmp($pagename,"Main.Phpinfo") == 0) { phpinfo(); return; }
 		
 		// If the pagename begins with the keyword "src", disable the wiki markup for this page
 		else if (strcasecmp(substr($pagename,strpos($pagename,"."),4), ".src") == 0) 
@@ -1975,7 +1977,12 @@ echo $time_elapsed_secs."<br>";
 			$text = substr_replace($text, "[@", strpos($text,"(:groupheader:)")+strlen("(:groupheader:)"), 0);
 			$text = substr_replace($text, "@]", strpos($text,"(:groupfooter:)"), 0);
 		}
+
+		else if (strcasecmp($pagename,"Main.Map") == 0)
+		{
 		
+		}
+
 		// All other pages, including diary pages.
 		else
 		{
@@ -1986,8 +1993,7 @@ echo $time_elapsed_secs."<br>";
 			// Read in the diary photo directory to find all the diary images and videos, and then
 			// paste their full URL to the diary pages
 			global $UrlScheme;
-			if ($UrlScheme == 'https') {}
-			else { $text = pasteImgURLToDiary($text); }
+			if ($UrlScheme == 'http') { $text = pasteImgURLToDiary($text); }
 			
 			// A temp fix for the img path/url used before. Replace them with explicit URLs
 			global $diaryImgDirURL;
@@ -2001,12 +2007,11 @@ echo $time_elapsed_secs."<br>";
 			// html in replaceImgUrlWithSizeToggle()
 //			syncFileFromDropbox($text);
 		}
-		
-		$text = @str_replace('(:groupfooter:)',"\n\n(:groupfooter:)",$text);
+
 /****************************************************************************************/
 
-    $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt);
-    
+    $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt).'<br>';
+
     // Meng. Apply default image size.
     $FmtV['$PageText'] = formatImgSize($FmtV['$PageText']);
 
@@ -2046,9 +2051,10 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL) {
     // Meng. Skip PostRecentChanges() here. Invoke this functionality alongside the 
     // mechanism for updating pageIndex so that the recentChanges are not updated every
     // time the text is autosaved.
-    if ($fn == "PostRecentChanges") {}
+    // Skip preview and postpageindex also.
+    if ($fn == 'PostRecentChanges' || $fn == 'PreviewPage' || $fn == 'PostPageIndex') {}
     else
-    {      
+    {
 			StopWatch("UpdatePage: $fn ($pagename)");
 			$fn($pagename, $page, $new);
     }
@@ -2220,7 +2226,7 @@ function PostPage($pagename, &$page, &$new)
       {
         $new['lastPageindexUpdateTime'] = $Now;
               
-        // Go to a special link address to perform pageindex update in a non-block way.
+        // Go to a special link address to perform pageindex update in a non-blocking way.
 				post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
       }
     }
@@ -2236,7 +2242,10 @@ function PostPage($pagename, &$page, &$new)
         // Meng. The original delete() doesn't seem to work. 
         global $WorkDir;
         @unlink("$WorkDir/$pagename");
-        
+
+        // Delete its backup
+        preservePageBackup($pagename, null);
+
         // Meng. Call pageindex update here to remove the page's content from pageindex.
         // Go to a special link address to perform pageindex update in a non-block way.
 				post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
@@ -2340,7 +2349,7 @@ function HandleEdit($pagename, $auth = 'edit') {
   }
 
 /****************************************************************************************/
-
+/*
 	// Meng. Struggle with auto resizing the textarea box below. This is to work with the js
 	// side. The textarea width in px will be stored in a cookie at the client side, which
 	// is used here to loosely calculate how many lines will there be in the textarea. We then 
@@ -2374,6 +2383,13 @@ function HandleEdit($pagename, $auth = 'edit') {
 	// !Important. a dummy height of 1234px has to be configured in forms.php.
 	$pos = strpos($FmtV['$EditForm'],'height:1234px');
 	$FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
+*/
+
+// !Important. a dummy height of 1234px has to be configured in forms.php.
+$MIN_textAreaHeightPx = 500;
+$textAreaHeightPx = isset($_COOKIE['textAreaHeight']) ? $_COOKIE['textAreaHeight'] : MIN_textAreaHeightPx;
+$pos = strpos($FmtV['$EditForm'],'height:1234px');
+$FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
 
 /****************************************************************************************/
 

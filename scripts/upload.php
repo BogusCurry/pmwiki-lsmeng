@@ -103,7 +103,7 @@ SDV($PageUploadFmt,array("
   'wiki:$[{$SiteGroup}/UploadQuickReference]'));
 XLSDV('en',array(
   'ULsuccess' => 'successfully uploaded',
-  'ULbadname' => 'invalid attachment name',
+  'ULbadname' => 'invalid attachment name or wrong extension',
   'ULbadtype' => '\'$upext\' is not an allowed file extension',
   'ULtoobig' => 'file is larger than maximum allowed by webserver',
   'ULtoobigext' => 'file is larger than allowed maximum of $upmax
@@ -276,40 +276,54 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
   if ($upname=='') $upname=$uploadfile['name'];
   $upname = MakeUploadName($pagename,$upname);
 
-  // Convert the uploaded image from png to jpg if it's a pasted image matching the
-  // a specific filename format given in fileUpload.js
-//  if (function_exists(imagecreatetruecolor) && preg_match('/\d{8}_\d{6}P\.jpg/',$upname))
-//  { png2jpg($uploadfile['tmp_name'], $uploadfile['tmp_name'], 100); }
-
-	
   // Meng. Image processing. For png/gif, if the image is determined not to have 
   // transparency, the transparency information (alpha) will not be saved.
   // Next if either the height or the width exceeds a maximum value, the image is resized
   // to fit the size limit. 
-  // Turns out resizing gif will remove its animation. Skip gif as mostly it's for
-  // animation
   if (function_exists(imagecreatetruecolor))
   {
 		$ext = strtolower(substr($upname, strrpos($upname, '.')+1));
 
     // If this is an image
-		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png')// || $ext == 'gif')
+		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png' || $ext == 'bmp' || $ext == 'gif')
 		{
 			$imgFile = $uploadfile['tmp_name'];
+      
+      // Check if the image type and its extension matches
+			if (function_exists(exif_imagetype))
+			{
+				$imgType = exif_imagetype($imgFile);
+				if ((($ext == 'jpg' || $ext == 'jpeg') && $imgType != 2) ||
+				($ext == 'png' && $imgType != 3) ||
+				($ext == 'bmp' && $imgType != 6) ||
+				($ext == 'gif' && $imgType != 1) 	)
+				{
+				  $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&upresult=badname");
+				  return;
+				}
+			}
 			
   		// For png/gif, check for transparency first
   		if ($ext == 'png' || $ext == 'gif')
 			{
-				if ($ext == 'png') { $src = imagecreatefrompng($imgFile); }
+        // See if alpha info is stored
+        $colorType = ord(file_get_contents($imgFile, NULL, NULL, 25, 1));
+        if ($colorType == 4 || $colorType == 6)
+        { $isAlphaStored = true; }
+
+			  // See if the file actually has transparency
+        if ($ext == 'png') { $src = imagecreatefrompng($imgFile); }
 				else               { $src = imagecreatefromgif($imgFile); }
-				$hasTransparency = hasAlphaColour($src);		
-			}  
+				$hasTransparency = hasAlphaColour($src);
+			}
 
       // If the image is oversized
-			$MAXWHPX = 640;
+			// Turns out resizing gif will remove its animation. Skip gif as mostly it's for
+			// animation
+			$MAXWHPX = 720;
 			list($width,$height)=getimagesize($imgFile);
 			$maxWH = max($width,$height);
-			if ($maxWH > $MAXWHPX)
+			if ($maxWH > $MAXWHPX && $ext != 'gif')
 			{
 				$scale = $MAXWHPX/$maxWH;	
 				$newwidth=round($width*$scale);
@@ -324,7 +338,10 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
 				
         // Resize
 				imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
-				
+
+        // Sharpen
+        imageconvolution($tmp, array(array(-1, -1, -1), array(-1, 16, -1), array(-1, -1, -1)), 8, 0);
+
 				if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
 				else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
 				else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
@@ -332,8 +349,10 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
 				imagedestroy($src);
 				imagedestroy($tmp);
 			}
-			// Else if the image is png/gif without transparency
-			else if (($ext == 'png' || $ext == 'gif') && !$hasTransparency)
+			
+			// Else if the image is png/gif without transparency, but alpha info is stored
+			// remove the alpha info
+			else if (($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
 			{
    			imagesavealpha($src, false);	
 				if ($ext == 'png') { $result = imagepng($src,$imgFile); }
@@ -383,30 +402,8 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
       register_shutdown_function('NotifyUpdate', $pagename, getcwd());
     }
   }
-  
-  if (isset($_SERVER['HTTP_AJAXUPLOAD']))
-  {
-    header("UpResult: $result");
-    return;
-  }
-
   SDV($UploadRedirectFunction, 'Redirect');
-
-/****************************************************************************************/
-/*
-  if ($originalAction == 'edit')
-  {
-    setcookie("upname", '{$PhotoPub}'.substr($pagename, 0, strpos($pagename,'.')).'/'.$upname);
-    Redirect($pagename.'?action=edit');
-  }
-*/
-  // Meng. Return to viewing the page on upload success; default action otherwise.
-  if ($result == "upresult=success")
-  { $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload"); }
-  else
-  { $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&$result"); }
-
-/****************************************************************************************/
+  $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&$result");
 }
 
 function UploadVerifyBasic($pagename,$uploadfile,$filepath) {
