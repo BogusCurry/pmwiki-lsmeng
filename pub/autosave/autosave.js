@@ -513,7 +513,16 @@ window.addEventListener('keyup', function()
 { if (event.keyCode == 91) { AS.cmdKeyDn = false; } }, false);
 window.addEventListener('keydown', function()
 {
+ 
   if (event.keyCode == 91) { AS.cmdKeyDn = true; }
+  
+  // Insert: Ctrl+i
+  else if (event.keyCode == 73 && (event.ctrlKey || AS.cmdKeyDn))
+  {
+		event.preventDefault();
+		AS.textID.focus();
+		AS.cmdKeyDn = false;
+  }
   
   // Save buttons: Ctrl+s  
   else if (event.keyCode == 83 && (event.ctrlKey || AS.cmdKeyDn))
