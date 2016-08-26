@@ -841,8 +841,6 @@ function PageVar($pagename, $var, $pn = '') {
   global $action;
   if ($var == '$action') { return PUE($action); }
 
-  else if ($var == '$EditMsg')
-  { if ($action == 'edit') return '&#9999;'; }
 /****************************************************************************************/
 
   if ($pn) {

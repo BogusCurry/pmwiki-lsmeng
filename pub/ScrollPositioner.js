@@ -203,6 +203,14 @@ var ScrollPositioner =
 		bulletObj.id = idName;
 		bulletObj.style.backgroundColor = 'yellow';
 
+    // Remove the highlight after 1 sec
+		setTimeout(function()
+		{
+			bulletObj.style.webkitTransition = 'background-color 1s ease';
+			bulletObj.style.backgroundColor = '';
+		},1000);
+		
+		
 		// A certain delay is needed when there are a lot of images waiting to be arranged on
 		// the page, i.e., diary pages. A delay of around 1 second is needed for diary page 
 		// with a lot of images. Not satisfied with this solution; there should be a mechanism
