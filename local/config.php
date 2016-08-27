@@ -301,10 +301,26 @@ if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
     <script src='$PubDirUrl/map/map.js'></script>";
 }
 
-
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, and prevent the memory from being paged.
 if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
+
+// Rich edit commands
+if ($action == 'edit')
+{	$HTMLHeaderFmt['editEnhance'] .=  "<script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>"; }
+// Edit button: F1 or F4
+if ($action == 'browse')
+{
+  $HTMLHeaderFmt[editEnhance] .= 
+	"<script type='text/javascript'>
+		window.addEventListener('keydown', function()
+		{
+			if (event.keyCode == 75 && event.shiftKey && (event.ctrlKey || event.metaKey))
+			{ window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit'; }
+		}, false);
+	</script>";
+}
+
 	
 /*
 // For debugging

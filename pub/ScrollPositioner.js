@@ -359,9 +359,6 @@ var ScrollPositioner =
 
   init: function()
   {  
-//setTimeout("var test='test'; alert(test);",2000);
-
-
     ScrollPositioner.pagename = ScrollPositioner.pagename.toUpperCase();
   
 	  if (ScrollPositioner.action == 'browse')
@@ -381,8 +378,7 @@ var ScrollPositioner =
 				if (String(value).substring(0,1) == 'n')
 				{ ScrollPositioner.setScrollPosLS(null); }
 			}
-						
-      			
+			      			
       // When enter is pressed, check whether texts are selected. If yes, compute the number of
       // html bullets before the selected text, record it in cookie, and then open a new tab
       // for editing.
@@ -425,7 +421,6 @@ var ScrollPositioner =
 	  else if (ScrollPositioner.action == 'edit')
 	  {
 	    fixTextareaHeight();
-//      setTimeout(fixTextareaHeight, 2000);
       
 	    // Check cookie. If the cookie content begins with 'n', texts from browsing have 
 	    // just been selected for editing. Delete it and scroll to the specified position.

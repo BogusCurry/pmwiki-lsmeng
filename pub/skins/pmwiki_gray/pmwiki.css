@@ -108,6 +108,7 @@ h6 { font-size:1.0em; }
   font-weight:bold;
   width:auto;
   font-family:Verdana,sans-serif; font-size:80%;
+  color:rgb(88,173,227);
   z-index: 2;
 }
 #wikicmds ul { list-style:none; margin:0px; padding:0px; }
