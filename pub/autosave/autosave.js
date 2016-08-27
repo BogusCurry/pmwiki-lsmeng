@@ -26,7 +26,6 @@ var AS =
   errStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px red); background-color: red; background:-webkit-linear-gradient(right, red, pink);'></div>",
   typingStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px silver); background-color: #fc0; background:-webkit-linear-gradient(right, #fc0, #ff1);'></div>",
   
-  cmdKeyDn: false,
   enableDrag: 0,
   lastInputTime: 0,
   inputBurstStartTime: 0,
@@ -365,7 +364,7 @@ var AS =
   },
   
 	init: function()
-	{ 
+	{   
 		if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
 
 		// Check for out-dated text. The built-in navigation mechanism "last page" of browsers
@@ -380,7 +379,7 @@ var AS =
     
 		AS.textID = document.getElementById('text');
     AS.ef = AS.textID.form;
-    
+
     // Set cursor to move it drag is enabled.
     if (AS.enableDrag)
     { document.getElementById('autosaveStatus').style.cursor = 'move'; }
@@ -431,27 +430,27 @@ var AS =
     {  
       document.getElementById('autosaveStatus').onmouseup = function()
       {
-      		var top = this.style.top;
-      		var left = this.style.left;
-      		
-      		localStorage.setItem('AutosaveSymTop', top);
-      		localStorage.setItem('AutosaveSymLeft', left);
-      		window.onmousemove = '';
+				var top = this.style.top;
+				var left = this.style.left;
+				
+				localStorage.setItem('AutosaveSymTop', top);
+				localStorage.setItem('AutosaveSymLeft', left);
+				window.onmousemove = '';
       }
       document.getElementById('autosaveStatus').onmousedown = function(e)
       {
-      		var mouseCoordX = e.clientX;
-      		var mouseCoordY = e.clientY;
-      									
-      		var imgCoordX = parseInt(this.style.left);
-      		var imgCoordY = parseInt(this.style.top);
-      		
-      		window.onmousemove = function(e)
-      		{
-      			document.getElementById('autosaveStatus').style.left = imgCoordX+e.clientX-mouseCoordX+'px';
-      			document.getElementById('autosaveStatus').style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
-      		};
-      		return false;
+				var mouseCoordX = e.clientX;
+				var mouseCoordY = e.clientY;
+											
+				var imgCoordX = parseInt(this.style.left);
+				var imgCoordY = parseInt(this.style.top);
+				
+				window.onmousemove = function(e)
+				{
+					document.getElementById('autosaveStatus').style.left = imgCoordX+e.clientX-mouseCoordX+'px';
+					document.getElementById('autosaveStatus').style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
+				};
+				return false;
       }
     }
 	}
@@ -508,29 +507,14 @@ window.addEventListener("beforeunload", function(event)
 	}
 });
 
-// Set the saving button and saving toggle button
-window.addEventListener('keyup', function()
-{ if (event.keyCode == 91) { AS.cmdKeyDn = false; } }, false);
 window.addEventListener('keydown', function()
-{
- 
-  if (event.keyCode == 91) { AS.cmdKeyDn = true; }
-  
-  // Insert: Ctrl+i
-  else if (event.keyCode == 73 && (event.ctrlKey || AS.cmdKeyDn))
-  {
-		event.preventDefault();
-		AS.textID.focus();
-		AS.cmdKeyDn = false;
-  }
-  
+{ 
   // Save buttons: Ctrl+s  
-  else if (event.keyCode == 83 && (event.ctrlKey || AS.cmdKeyDn))
+  if (event.keyCode == 83 && (event.ctrlKey || event.metaKey))
   {
 		event.preventDefault();
 		clearTimeout(AS.id1);
 		AS.keydownSave();
-		AS.cmdKeyDn = false;
   }
   // Toggle autosave: esc
   else if (event.keyCode == 27)

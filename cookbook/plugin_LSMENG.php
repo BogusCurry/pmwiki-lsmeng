@@ -1820,24 +1820,6 @@ function updatePageHistory()
   }
 }
 
-
-/****************************************************************************************/
-
-// Edit button: F1 or F4
-if ($action != 'edit')
-{
-  $HTMLHeaderFmt[] .= 
-  "<script type='text/javascript'>
-		window.addEventListener('keydown', function()
-		{
-			if (event.keyCode == 112 || event.keyCode == 115)
-			{
-				window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit';
-			}
-		}, false);
-	</script>";
-}
-
 /****************************************************************************************/
 
 // Basically this opens a socket, send request, then close the socket before getting
