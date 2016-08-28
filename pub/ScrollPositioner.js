@@ -432,10 +432,14 @@ var ScrollPositioner =
 				// Note that the sequence of the following commands matters. If the caret 
 				// positioning comes before the focus, Chrome will scroll so that caret is
 				// centered in the screen, which interferes with the setScroll command.
-				document.getElementById('text').focus();
+  			document.getElementById('text').focus();
 				var caretPos = ScrollPositioner.getCaretPosLS();
 				ScrollPositioner.setCaretPos(caretPos, caretPos);
 				ScrollPositioner.setScrollPos(value);
+
+// 				var caretPos = ScrollPositioner.getCaretPosLS();
+// 				ScrollPositioner.setCaretPos(caretPos, caretPos);
+//   			document.getElementById('text').focus();
 			}
 			else
 			{
