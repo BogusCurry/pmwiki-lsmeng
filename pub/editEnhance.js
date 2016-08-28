@@ -4,33 +4,67 @@
  * Email: f95942117@gmail.com
  */
 
+function getBulletStart(pos)
+{
+	// Find bullet start
+	var start1 = document.getElementById('text').form.text.value.lastIndexOf("\n*",pos-1) +1;
+	var start2 = document.getElementById('text').form.text.value.lastIndexOf("\n#",pos-1) +1;
+	if (start1+start2 == 0)
+	{ 
+		var firstChar = document.getElementById('text').form.text.value.substr(0,1);
+		if (firstChar != '*' && firstChar != '#')  {return;}
+	}
+	return Math.max(start1,start2);
+}
+
+function getBulletEnd(pos)
+{
+	// Find bullet end
+	var end1 = document.getElementById('text').form.text.value.indexOf("\n*",pos);
+	end1 = end1==-1 ? Infinity : end1;
+	var end2 = document.getElementById('text').form.text.value.indexOf("\n#",pos);
+	end2 = end2==-1 ? Infinity : end2;
+	var end = Math.min(end1,end2);
+	if (end == Infinity) { end = document.getElementById('text').form.text.value.length; }
+	
+	return end+1;
+}
+
+function selectLine(pos)
+{
+	var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
+	var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
+	end = end==-1 ? document.getElementById('text').form.text.value.length : end;
+	document.getElementById('text').selectionStart = start;
+	document.getElementById('text').selectionEnd = end;  
+}
+
+// Compute the correct top offset for the cursor highlight div based on the cursor position
+// and the scroll position. A cutoff value has been set due to performance issue.
 function showCursorHighlight()
 {
 	var pos = document.getElementById('text').selectionStart;
+  if (pos > 20000) { return; }
 	var scrollTop = document.getElementById('text').scrollTop;
 	var cursorHighlight = document.getElementById('cursorHighlight');
 	cursorHighlight.style.display = 'initial';
 	cursorHighlight.style.top = getTextAreaHeightAtCaretPos(pos) + cursorHighlight.clientHeight - scrollTop  + 'px';
 }
 function hideCursorHighlight()
-{
-	cursorHighlight.style.display = 'none';
-}
+{	cursorHighlight.style.display = 'none'; }
 
+// Well, it turns out there are still a few glitches with creating a hidden div; most of 
+// the problems arise because of text wrapping though. E.g., ctrl+l puts the cursor at 
+// the end of the line, while this actually can't be achieved with navigating simply 
+// using direction keys.
 function getTextAreaHeightAtCaretPos(pos)
- {
-//  console.log(document.getElementById('text').form.text.value.substring(pos,1));
+{
   if (pos == 0) { pos = 1; }
-// 	else if (document.getElementById('text').form.text.value.substring(pos-1,pos) == "\n") { pos += 1; }
+//  	else if (document.getElementById('text').form.text.value.substring(pos-1,pos) == "\n") { pos += 1; }
   var textAreaDiv = document.getElementById('textAreaDiv');
   textAreaDiv.innerHTML = document.getElementById('text').form.text.value.substring(0,pos+1).replace(/\n/g,"<br>");
   return textAreaDiv.clientHeight;
 }
-
-window.addEventListener('wheel',function()
-{
-  hideCursorHighlight();
-},false);
 
 window.addEventListener('load',function()
 {
@@ -53,32 +87,26 @@ window.addEventListener('load',function()
   textAreaDiv.style.wordBreak = window.getComputedStyle(document.getElementById('text'))['word-break'];
  	document.body.appendChild(textAreaDiv);
 
-
+  // Create the cursor highlight div
   var cursorHighlight = document.createElement('div');
   cursorHighlight.id = 'cursorHighlight';
   cursorHighlight.style.position = 'fixed';
   cursorHighlight.style.display = 'none';
   cursorHighlight.style.top = rectObject.top + 2 + 'px';
   cursorHighlight.style.left = rectObject.left + 'px';
-  cursorHighlight.style.opacity = 0.3;
+  cursorHighlight.style.opacity = 0.4;
   cursorHighlight.style.backgroundColor = 'lightgreen';
   cursorHighlight.style.height = window.getComputedStyle(document.getElementById('text'))['line-height'];
   cursorHighlight.style.width = window.getComputedStyle(document.getElementById('text'))['width'];
  	document.body.appendChild(cursorHighlight);
   
-	showCursorHighlight();
-	  
+// 	showCursorHighlight();	  
 
 }, false);
-
-window.addEventListener('click',function()
-{
-	hideCursorHighlight();
-},false);
 	
 window.addEventListener('keydown', function()
-{  	
-	// Scroll up & dn without moving caret
+{
+	// Scroll up & dn
 	if (event.keyCode == 38 && event.altKey && (event.ctrlKey || event.metaKey))
 	{
 		event.preventDefault();  
@@ -90,32 +118,67 @@ window.addEventListener('keydown', function()
 		document.getElementById('text').scrollTop += EditEnhanceLineHeight;
 	}
 
-	// Scroll up & dn
-	// The default behavior for dn puts the cursor at the end of line, which I don't like
-	// Write my own solution to put it at the front of the line
-	else if (event.keyCode == 38 && event.altKey)
-	{	document.getElementById('text').scrollTop -= EditEnhanceLineHeight; }
-	else if (event.keyCode == 40 && event.altKey)
+  // Page up down and highlight current line
+	else if (event.keyCode == 33 && event.altKey && event.shiftKey)
+	{
+		setTimeout(function()
+		{ selectLine(document.getElementById('text').selectionStart); },0);
+	}
+	else if (event.keyCode == 34 && event.altKey && event.shiftKey)
+	{
+		setTimeout(function()
+		{ selectLine(document.getElementById('text').selectionStart-1);	},0);
+	}	
+	
+	// Line up dn and highlight current line
+	else if (event.keyCode == 38 && event.altKey && event.shiftKey)
+	{
+ 		event.preventDefault();
+	  document.getElementById('text').scrollTop -= EditEnhanceLineHeight;
+		selectLine(document.getElementById('text').selectionStart-1);
+	}
+	else if (event.keyCode == 40 && event.altKey && event.shiftKey)
 	{
 		event.preventDefault();
 		document.getElementById('text').scrollTop += EditEnhanceLineHeight;
+
 		var pos = document.getElementById('text').selectionStart;
-	
-		if ( document.getElementById('text').form.text.value.substring(pos,pos+1) != "\n")
-		{	document.getElementById('text').selectionStart = document.getElementById('text').form.text.value.indexOf("\n",pos+1)+1; }
-		else
-		{ document.getElementById('text').selectionStart += 1; }
+		if (document.getElementById('text').form.text.value.substring(pos,pos+1) != "\n")
+		{
+ 		  var nextLine = document.getElementById('text').form.text.value.indexOf("\n",pos+1)+1;
+ 		  var start = nextLine==0 ? pos : nextLine;
+		}
+		else { var start = pos + 1; }
+		document.getElementById('text').selectionStart = start;
+
+		var end = document.getElementById('text').form.text.value.indexOf("\n",start);
+		end = end==-1 ? document.getElementById('text').form.text.value.length : end;
+		document.getElementById('text').selectionEnd = end;
 	}
 	
-	// Insert mode: Ctrl+i
-	else if (event.keyCode == 73 && (event.ctrlKey || event.metaKey))
+  // Move to the last/next bullet
+  else if (event.keyCode == 38 && event.altKey)
 	{
 		event.preventDefault();
-		document.getElementById('text').focus();
-		EditEnhanceCmdDn = false;
+		var pos = document.getElementById('text').selectionStart-1;
+		
+		document.getElementById('text').selectionStart =
+		document.getElementById('text').selectionEnd =  getBulletStart(pos);
+		document.getElementById('text').blur();
+		document.getElementById('text').focus();			
 	}
+	else if (event.keyCode == 40 && event.altKey)
+	{
+		event.preventDefault();
+		var pos = document.getElementById('text').selectionStart;
+		
+		document.getElementById('text').selectionStart = 
+		document.getElementById('text').selectionEnd = getBulletEnd(pos);
+		document.getElementById('text').blur();
+		document.getElementById('text').focus();			
+  }
 
-  // Cmd+(shift)+l: selection line or paragraph
+  // Cmd/alt+shift+l: selection line, paragraph, or bullet
 	else if (event.keyCode == 76)
 	{
 	  if (event.ctrlKey || event.metaKey)
@@ -134,17 +197,17 @@ window.addEventListener('keydown', function()
 			// Select line
 			else
 			{
+				// A fix for resolving conflict with Chrome's url command
 				var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
 				var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
-
-				// A fix for resolving conflict with Chrome's url command
 				if (document.getElementById('text').selectionStart == start &&
 						document.getElementById('text').selectionEnd == end)
 				{ return; }
 
 				event.preventDefault();
-				document.getElementById('text').selectionStart = start;
-				document.getElementById('text').selectionEnd = end;
+				document.getElementById('text').blur();
+				document.getElementById('text').focus();
+        selectLine(pos);
 			}
     }
 		// Select the whole bullet
@@ -152,29 +215,12 @@ window.addEventListener('keydown', function()
     {
 			event.preventDefault();
 			var pos = document.getElementById('text').selectionStart;
-
-			// Find bullet start
-			var start1 = document.getElementById('text').form.text.value.lastIndexOf("\n*",pos-1) +1;
-			var start2 = document.getElementById('text').form.text.value.lastIndexOf("\n#",pos-1) +1;
-			if (start1+start2 == 0)
-			{ 
-			  var firstChar = document.getElementById('text').form.text.value.substr(0,1);
-			  if (firstChar != '*' && firstChar != '#')  {return;}
-			}
-      
-			// Find bullet end
-      var end1 = document.getElementById('text').form.text.value.indexOf("\n*",pos);
-      end1 = end1==-1 ? Infinity : end1;
-      var end2 = document.getElementById('text').form.text.value.indexOf("\n#",pos);
-      end2 = end2==-1 ? Infinity : end2;
-      var end = Math.min(end1,end2);
-			if (end == Infinity) { end = document.getElementById('text').form.text.value.length; }
 			
-			document.getElementById('text').selectionStart = Math.max(start1,start2);
-			document.getElementById('text').selectionEnd = end+1;
+			document.getElementById('text').selectionStart = getBulletStart(pos);
+			document.getElementById('text').selectionEnd = getBulletEnd(pos);
     }
 	}
-	
+		
 	// Open viewing page in a new tab
 	else if (event.keyCode == 75 && event.shiftKey && (event.ctrlKey || event.metaKey))
   {
@@ -182,24 +228,17 @@ window.addEventListener('keydown', function()
     window.open(window.location.href.replace(/\?action=edit/i,''), '_blank');
   }
 
-//   else if (event.keyCode == 39 && (event.ctrlKey || event.metaKey))
-//   {
-//     showCursorHighlight();
-//   }
-  
-	else if (event.keyCode >= 37 && event.keyCode <= 40)
-	{
-    if (!event.shiftKey)
-    {
-      setTimeout(showCursorHighlight,0);
-    }
-    else
-    {
-      hideCursorHighlight();
-    }
-	}
+  // Ctrl+shift+del to delete till the end of the line
+  else if (event.keyCode == 8 && event.shiftKey && (event.ctrlKey || event.metaKey))
+  {
+		var pos = document.getElementById('text').selectionStart;
+		var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
+		var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
+		end = end==-1 ? document.getElementById('text').form.text.value.length : end;
+		document.getElementById('text').selectionStart = pos;
+		document.getElementById('text').selectionEnd = end;
+  }
 
-
-//   console.log(event.keyCode)
+//  console.log(event.keyCode)
 }
 , false);
