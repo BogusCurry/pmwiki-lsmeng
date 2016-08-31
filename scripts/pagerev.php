@@ -1,5 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2004-2014 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2004-2015 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
@@ -7,6 +7,8 @@
 
     This script defines routines for displaying page revisions.  It
     is included by default from the stdconfig.php script.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 function LinkSuppress($pagename,$imap,$path,$title,$txt,$fmt=NULL) 
@@ -83,6 +85,7 @@ function PrintDiff($pagename) {
     if (!$diffauthor) $diffauthor="unknown";
     $FmtV['$DiffChangeSum'] = PHSC(@$page["csum:$diffgmt"]);
     $FmtV['$DiffHost'] = @$page["host:$diffgmt"];
+    $FmtV['$DiffUserAgent'] = PHSC(@$page["agent:$diffgmt"], ENT_QUOTES);
     $FmtV['$DiffAuthor'] = $diffauthor;
     $FmtV['$DiffId'] = $k;
     $html = $DiffHTMLFunction($pagename, $v);
@@ -167,12 +170,12 @@ function DiffRenderSource($in, $out, $which) {
   $lines = $cnt = $x2 = $y2 = array();
   foreach($in as $line) {
     $tmp = $countdifflines>20 ? array($line) : DiffPrepareInline($line);
-    if(!$which) $cnt[] = array(count($x2), count($tmp));
+    if (!$which) $cnt[] = array(count($x2), count($tmp));
     $x2 = array_merge($x2, $tmp);
   }
   foreach($out as $line) {
     $tmp = $countdifflines>20 ? array($line) : DiffPrepareInline($line);
-    if($which) $cnt[] = array(count($y2), count($tmp));
+    if ($which) $cnt[] = array(count($y2), count($tmp));
     $y2 = array_merge($y2, $tmp);
   }
   $z = $WordDiffFunction(implode("\n", $x2), implode("\n", $y2));

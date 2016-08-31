@@ -1,5 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2004-2014 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2004-2016 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
@@ -13,6 +13,8 @@
     be necessary to set values for $UploadDir and $UploadUrlFmt,
     especially if any form of URL rewriting is being performed.
     See the PmWiki.UploadsAdmin page for more information.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 ## $EnableUploadOverwrite determines if we allow previously uploaded
@@ -23,7 +25,8 @@ SDV($EnableUploadOverwrite,1);
 ## accept, along with the Content-Type: value appropriate for each.
 SDVA($UploadExts,array(
   'gif' => 'image/gif', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
-  'png' => 'image/png', 'bmp' => 'image/bmp',
+  'png' => 'image/png', 'bmp' => 'image/bmp', 'ico' => 'image/x-icon',
+  'wbmp'=> 'image/vnd.wap.wbmp', 'svg' => 'image/svg+xml', 'svgz' => 'image/svg+xml', 'xcf' => 'image/x-xcf',
   'mp3' => 'audio/mpeg', 'au' => 'audio/basic', 'wav' => 'audio/x-wav',
   'ogg' => 'audio/ogg', 'flac' => 'audio/x-flac',
   'ogv' => 'video/ogg', 'mp4' => 'video/mp4',
@@ -114,7 +117,7 @@ XLSDV('en',array(
   'ULpquota' => 'group quota exceeded',
   'ULtquota' => 'upload quota exceeded'));
 SDV($PageAttributes['passwdupload'],'$[Set new upload password:]');
-SDV($DefaultPasswords['upload'],'*');
+SDV($DefaultPasswords['upload'],'@lock');
 SDV($AuthCascade['upload'], 'read');
 SDV($FmtPV['$PasswdUpload'], 'PasswdVar($pn, "upload")');
 
@@ -183,13 +186,13 @@ function UploadAuth($pagename, $auth, $cache=0){
     $pn_upload = FmtPageName($GroupAttributesFmt, $pagename);
   } else $pn_upload = $pagename;
   $page = RetrieveAuthPage($pn_upload, $auth, true, READPAGE_CURRENT);
-  if(!$page) Abort("?No '$auth' permissions for $pagename");
-  if($cache) PCache($pn_upload,$page);
+  if (!$page) Abort("?No '$auth' permissions for $pagename");
+  if ($cache) PCache($pn_upload,$page);
   return true;
 }
 
 function HandleUpload($pagename, $auth = 'upload') {
-  global $FmtV,$UploadExtMax,
+  global $FmtV,$UploadExtMax, $EnableReadOnly,
     $HandleUploadFmt,$PageStartFmt,$PageEndFmt,$PageUploadFmt;
   UploadAuth($pagename, $auth, 1);
   $FmtV['$UploadName'] = MakeUploadName($pagename,@$_REQUEST['upname']);
@@ -198,7 +201,8 @@ function HandleUpload($pagename, $auth = 'upload') {
   $FmtV['$upext'] = PHSC(@$_REQUEST['upext']);
   $FmtV['$upmax'] = PHSC(@$_REQUEST['upmax']);
   $FmtV['$UploadResult'] = ($upresult) ?
-    FmtPageName("<i>$uprname</i>: $[UL$upresult]",$pagename) : '';
+    FmtPageName("<i>$uprname</i>: $[UL$upresult]",$pagename) : 
+      (@$EnableReadOnly ? XL('Cannot modify site -- $EnableReadOnly is set'): '');
   SDV($HandleUploadFmt,array(&$PageStartFmt,&$PageUploadFmt,&$PageEndFmt));
   PrintFmt($pagename,$HandleUploadFmt);
 }
@@ -269,7 +273,12 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
   global $UploadVerifyFunction, $UploadFileFmt, $LastModFile, 
     $EnableUploadVersions, $Now, $RecentUploadsFmt, $FmtV,
     $NotifyItemUploadFmt, $NotifyItemFmt, $IsUploadPosted,
-    $UploadRedirectFunction, $UploadPermAdd, $UploadPermSet;
+    $UploadRedirectFunction, $UploadPermAdd, $UploadPermSet,
+    $EnableReadOnly;
+    
+  if (IsEnabled($EnableReadOnly, 0))
+    Abort('Cannot modify site -- $EnableReadOnly is set', 'readonly');
+
   UploadAuth($pagename, $auth);
   $uploadfile = $_FILES['uploadfile'];
   $upname = $_REQUEST['upname'];
@@ -410,7 +419,8 @@ function UploadVerifyBasic($pagename,$uploadfile,$filepath) {
   global $EnableUploadOverwrite,$UploadExtSize,$UploadPrefixQuota,
     $UploadDirQuota,$UploadDir, $UploadBlacklist;
   if (count($UploadBlacklist)) {
-    $upname = strtolower(end(explode("/", $filepath)));
+    $tmp = explode("/", $filepath);
+    $upname = strtolower(end($tmp));
     foreach($UploadBlacklist as $needle) {
       if (strpos($upname, $needle)!==false) return 'upresult=badname';
     }
@@ -580,17 +590,21 @@ function FmtUploadList($pagename, $args) {
   return implode("\n",$out);
 }
 
-# this adds (:if [!]attachments:) to the markup
-$Conditions['attachments'] = "AttachExist(\$pagename)";
-function AttachExist($pagename) {
-  global $UploadDir, $UploadPrefixFmt;
-  $uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
-  $count = 0;
+# this adds (:if [!]attachments filepattern pagename:) to the markup
+$Conditions['attachments'] = "AttachExist(\$pagename, \$condparm)";
+function AttachExist($pagename, $condparm='*') {
+  global $UploadFileFmt;
+  @list($fpat, $pn) = explode(' ', $condparm, 2);
+  $pn = ($pn > '') ? MakePageName($pagename, $pn) : $pagename;
+    
+  $uploaddir = FmtPageName($UploadFileFmt, $pn);
+  $flist = array();
   $dirp = @opendir($uploaddir);
   if ($dirp) {
     while (($file = readdir($dirp)) !== false)
-      if ($file{0} != '.') $count++;
+      if ($file{0} != '.') $flist[] = $file;
     closedir($dirp);
+    $flist = MatchNames($flist, $fpat);
   }
-  return $count;
+  return count($flist);
 }

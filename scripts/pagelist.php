@@ -1,5 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2004-2014 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2004-2016 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
@@ -22,6 +22,8 @@
     to FmtPageList.  FmtPageList then returns the output to
     the caller, and calls Keep() (preserves HTML) or PRR() (re-evaluate
     as markup) as appropriate for the output being returned.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 ## $PageIndexFile is the index file for term searches and link= option
@@ -109,7 +111,7 @@ define('PAGELIST_POST', 4);
 ## If $SearchBoxFmt is defined, that is used, otherwise a searchbox
 ## is generated.  Options include group=, size=, label=.
 function SearchBox($pagename, $opt) {
-  global $SearchBoxFmt, $SearchBoxOpt, $SearchQuery, $EnablePathInfo;
+  global $SearchBoxFmt, $SearchBoxInputType, $SearchBoxOpt, $SearchQuery, $EnablePathInfo;
   if (isset($SearchBoxFmt)) return Keep(FmtPageName($SearchBoxFmt, $pagename));
   SDVA($SearchBoxOpt, array('size' => '40', 
     'label' => FmtPageName('$[Search]', $pagename),
@@ -125,13 +127,14 @@ function SearchBox($pagename, $opt) {
     if ($v == '' || is_array($v)) continue;
     $v = str_replace("'", "&#039;", $v);
     $opt[$k] = $v;
-    if ($k == 'q' || $k == 'label' || $k == 'value' || $k == 'size') continue;
+    if(preg_match('/^(q|label|value|size|placeholder)$/', $k)) continue;
     $k = str_replace("'", "&#039;", $k);
     $out .= "<input type='hidden' name='$k' value='$v' />";
   }
-  // Meng. Auto focus the search box.
-  $out .= "<input autofocus type='text' name='q' value='{$opt['value']}' 
-    class='inputbox searchbox' size='{$opt['size']}' /><input style='margin-left:5px;' type='submit' 
+  SDV($SearchBoxInputType, 'text');
+  $out .= "<input autofocus type='$SearchBoxInputType' name='q' value='{$opt['value']}' ";
+  if(@$opt['placeholder']) $out .= "  placeholder='{$opt['placeholder']}' ";
+  $out .= "  class='inputbox searchbox' size='{$opt['size']}' /><input type='submit' 
     class='inputbutton searchbutton' value='{$opt['label']}' />";
   return '<form '.Keep($out).'</form>';
 }
@@ -153,8 +156,22 @@ function FmtPageList($outfmt, $pagename, $opt) {
   }
   $opt = array_merge($opt, ParseArgs($opt['o'], $PageListArgPattern));
   # merge markup options with form and url
-  if (@$opt['request']) 
-    $opt = array_merge($opt, ParseArgs($rq, $PageListArgPattern), @$_REQUEST);
+  if (@$opt['request'] && @$_REQUEST) {
+    $rkeys = preg_grep('/^=/', array_keys($_REQUEST), PREG_GREP_INVERT);
+    if ($opt['request'] != '1') {
+      list($incl, $excl) = GlobToPCRE($opt['request']);
+      if ($excl) $rkeys = array_diff($rkeys, preg_grep("/$excl/", $rkeys));
+      if ($incl) $rkeys = preg_grep("/$incl/", $rkeys);
+    }
+    $cleanrequest = array();
+    foreach($rkeys as $k) {
+      $cleanrequest[$k] = stripmagic($_REQUEST[$k]);
+      if(substr($k, 0, 4)=='ptv_') # defined separately in forms
+        $cleanrequest['$:'.substr($k, 4)] = stripmagic($_REQUEST[$k]);
+    }
+    $opt = array_merge($opt, ParseArgs($rq, $PageListArgPattern), $cleanrequest);
+  }
+
   # non-posted blank search requests return nothing
   if (@($opt['req'] && !$opt['-'] && !$opt[''] && !$opt['+'] && !$opt['q']))
     return '';
@@ -660,7 +677,7 @@ function FPLTemplateDefaults($pagename, $matches, &$opt, &$tparts){
     if ($tparts[$i] != 'template') { $i++; continue; }
     if ($tparts[$i+2] != 'defaults' && $tparts[$i+2] != 'default') { $i+=5; continue; }
     $pvars = $GLOBALS['MarkupTable']['{$var}']; # expand {$PVars}
-    $ttext = preg_replace($pvars['pat'], $pvars['rep'], $tparts[$i+3]);
+    $ttext = preg_replace_callback($pvars['pat'], $pvars['rep'], $tparts[$i+3]);
     $opt = array_merge(ParseArgs($ttext, $PageListArgPattern), $opt);
     array_splice($tparts, $i, 4);
   }
@@ -704,10 +721,10 @@ function FPLTemplateFormat($pagename, $matches, $opt, $tparts, &$output){
   $vv = array_values($pseudovars);
 
   $lgroup = ''; $out = '';
-  if(count($matches)==0 ) {
+  if (count($matches)==0) {
     $t = 0;
     while($t < count($tparts)) {
-      if($tparts[$t]=='template' && $tparts[$t+2]=='none') {
+      if ($tparts[$t]=='template' && $tparts[$t+2]=='none') {
          $out .= MarkupRestore(FPLExpandItemVars($tparts[$t+4], $matches, 0, $pseudovars));
          $t+=4;
       }
@@ -725,7 +742,7 @@ function FPLTemplateFormat($pagename, $matches, $opt, $tparts, &$output){
       if ($tparts[$t] != 'template') { $item = $tparts[$t]; $t++; }
       else {
         list($neg, $when, $control, $item) = array_slice($tparts, $t+1, 4); $t+=5;
-        if($when=='none') continue;
+        if ($when=='none') continue;
         if (!$control) {
           if ($when == 'first' && ($neg xor ($i != 0))) continue;
           if ($when == 'last' && ($neg xor ($i != count($matches) - 1))) continue;
@@ -767,7 +784,7 @@ function FPLExpandItemVars($item, $matches, $idx, $psvars) {
   $item = str_replace(array_keys($psvars), array_values($psvars), $item);
   $item = PPRE('/\\{(=|&[lg]t;)(\\$:?\\w[-\\w]*)\\}/',
               "PVSE(PageVar('$pn',  \$m[2], \$m[1]))", $item);
-  if(! IsEnabled($EnableUndefinedTemplateVars, 0))
+  if (! IsEnabled($EnableUndefinedTemplateVars, 0))
     $item = preg_replace("/\\{\\$\\$\\w+\\}/", '', $item);
   return $item;
 }
