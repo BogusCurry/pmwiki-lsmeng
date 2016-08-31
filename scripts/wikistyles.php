@@ -1,9 +1,11 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2004-2014 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2004-2015 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.  See pmwiki.php for full details.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 SDV($WikiStylePattern,'%%|%[A-Za-z][-,=:#\\w\\s\'"().]*%');
@@ -24,19 +26,21 @@ Markup_e('restorelinks','<%%',"/$KeepToken(\\d+L)$KeepToken/",
 if (IsEnabled($EnableStdWikiStyles,1)) {
   ## standard colors
   foreach(array('black','white','red','yellow','blue','gray',
-      'silver','maroon','green','navy','purple') as $c)
+      'silver','maroon','green','navy','purple',
+      'fuchsia','olive','lime','teal','aqua','orange') as $c)
     SDV($WikiStyle[$c]['color'],$c);
+  SDV($WikiStyle['grey']['color'],'gray');
   ## %newwin% style opens links in a new window
   SDV($WikiStyle['newwin']['target'],'_blank');
   ## %comment% style turns markup into a comment via display:none css
   SDV($WikiStyle['comment']['display'],'none');
   ## display, margin, padding, and border css properties
   $WikiStyleCSS[] = 
-    'float|display|(margin|padding|border)(-(left|right|top|bottom))?';
+    'float|clear|display|(margin|padding|border)(-(left|right|top|bottom))?';
   $WikiStyleCSS[] = 'white-space';
+  $WikiStyleCSS[] = '((min|max)-)?(width|height)';
   ## list-styles
   $WikiStyleCSS[] = 'list-style';
-  $WikiStyleCSS[] = 'width|height';
   foreach(array('decimal'=>'decimal', 'roman'=>'lower-roman',
     'ROMAN'=>'upper-roman', 'alpha'=>'lower-alpha', 'ALPHA'=>'upper-alpha')
     as $k=>$v) 
@@ -46,10 +50,17 @@ if (IsEnabled($EnableStdWikiStyles,1)) {
     'item' => 'li|dt',
     'list' => 'ul|ol|dl',
     'div' => 'div',
+    'article' => 'article',
+    'section' => 'section',
+    'nav' => 'nav',
+    'aside' => 'aside',
+    'header' => 'header',
+    'footer' => 'footer',
+    'address' => 'address',
     'pre' => 'pre',
     'img' => 'img',
-    'block' => 'p(?!\\sclass=)|div|ul|ol|dl|li|dt|pre|h[1-6]',
-    'p' => 'p(?!\\sclass=)'));
+    'block' => 'p(?!\\s+class=)|div|ul|ol|dl|li|dt|pre|h[1-6]|article|section|nav|aside|address|header|footer',
+    'p' => 'p(?!\\s+class=)'));
   foreach(array('item', 'list', 'block', 'p', 'div') as $c)
     SDV($WikiStyle[$c],array('apply'=>$c));
   ## block justifications

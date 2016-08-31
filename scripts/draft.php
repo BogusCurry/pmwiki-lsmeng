@@ -1,9 +1,11 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2006-2013 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2006-2015 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.  See pmwiki.php for full details.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 SDV($DraftSuffix, '-Draft');
@@ -27,7 +29,8 @@ if (!PageExists($pagename) && PageExists($basename)) $pagename = $basename;
 
 ## The section below handles specialized EditForm pages and handler.
 ## We don't bother to load it if we're not editing.
-if ($action != 'edit') return;
+SDV($DraftActionsPattern, 'edit');
+if (! preg_match("/($DraftActionsPattern)/", $action)) return;
 
 ##  set edit form button labels to reflect draft prompts
 SDVA($InputTags['e_savebutton'], array('value' => ' '.XL('Publish').' '));
@@ -56,10 +59,10 @@ function EditDraft(&$pagename, &$page, &$new) {
   if ($_POST['postdraft'] || $_POST['postedit']) $pagename = $draftname; 
   else if ($_POST['post'] && !preg_match("/$DeleteKeyPattern/", $new['text'])) { 
     $pagename = $basename; 
-    if(IsEnabled($EnableDraftAtomicDiff, 0)) {
+    if (IsEnabled($EnableDraftAtomicDiff, 0)) {
       $page = ReadPage($basename);
       foreach($new as $k=>$v) # delete draft history
-        if(preg_match('/:\\d+(:\\d+:)?$/', $k) && ! preg_match("/:$Now(:\\d+:)?$/", $k)) unset($new[$k]);
+        if (preg_match('/:\\d+(:\\d+:)?$/', $k) && ! preg_match("/:$Now(:\\d+:)?$/", $k)) unset($new[$k]);
       unset($new['rev']);
       SDVA($new, $page);
     }

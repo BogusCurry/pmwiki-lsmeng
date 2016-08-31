@@ -1,5 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2004-2013 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2004-2016 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
@@ -14,6 +14,8 @@
     Second, we have to assume that all non-ASCII characters are valid
     in pagenames, since there's no way to determine which UTF-8
     characters are "letters" and which are punctuation.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 global $HTTPHeaders, $KeepToken, $pagename,
@@ -25,6 +27,13 @@ $Charset = 'UTF-8';
 $HTTPHeaders['utf-8'] = 'Content-type: text/html; charset=UTF-8';
 $HTMLHeaderFmt['utf-8'] = 
   "<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />";
+SDVA($HTMLStylesFmt, array('rtl-ltr' => "
+  .rtl {direction:rtl; unicode-bidi:bidi-override;}
+  .ltr {direction:ltr; unicode-bidi:bidi-override;}
+  .rtl .indent, .rtl.indent, .rtl .outdent, .rtl.outdent {
+    margin-left:0; margin-right: 40px;
+  }
+  "));
 $pagename = @$_REQUEST['n'];
 if (!$pagename) $pagename = @$_REQUEST['pagename'];
 if (!$pagename &&

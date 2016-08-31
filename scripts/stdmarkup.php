@@ -1,5 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
-/*  Copyright 2004-2014 Patrick R. Michaud (pmichaud@pobox.com)
+/*  Copyright 2004-2016 Patrick R. Michaud (pmichaud@pobox.com)
     This file is part of PmWiki; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published
     by the Free Software Foundation; either version 2 of the License, or
@@ -14,6 +14,8 @@
     $id is a unique name for the rule, $where is the position of the rule
     relative to another rule, $pat is the pattern to look for, and
     $rep is the string to replace it with.
+    
+    Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
 ## first we preserve text in [=...=] and [@...@]
@@ -329,8 +331,8 @@ Markup('^!<:', '<^<:',
 Markup_e('^img', 'block',
   "/^((?>(\\s+|%%|%[A-Za-z][-,=:#\\w\\s'\".]*%)*)$KeepToken(\\d+L)$KeepToken)(\\s*\\|\\s?)?(.*)$/",
   "(strpos(\$GLOBALS['KPV'][\$m[3]],'<img')===false) ? \$m[0] :
-       '<:block,1><div>'.\$m[1] . (\$m[4] ? '<br />' : '') .\$m[5].'</div>'");
-
+       '<:block,1><div class=\"img\">'.\$m[1] . 
+       (\$m[4] ? '<br /><span class=\"caption\">'.\$m[5].'</span>' : \$m[5]) . '</div>'");
 
 ## Whitespace at the beginning of lines can be used to maintain the
 ## indent level of a previous list item, or a preformatted text block.
@@ -379,8 +381,15 @@ Markup_e('^||||', 'block',
   "FormatTableRow(\$m[0])");
 ## ||table attributes
 Markup_e('^||','>^||||','/^\\|\\|(.*)$/',
-  "PZZ(\$GLOBALS['BlockMarkups']['table'][0] = '<table '.PQA(\$m[1]).'>')
+  "PZZ(\$GLOBALS['BlockMarkups']['table'][0] = '<table '.SimpleTableAttr(\$m[1]).'>')
     .'<:block,1>'");
+function SimpleTableAttr($attr) {
+  global $SimpleTableDefaultClassName;
+  $qattr = PQA($attr);
+  if(IsEnabled($SimpleTableDefaultClassName) && !preg_match("/(^| )class='.*?' /", $qattr))
+    $qattr .= "class='$SimpleTableDefaultClassName'";
+  return $qattr;
+}
 
 ## headings
 Markup_e('^!', 'block',
@@ -392,18 +401,19 @@ Markup('^----','>^->','/^----+/','<:block,1><hr />');
 
 #### (:table:) markup (AdvancedTables)
 function Cells($name,$attr) {
-  global $MarkupFrame;
+  global $MarkupFrame, $EnableTableAutoValignTop;
   $attr = PQA($attr);
   $tattr = @$MarkupFrame[0]['tattr'];
   $name = strtolower($name);
   $key = preg_replace('/end$/', '', $name);
-  if (preg_match("/^(?:head|cell)/", $name)) $key = 'cell';
+  if (preg_match("/^(?:head|cell)(nr)?$/", $name)) $key = 'cell';
   $out = '<:block>'.MarkupClose($key);
   if (substr($name, -3) == 'end') return $out;
   $cf = & $MarkupFrame[0]['closeall'];
   if ($name == 'table') $MarkupFrame[0]['tattr'] = $attr; 
   else if ($key == 'cell') {
-    if (strpos($attr, "valign=")===false) $attr .= " valign='top'";
+    if (IsEnabled($EnableTableAutoValignTop, 1) && strpos($attr, "valign=")===false)
+      $attr .= " valign='top'";
     $t = (strpos($name, 'head')===0 ) ? 'th' : 'td';
     if (!@$cf['table']) {
        $tattr = @$MarkupFrame[0]['tattr'];
@@ -413,14 +423,15 @@ function Cells($name,$attr) {
     else $out .= "<$t $attr>";
     $cf['cell'] = "</$t>";
   } else {
-    $out .= "<div $attr>";
-    $cf[$key] = '</div>';
+    $tag = preg_replace('/\\d+$/', '', $key);
+    $out .= "<$tag $attr>";
+    $cf[$key] = "</$tag>";
   }
   return $out;
 }
 
 Markup_e('table', '<block',
-  '/^\\(:(table|cell|cellnr|head|headnr|tableend|div\\d*(?:end)?)(\\s.*?)?:\\)/i',
+  '/^\\(:(table|cell|cellnr|head|headnr|tableend|(?:div\\d*|section\\d*|article\\d*|header|footer|nav|address|aside)(?:end)?)(\\s.*?)?:\\)/i',
   "Cells(\$m[1],\$m[2])");
 Markup('^>>', '<table',
   '/^&gt;&gt;(.+?)&lt;&lt;(.*)$/',
@@ -432,8 +443,10 @@ Markup('^>><<', '<^>>',
 #### special stuff ####
 ## (:markup:) for displaying markup examples
 function MarkupMarkup($pagename, $text, $opt = '') {
-  global $MarkupWordwrapFunction;
-  SDV($MarkupWordwrapFunction, 'wordwrap');
+  global $MarkupWordwrapFunction, $MarkupWrapTag;
+  SDV($MarkupWordwrapFunction, 
+    PCCF('return str_replace("  ", " &nbsp;", nl2br($m));'));
+  SDV($MarkupWrapTag, 'code');
   $MarkupMarkupOpt = array('class' => 'vert');
   $opt = array_merge($MarkupMarkupOpt, ParseArgs($opt));
   $html = MarkupToHTML($pagename, $text, array('escape' => 0));
@@ -446,7 +459,7 @@ function MarkupMarkup($pagename, $text, $opt = '') {
   else 
     { $sep = '</tr><tr>'; $pretext = $MarkupWordwrapFunction($text, 75); }
   return Keep(@"<table class='markup $class' align='center'>$caption
-      <tr><td class='markup1' valign='top'><pre>$pretext</pre></td>$sep<td 
+      <tr><td class='markup1' valign='top'><$MarkupWrapTag>$pretext</$MarkupWrapTag></td>$sep<td 
         class='markup2' valign='top'>$html</td></tr></table>");
 }
 
@@ -496,5 +509,5 @@ function CondDate($condparm) {
 
 # This pattern enables the (:encrypt <phrase>:) markup/replace-on-save
 # pattern.
-SDV($ROSPatterns['/\\(:encrypt\\s+([^\\s:=]+).*?:\\)/'], PCCF("return crypt(\$m[1]);"));
+SDV($ROSPatterns['/\\(:encrypt\\s+([^\\s:=]+).*?:\\)/'], PCCF("return pmcrypt(\$m[1]);"));
 
