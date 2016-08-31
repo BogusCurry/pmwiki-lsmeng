@@ -4,6 +4,50 @@
  * Email: f95942117@gmail.com
  */
 
+function getLastParaStart(pos)
+{
+	var str = document.getElementById('text').form.text.value.slice(0,pos).split('').reverse().join('');
+	// The start of a paragraph is identified by a newline, followed by optional multiple
+	// empty spaces, followed by another char which is either a newline nor empty space
+	var match = str.match(/[^\s]\s*\n\s*\n/);
+	if (match == null)
+	{ 
+		if (document.getElementById('text').form.text.value.substr(0,1) == "\n" && 
+				document.getElementById('text').form.text.value.substr(1,1) != "\n" && pos > 1)
+		{ return 1; }
+		else { return 0; }
+		
+	}
+	var start = pos - match['index'] - 1;
+  return start;
+}
+
+function getNextParaStart(pos)
+{
+  // Handle the case where the next line is a new paragraph
+	var str = document.getElementById('text').form.text.value.slice(pos);
+  if (str.match(/^\s*\n\s*[^\s]/))
+  {
+  	var reverseStr = document.getElementById('text').form.text.value.slice(0,pos).split('').reverse().join('');
+    if (reverseStr.match(/^\s*\n/))
+    { return pos + str.indexOf("\n") + 1; }
+  }
+
+	var match = str.match(/\n\s*\n\s*[^\s]/);
+	if (match == null) { return document.getElementById('text').form.text.value.length; }
+	var start = pos + match['index'] + match[0].length -1;
+	return start;
+}
+
+function getParaEnd(pos)
+{
+	var str = document.getElementById('text').form.text.value.slice(pos);
+	var match = str.match(/\n\s*?\n/);
+	if (match == null) { return document.getElementById('text').form.text.value.length; }
+ 	var end = pos + match['index'] ;
+	return end;
+}
+
 function getBulletStart(pos)
 {
 	// Find bullet start
@@ -12,7 +56,7 @@ function getBulletStart(pos)
 	if (start1+start2 == 0)
 	{ 
 		var firstChar = document.getElementById('text').form.text.value.substr(0,1);
-		if (firstChar != '*' && firstChar != '#')  {return;}
+		if (firstChar != '*' && firstChar != '#')  { return -1; }
 	}
 	return Math.max(start1,start2);
 }
@@ -32,11 +76,15 @@ function getBulletEnd(pos)
 
 function selectLine(pos)
 {
+	document.getElementById('text').selectionStart =
+	document.getElementById('text').selectionEnd = pos;  
+	document.getElementById('text').blur();
+	document.getElementById('text').focus();
 	var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
 	var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
 	end = end==-1 ? document.getElementById('text').form.text.value.length : end;
 	document.getElementById('text').selectionStart = start;
-	document.getElementById('text').selectionEnd = end;  
+	document.getElementById('text').selectionEnd = end;
 }
 
 // Compute the correct top offset for the cursor highlight div based on the cursor position
@@ -107,29 +155,44 @@ window.addEventListener('load',function()
 window.addEventListener('keydown', function()
 {
 	// Scroll up & dn
-	if (event.keyCode == 38 && event.altKey && (event.ctrlKey || event.metaKey))
+  if ((event.keyCode == 38 || event.keyCode == 33) && event.altKey && (event.ctrlKey || event.metaKey))
 	{
 		event.preventDefault();  
-		document.getElementById('text').scrollTop -= EditEnhanceLineHeight;
+		document.getElementById('text').scrollTop -= EditEnhanceLineHeight<<1;
 	}
-	else if (event.keyCode == 40 && event.altKey && (event.ctrlKey || event.metaKey))
+	else if ((event.keyCode == 40 || event.keyCode == 34) && event.altKey && (event.ctrlKey || event.metaKey))
 	{
 		event.preventDefault();
-		document.getElementById('text').scrollTop += EditEnhanceLineHeight;
+		document.getElementById('text').scrollTop += EditEnhanceLineHeight<<1;
 	}
 
   // Page up down and highlight current line
-	else if (event.keyCode == 33 && event.altKey && event.shiftKey)
+	else if (event.keyCode == 33 && event.altKey)// && event.shiftKey)
 	{
 		setTimeout(function()
 		{ selectLine(document.getElementById('text').selectionStart); },0);
 	}
-	else if (event.keyCode == 34 && event.altKey && event.shiftKey)
+	else if (event.keyCode == 34 && event.altKey)// && event.shiftKey)
 	{
 		setTimeout(function()
 		{ selectLine(document.getElementById('text').selectionStart-1);	},0);
 	}	
-	
+
+  // Continuous paragraph selection 
+	else if (event.keyCode == 38 && event.altKey && event.shiftKey)
+	{
+ 		event.preventDefault();
+		var pos = document.getElementById('text').selectionStart;
+    document.getElementById('text').selectionStart = getLastParaStart(pos);
+  }
+	else if (event.keyCode == 40 && event.altKey && event.shiftKey)
+	{
+ 		event.preventDefault();
+		var pos = document.getElementById('text').selectionEnd;
+    document.getElementById('text').selectionEnd = getNextParaStart(pos);
+	}
+
+/*
 	// Line up dn and highlight current line
 	else if (event.keyCode == 38 && event.altKey && event.shiftKey)
 	{
@@ -155,28 +218,46 @@ window.addEventListener('keydown', function()
 		end = end==-1 ? document.getElementById('text').form.text.value.length : end;
 		document.getElementById('text').selectionEnd = end;
 	}
-	
-  // Move to the last/next bullet
+*/
+
+  // Move to the last/next paragraph. Turns out to be non-trivial. Unlike selecting a whole
+  // paragraph, detecting the start of a paragraph needs regex
   else if (event.keyCode == 38 && event.altKey)
 	{
 		event.preventDefault();
-		var pos = document.getElementById('text').selectionStart-1;
-		
-		document.getElementById('text').selectionStart =
-		document.getElementById('text').selectionEnd =  getBulletStart(pos);
-		document.getElementById('text').blur();
-		document.getElementById('text').focus();			
+		var pos = document.getElementById('text').selectionStart;
+    var start = getLastParaStart(pos);
+    selectLine(start);
 	}
 	else if (event.keyCode == 40 && event.altKey)
 	{
 		event.preventDefault();
 		var pos = document.getElementById('text').selectionStart;
-		
-		document.getElementById('text').selectionStart = 
-		document.getElementById('text').selectionEnd = getBulletEnd(pos);
-		document.getElementById('text').blur();
-		document.getElementById('text').focus();			
+ 		var start = getNextParaStart(pos);
+		selectLine(start);
   }
+
+/*	
+  // Move to the last/next bullet
+  else if (event.keyCode == 38 && event.altKey)
+	{
+		event.preventDefault();
+		var pos = document.getElementById('text').selectionStart-1;
+		var start = getBulletStart(pos);
+		document.getElementById('text').selectionStart =
+		document.getElementById('text').selectionEnd = start;
+		selectLine(start);
+	}
+	else if (event.keyCode == 40 && event.altKey)
+	{
+		event.preventDefault();
+		var pos = document.getElementById('text').selectionStart;
+		var start = getBulletStart(pos);
+		document.getElementById('text').selectionStart = 
+		document.getElementById('text').selectionEnd = start;
+		selectLine(start);
+	}
+*/
 
   // Cmd/alt+shift+l: selection line, paragraph, or bullet
 	else if (event.keyCode == 76)
@@ -189,24 +270,23 @@ window.addEventListener('keydown', function()
 			if (event.shiftKey)
 			{
 				event.preventDefault();
-				var start = document.getElementById('text').form.text.value.lastIndexOf("\n\n",pos-1) +2;
-				var end = document.getElementById('text').form.text.value.indexOf("\n\n",pos);
-				document.getElementById('text').selectionStart = start;
-				document.getElementById('text').selectionEnd = end;
+				document.getElementById('text').selectionStart = getLastParaStart(pos+1);
+				document.getElementById('text').selectionEnd = getParaEnd(pos);
 			}
 			// Select line
 			else
 			{
+				if (document.getElementById('text').selectionStart == 0) { var start = 0; }
+				else { var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1; }
+				if (document.getElementById('text').selectionEnd == document.getElementById('text').form.text.value.length) { var end = document.getElementById('text').form.text.value.length; }
+				else {var end = document.getElementById('text').form.text.value.indexOf("\n",pos); }
+
 				// A fix for resolving conflict with Chrome's url command
-				var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
-				var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
 				if (document.getElementById('text').selectionStart == start &&
 						document.getElementById('text').selectionEnd == end)
 				{ return; }
 
 				event.preventDefault();
-				document.getElementById('text').blur();
-				document.getElementById('text').focus();
         selectLine(pos);
 			}
     }
@@ -215,28 +295,66 @@ window.addEventListener('keydown', function()
     {
 			event.preventDefault();
 			var pos = document.getElementById('text').selectionStart;
-			
-			document.getElementById('text').selectionStart = getBulletStart(pos);
-			document.getElementById('text').selectionEnd = getBulletEnd(pos);
+			var bulletStart = getBulletStart(pos);
+			if (bulletStart == -1) { return; }
+			else
+			{
+				document.getElementById('text').selectionStart = bulletStart;
+				document.getElementById('text').selectionEnd = getBulletEnd(pos);
+			}
     }
 	}
 		
-	// Open viewing page in a new tab
-	else if (event.keyCode == 75 && event.shiftKey && (event.ctrlKey || event.metaKey))
+	// Ctrl+enter to open viewing page
+	else if (event.keyCode == 13 && (event.ctrlKey || event.metaKey))
   {
     event.preventDefault();
-    window.open(window.location.href.replace(/\?action=edit/i,''), '_blank');
+    if (event.shiftKey)
+    { window.open(window.location.href.replace(/\?action=edit/i,''), '_blank'); }
+    else
+    { window.location = window.location.href.replace(/\?action=edit/i,''); }
   }
 
   // Ctrl+shift+del to delete till the end of the line
-  else if (event.keyCode == 8 && event.shiftKey && (event.ctrlKey || event.metaKey))
+  // Shift+del to delete the whole line
+  else if (event.keyCode == 8)
   {
-		var pos = document.getElementById('text').selectionStart;
-		var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
-		var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
-		end = end==-1 ? document.getElementById('text').form.text.value.length : end;
-		document.getElementById('text').selectionStart = pos;
-		document.getElementById('text').selectionEnd = end;
+  	var pos = document.getElementById('text').selectionStart;
+  	if (event.shiftKey)
+  	{
+  		if (event.ctrlKey || event.metaKey)
+  		{
+		  var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
+		  var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
+		  end = end==-1 ? document.getElementById('text').form.text.value.length : end;
+		  document.getElementById('text').selectionStart = pos;
+		  document.getElementById('text').selectionEnd = end;
+      }
+      else
+	    {
+	    var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
+	    var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
+	    end = end==-1 ? document.getElementById('text').form.text.value.length : end+1;
+	    document.getElementById('text').selectionStart = start;
+	    document.getElementById('text').selectionEnd = end;
+	    }
+		}
+  }
+
+  // Ctrl + up/dn to go to the top/bottom of page. A fix for windows.
+  else if (event.keyCode == 38 && event.ctrlKey)
+  {
+  	event.preventDefault();
+  	if (event.shiftKey)
+  	{ document.getElementById('text').selectionStart = 0;	}
+  	else { selectLine(0); }
+  }
+  else if (event.keyCode == 40 && event.ctrlKey)
+  {
+  	event.preventDefault();
+  	if (event.shiftKey)
+  	{ document.getElementById('text').selectionEnd = document.getElementById('text').form.text.value.length;	}
+  	else { selectLine(document.getElementById('text').form.text.value.length); }
   }
 
 //  console.log(event.keyCode)
