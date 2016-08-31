@@ -1348,9 +1348,9 @@ function decryptStr($text, $key = "")
 	// Retrieve the salt.
 	global $SALT_LEN;
 	$salt = substr($text,0,$SALT_LEN);
-	
-	// See if the recently used salt equals the retrieved salt
-	// If found, use the cached derived key and skip the follow KDF
+
+	// Get the cached recently decrypted text using the salt as the array key.	
+	// Basically this trades memory off the CPU usage.
 	$decryptText = getRecentDecryptText($key.$salt);
 	if ($decryptText != "") { return $decryptText; }
 	   
@@ -1359,21 +1359,17 @@ function decryptStr($text, $key = "")
 	$iv = substr($text,$SALT_LEN,$IV_LEN);
 
 	// Derive the encryption key
+	// See if the recently used salt equals the retrieved salt
+	// If found, use the cached derived key and skip the KDF process
   $AES_KEY = getRecentPageAESKey($key.$salt);
 	if ($AES_KEY == "")	{	$AES_KEY = derivePageAESKey($key, $salt); }
 
-	// Get the cached recently decrypted text using the salt as the array key.
-	// Basically this trades memory off the CPU usage.
+  // Run open ssl decrypt.
 	$decryptText = openssl_decrypt(substr($text,$SALT_LEN+$IV_LEN), $OPENSSL_METHOD, $AES_KEY, OPENSSL_RAW_DATA, $iv);
-  
-//	if ($decryptText === false)
-//	{
-//	  global $pagename;
-//	  echo "Using key: $key <br>";
-//	  echo "$pagename decryption fails at openssl_decrypt(). Possibly a wrong passphrase!<br>"; return -1;
-//	}
+	if ($decryptText === false)	{ return -1; }
 
-	// Cache the decrypted text, or the AES KEY
+	// Cache the decrypted text for some non-sensitive pmwiki builtin pages for speedup;
+	// otherwise record the AES KEY as a recently used one
 	if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
 	else
 	{ cacheRecentPageAESKey($AES_KEY, $key.$salt); }
@@ -1671,9 +1667,10 @@ function isPasswdCorrect($passwd)
   global $WorkDir;
   $file = "$WorkDir/Main.HomePage";
 	$text = file_get_contents($file);
-
-	$text = decryptStr($text, $MASTER_KEY);
-	if (stripos($text, "version=pmwiki") !== false)
+	$decryptText = decryptStr($text, $MASTER_KEY);
+	// If decryption is successful, or the homepage does not exist. The latter case should
+	// only happen when initializing. 
+	if (stripos($decryptText, "version=pmwiki") !== false || $text === false)
 	{
 		@session_start();
 		$_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
@@ -1690,9 +1687,8 @@ function isPasswdCorrect($passwd)
 	else
 	{
 //$firstFewWord = substr($text,0,50);
-//echo "First few words: $firstFewWord<br>";
-//echo "Wrong passwd: $passwd<br>";
-
+//echo "Wrong passwd. First few words: $firstFewWord<br>";
+    echo "<span style='color:red; font-weight:bold;'>Password incorrect!</span>";
 	  return false;
 	}
 }

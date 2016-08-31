@@ -147,7 +147,7 @@ $DiffKeepDays=36500;
 
 /****************************************************************************************/
 
-// Meng. Configurations for my plugins/enhancements for PmWiki.
+// Configurations for PmWiki plugins/enhancements written by LSMeng
 
 // Set the station name and path for public wiki.d
 // On MAC, it appears the environment variable is not working.
@@ -159,10 +159,10 @@ if ($AuthorLink == '')
 }
 else if ($AuthorLink == 'SAM_MENG_W7N')
 { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
-else { Abort('Unexpected station name!'); }
+else {}
 
 if (!file_exists("$WorkDir"))
-{ Abort("Public wiki.d folder does not exist in the specified path \"$WorkDir\"!"); }
+{ Abort("Create a folder named \"wiki.d\" following the specified path \"$WorkDir\"!"); }
 
 // See if local wiki.d folder exists.
 if (!file_exists("wiki.d"))
@@ -193,14 +193,13 @@ $currentSSID = shell_exec("/System/Library/PrivateFrameworks/Apple80211.framewor
 $isAtHome = ($UrlScheme == "http" && trim($currentSSID) == trim($homeSSID)) ? 1 : 0;
 $isAtHome = 0;
 
-//$pubImgDirURL = ($UrlScheme == "http") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/pmwiki/uploads/' : $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/uploads/';
 $diaryImgDirURL = ($AuthorLink == "MBA") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
 $PhotoPub = str_replace('wiki.d','uploads',$WorkDir).'/';
 $Photo = '/Volumes/wiki/www/pmWiki/Photo/';
 $runCodePath = "pub/runCode";
 
-$emailAddress1 = "";//"lsmeng@ece.gatech.edu";
-$emailAddress2 = "sam_meng@htc.com";
+$emailAddress1 = "f95942117@gmail.com";
+$emailAddress2 = "lsmeng@ece.gatech.edu";
 
 // Php login password. Have to be correct at the $pwRetryLimit th time
 $pwRetryLimit = 2; 
@@ -308,29 +307,16 @@ if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 // Rich edit commands
 if ($action == 'edit')
 {	$HTMLHeaderFmt['editEnhance'] .=  "<script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>"; }
-// Edit button: F1 or F4
-// if ($action == 'browse')
-// {
-//   $HTMLHeaderFmt[editEnhance] .= 
-// 	"<script type='text/javascript'>
-// 		window.addEventListener('keydown', function()
-// 		{
-// 			if (event.keyCode == 75 && event.shiftKey && (event.ctrlKey || event.metaKey))
-// 			{ window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit'; }
-// 		}, false);
-// 	</script>";
-// }
-
 	
 /*
 // For debugging
-
 //file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
 file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent);
 */
 
-
 /****************************************************************************************/
+
+// Configurations for PmWiki plugins/enhancements written by other developers.
 
 # Include traditional chinese language
 include_once("$FarmD/scripts/xlpage-utf-8.php");
@@ -358,7 +344,6 @@ include_once("$FarmD/cookbook/flipbox.php");
 
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
-
 
 # Neo mp3 and video player.
 $EnableDirectDownload = 1;
@@ -428,10 +413,3 @@ $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
-
-// This eliminates redundant newlines each time the page is saved.
-//$ROSPatterns ['/\n\n\n/'] = "\n\n";
-
-//echo session_save_path();
-
-
