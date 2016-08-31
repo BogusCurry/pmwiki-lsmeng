@@ -309,17 +309,17 @@ if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 if ($action == 'edit')
 {	$HTMLHeaderFmt['editEnhance'] .=  "<script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>"; }
 // Edit button: F1 or F4
-if ($action == 'browse')
-{
-  $HTMLHeaderFmt[editEnhance] .= 
-	"<script type='text/javascript'>
-		window.addEventListener('keydown', function()
-		{
-			if (event.keyCode == 75 && event.shiftKey && (event.ctrlKey || event.metaKey))
-			{ window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit'; }
-		}, false);
-	</script>";
-}
+// if ($action == 'browse')
+// {
+//   $HTMLHeaderFmt[editEnhance] .= 
+// 	"<script type='text/javascript'>
+// 		window.addEventListener('keydown', function()
+// 		{
+// 			if (event.keyCode == 75 && event.shiftKey && (event.ctrlKey || event.metaKey))
+// 			{ window.location = '$ScriptUrl' + '?n=' + '$pagename' + '?action=edit'; }
+// 		}, false);
+// 	</script>";
+// }
 
 	
 /*

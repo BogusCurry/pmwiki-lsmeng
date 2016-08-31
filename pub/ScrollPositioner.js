@@ -385,13 +385,21 @@ var ScrollPositioner =
       window.addEventListener('keydown', function()
       {
         // Spaces are all removed for comparison.
-    		if( event.keyCode == 13 )
+    		if(event.keyCode == 13 && (event.ctrlKey || event.metaKey))
     		{
     		  // Remove spaces and replace special characters. 
     			var sel = window.getSelection();
     			var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
     
-    			if (selString == '') { return; }
+    			if (selString == '')
+					{
+						if (event.shiftKey)
+						{ window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
+						else
+						{ window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }    			
+						return;
+					}
+						
     			if (selString.substring(0,1) == "\n") { selString = selString.slice(1); }
     			var newlinePos = selString.indexOf("\n");
     			if (newlinePos != -1) { selString = selString.substring(0,newlinePos); }
@@ -411,7 +419,10 @@ var ScrollPositioner =
     
     			ScrollPositioner.setStorageByKey('EDIT-ScrollY', ScrollPositioner.pagename, 'n'+numBullet)
     
-    			window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank');
+          if (event.shiftKey)
+          { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
+          else
+          { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
     		}
     		
     		return true;
