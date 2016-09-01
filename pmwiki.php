@@ -226,7 +226,10 @@ $ActionTitleFmt = array(
   'edit' => '| $[Edit]',
   'attr' => '| $[Attributes]',
   'login' => '| $[Login]');
-$DefaultPasswords = array('admin'=>'@lock','read'=>'','edit'=>'','attr'=>'');
+// Meng. The following line is changed from PmWiki v2.2.61 to PmWiki v2.2.89, which
+// interferes with the encryption mechanism.
+$DefaultPasswords = array('admin'=>'*','read'=>'','edit'=>'','attr'=>'');
+//$DefaultPasswords = array('admin'=>'@lock','read'=>'','edit'=>'','attr'=>'');
 $AuthCascade = array('edit'=>'read', 'attr'=>'edit');
 $AuthList = array('' => 1, 'nopass:' => 1, '@nopass' => 1);
 $SessionEncode = 'base64_encode';
