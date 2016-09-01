@@ -1,0 +1,13 @@
+
+
+img.noImgEffect:hover
+{ -webkit-filter: none; }
+
+img.noImgEffect:active
+{ -webkit-transform: none; }
+
+img:hover
+{ -webkit-filter: drop-shadow(0 0 3px gray); }
+
+img:active
+{ -webkit-transform: scale(0.975); }
