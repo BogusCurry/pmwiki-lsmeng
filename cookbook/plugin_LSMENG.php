@@ -1819,26 +1819,21 @@ function updatePageHistory()
 /****************************************************************************************/
 
 // Basically this opens a socket, send request, then close the socket before getting
-// response from the server. Calling this function therefore executes the functions
-// related to the given url in a non-blocking manner.
+// response from the server. Calling this function therefore equals visiting the given
+// url in a non-blocking manner.
+// For .htaccess protected sites, username/password have to be sent too. PHP session ID has 
+// to be sent too for working in the same session. Set localhost in the whitelist in 
+// .htaccess to avoid providing username/password.
 function post_async($url)
 {
-  // This function is mainly for localhost use, and auth is not needed for localhost now. 
-//	$user = $_SERVER['PHP_AUTH_USER'];
-//	$pass = $_SERVER['PHP_AUTH_PW'];
-//	$auth = base64_encode("$user:$pass");
-	
 	// Parse the given url into host, path, etc.
 	$parts = parse_url($url);
-	
 	$port = isset($parts['port']) ? $parts['port'] : (($parts['scheme']=='http') ? 80 : 443);
-
 	$fp = fsockopen($parts['host'], $port);//, $errno, $errstr, 30);
+	
+	// Composing the message
 	$out = "POST ".$parts['path'].'?'.$parts['query']." HTTP/1.1\r\n";    
 	$out.= "Host: ".$parts['host']."\r\n";
-	// This is for the htaccess password
-//	$out.= "Authorization: Basic $auth\r\n";
-	// This is for the pmwiki password
 	$out.= "Cookie: ".urlencode('PHPSESSID') .'='. urlencode($_COOKIE['PHPSESSID'])."; \r\n";
 	$out.= "Connection: Close\r\n\n";
 	
