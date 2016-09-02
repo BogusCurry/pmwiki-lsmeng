@@ -177,24 +177,24 @@ window.addEventListener('focus', function()
 window.addEventListener('keydown', function()
 {
 	// Ctrl/Cmd + Alt to scroll up dn
-  if ((event.keyCode == 38 || event.keyCode == 33) && event.altKey && (event.ctrlKey || event.metaKey))
+  if (event.keyCode == 38 && event.altKey && (event.ctrlKey || event.metaKey))
 	{
 		event.preventDefault();  
 		document.getElementById('text').scrollTop -= EditEnhanceLineHeight<<1;
 	}
-	else if ((event.keyCode == 40 || event.keyCode == 34) && event.altKey && (event.ctrlKey || event.metaKey))
+	else if (event.keyCode == 40 && event.altKey && (event.ctrlKey || event.metaKey))
 	{
 		event.preventDefault();
 		document.getElementById('text').scrollTop += EditEnhanceLineHeight<<1;
 	}
 
   // Page up dn and highlight the current line
-	else if (event.keyCode == 33 && event.altKey)// && event.shiftKey)
+	else if (event.keyCode == 33)// && event.altKey)
 	{
 		setTimeout(function()
 		{ selectLine(document.getElementById('text').selectionStart); },0);
 	}
-	else if (event.keyCode == 34 && event.altKey)// && event.shiftKey)
+ 	else if (event.keyCode == 34)// && event.altKey)
 	{
 		setTimeout(function()
 		{ selectLine(document.getElementById('text').selectionStart-1);	},0);
