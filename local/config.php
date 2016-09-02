@@ -305,7 +305,7 @@ if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
 if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 
 // Rich edit commands
-if ($action == 'edit')
+if ($action == 'edit' ||$action == 'browse')
 {	$HTMLHeaderFmt['editEnhance'] .= "<script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>"; }
 
 // Some other keyboard commands

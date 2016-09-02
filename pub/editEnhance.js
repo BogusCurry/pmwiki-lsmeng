@@ -132,7 +132,7 @@ function getTextAreaHeightAtCaretPos(pos)
 
 window.addEventListener('load',function()
 {
-	EditEnhanceLineHeight = parseInt(window.getComputedStyle(document.getElementById('text'))['line-height']);
+// 	EditEnhanceLineHeight = parseInt(window.getComputedStyle(document.getElementById('text'))['line-height']);
 /*	
 	// Create an invisible div having the same dimension here
 	// due to the adjustment made in other js, a small delay should be applied here
@@ -166,9 +166,46 @@ window.addEventListener('load',function()
 
  	showCursorHighlight();	  
 */
-  selectLine(document.getElementById('text').selectionStart);
+//   selectLine(document.getElementById('text').selectionStart);
+
+/////////////// Try simulation of keypress here
+
+setTimeout(function()
+{
+triggerKeyboardEvent(document.body,'40');
+
+triggerKeyboardEvent(document.body,'40');
+triggerKeyboardEvent(document.body,'40');
+
+triggerKeyboardEvent(document.body,'40');
+
+triggerKeyboardEvent(document.getElementById('text'),40);
+},500);
 
 }, false);
+
+function traceEvent(e){ console.log(e.keyCode);}
+
+function triggerKeyboardEvent(el, keyCode)
+{
+    var eventObj = document.createEventObject ?
+        document.createEventObject() : document.createEvent("Events");
+  
+    if(eventObj.initEvent){
+      eventObj.initEvent("keydown", true, false);
+    }
+  
+    eventObj.keyCode = keyCode;
+    eventObj.which = keyCode;
+  el.dispatchEvent(eventObj)
+} 
+
+window.addEventListener('click', function()
+{
+triggerKeyboardEvent(document.getElementById('text'),40);
+triggerKeyboardEvent(document.body,'40');
+
+},false);
 
 // On focus, highlight the current line
 window.addEventListener('focus', function()
@@ -176,6 +213,7 @@ window.addEventListener('focus', function()
 
 window.addEventListener('keydown', function()
 {
+traceEvent(event);
 	// Ctrl/Cmd + Alt to scroll up dn
   if (event.keyCode == 38 && event.altKey && (event.ctrlKey || event.metaKey))
 	{
