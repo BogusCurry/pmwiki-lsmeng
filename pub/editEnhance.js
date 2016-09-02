@@ -169,7 +169,11 @@ window.addEventListener('load',function()
   selectLine(document.getElementById('text').selectionStart);
 
 }, false);
-	
+
+// On focus, highlight the current line
+window.addEventListener('focus', function()
+{ selectLine(document.getElementById('text').selectionStart); }, false);
+
 window.addEventListener('keydown', function()
 {
 	// Ctrl/Cmd + Alt to scroll up dn
