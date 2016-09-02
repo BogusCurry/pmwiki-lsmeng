@@ -132,9 +132,9 @@ function SearchBox($pagename, $opt) {
     $out .= "<input type='hidden' name='$k' value='$v' />";
   }
   SDV($SearchBoxInputType, 'text');
-  $out .= "<input autofocus type='$SearchBoxInputType' name='q' value='{$opt['value']}' ";
+  $out .= "<input autofocus style='width:500px; margin-top:5px;' type='$SearchBoxInputType' name='q' value='{$opt['value']}' ";
   if(@$opt['placeholder']) $out .= "  placeholder='{$opt['placeholder']}' ";
-  $out .= "  class='inputbox searchbox' size='{$opt['size']}' /><input type='submit' 
+  $out .= "  class='inputbox searchbox' size='{$opt['size']}' /><input style='margin-left:8px;' type='submit' 
     class='inputbutton searchbutton' value='{$opt['label']}' />";
   return '<form '.Keep($out).'</form>';
 }
