@@ -45,10 +45,13 @@ window.addEventListener('load', function()
   // Also introduce the play icon
   for (var i = 0; i < flashElement.length; i++)
   {
-    if (flashElement[i].type != 'application/x-shockwave-flash') { continue; }
-
-		var videoName = flashElement[i].children[0].value.match(/\/[^\/]*\.mp4/)[0].slice(1);
-		
+    if (flashElement[i].type != 'application/x-shockwave-flash') continue;
+    
+    try
+    {	var videoName = flashElement[i].children[0].value.match(/\/[^\/]*\.mp4/)[0].slice(1); }
+    catch(e) { var videoName = '_error_'; }
+    if (videoName == '_error_') continue;
+    		
 		var orient = getStorageByKey('VideoOrientation', videoName);
 		if (orient == null) {}
     else if (orient == 1)

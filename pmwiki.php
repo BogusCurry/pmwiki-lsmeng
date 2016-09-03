@@ -2442,7 +2442,8 @@ function HandleEdit($pagename, $auth = 'edit') {
 $MIN_textAreaHeightPx = 500;
 $textAreaHeightPx = isset($_COOKIE['textAreaHeight']) ? $_COOKIE['textAreaHeight'] : MIN_textAreaHeightPx;
 $pos = strpos($FmtV['$EditForm'],'height:1234px');
-$FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
+if ($pos !== false)
+	$FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
 
 /****************************************************************************************/
 

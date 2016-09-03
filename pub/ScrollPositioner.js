@@ -389,7 +389,7 @@ var ScrollPositioner =
     		{
     		  // Remove spaces and replace special characters. 
     			var sel = window.getSelection();
-    			var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    			var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;");
     
     			if (selString == '')
 					{
@@ -444,13 +444,25 @@ var ScrollPositioner =
 				// positioning comes before the focus, Chrome will scroll so that caret is
 				// centered in the screen, which interferes with the setScroll command.
   			document.getElementById('text').focus();
-				var caretPos = ScrollPositioner.getCaretPosLS();
-				ScrollPositioner.setCaretPos(caretPos, caretPos);
-				ScrollPositioner.setScrollPos(value);
+				var pos = ScrollPositioner.getCaretPosLS();
+        if (typeof pos == 'undefined')
+        {
+          var start = 0;
+					var end = document.getElementById('text').form.text.value.indexOf("\n",0);
+        }
+        else
+        {
+					var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
+					var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
+        }
+				end = end==-1 ? document.getElementById('text').form.text.value.length : end;
+        ScrollPositioner.setCaretPos(start, end);
+		  	ScrollPositioner.setScrollPos(value);
 
-// 				var caretPos = ScrollPositioner.getCaretPosLS();
-// 				ScrollPositioner.setCaretPos(caretPos, caretPos);
-//   			document.getElementById('text').focus();
+// Delete this afterwards
+console.log('caret pos: '+pos);
+console.log('start pos: '+start);
+console.log('end pos  : '+end);
 			}
 			else
 			{
@@ -470,8 +482,11 @@ function fixTextareaHeight()
 	// Check if the textarea height is correct; if not then adjust
 	var rectObject = document.getElementById('text').getBoundingClientRect();
 	var correctTextAreaHeight = window.innerHeight - rectObject.top-4;
-  if (document.getElementById('text').clientHeight != correctTextAreaHeight)
-	{ document.getElementById('text').style.height = correctTextAreaHeight + 'px'; }
+  if (parseInt(document.getElementById('text').style.height) != correctTextAreaHeight)
+	{
+		console.log('Adjusting textarea height...');
+		document.getElementById('text').style.height = correctTextAreaHeight + 'px';
+	}
 }
 
 // Record the scroll and caret position on focusout and page close.
@@ -495,7 +510,6 @@ function setScrollAndCaretPosCookie()
 		ScrollPositioner.setCookie(name, value);
 	}
 }
-
 
 // Get the indexOf the nth occurrence of either "pat1" or "pat2"
 function nthIndex(str, pat1, pat2, n)
@@ -524,4 +538,3 @@ function nthIndex(str, pat1, pat2, n)
 	
 	return i;
 }
-

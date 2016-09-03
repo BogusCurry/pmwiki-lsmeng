@@ -80,15 +80,14 @@ window.addEventListener('load', function() {
       this.poster = '';
 
       this.style.width = Math.round(this.clientHeight*this.videoWidth/this.videoHeight) + 'px';
-
-//  console.log(this.videoWidth);    
-//  console.log(this.videoHeight);    
-//        console.log('test');    
         
 			this.play();
 			this.pause();
       setTimeout("delete(Html5AVCtrlElement);", 0);
       
+      // On load remove the control bar
+      this.controls = false;
+            
 			// Overlay the play icon
 			var playIcon = document.createElement('img');	
 			playIcon.src = 'http://localhost/pmwiki/pub/html5avctrl/playIcon.png';

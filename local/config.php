@@ -306,7 +306,11 @@ if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 
 // Rich edit commands
 if ($action == 'edit')
-{	$HTMLHeaderFmt['editEnhance'] .= "<script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>"; }
+{	
+  $HTMLHeaderFmt['editEnhance'] .= "
+  <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>
+	<script type='text/javascript'> EditEnhanceOS = '$OS'; </script>";
+}
 
 // Some other keyboard commands
 else if ($action == 'browse')	
@@ -376,6 +380,7 @@ include_once("$FarmD/cookbook/flipbox.php");
 
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
+
 
 # Neo mp3 and video player.
 $EnableDirectDownload = 1;

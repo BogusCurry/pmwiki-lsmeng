@@ -890,8 +890,8 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
 
 	global $diaryImgDirURL;
 	if (strcasecmp($extension,'.mp4') == 0)
-	{ $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
-//	{ $imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
+// 	{ $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
+	{ $imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
 	else
 	{ $imgUrl = $diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img; }
 	
