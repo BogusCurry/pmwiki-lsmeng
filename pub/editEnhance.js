@@ -140,16 +140,26 @@ window.addEventListener('keyup', function()
 				// Alt+Shift: continuous paragraph selection 
 				else if (event.shiftKey && event.keyCode == 38)
 				{
+					EditEnhanceElement.blur();
+					var end = EditEnhanceElement.selectionEnd;
 					var pos = EditEnhanceElement.selectionStart;
-					EditEnhanceElement.selectionStart = getLastParaStart(pos);
+					var start = EditEnhanceElement.selectionEnd = 
+											EditEnhanceElement.selectionStart = getLastParaStart(pos);
+					EditEnhanceElement.focus();
+					EditEnhanceElement.selectionEnd = end;
 				}
 				else if (event.shiftKey && event.keyCode == 40)
 				{
+					EditEnhanceElement.blur();
+					var start = EditEnhanceElement.selectionStart;			  
 					var pos = EditEnhanceElement.selectionEnd;
 					if (pos == getParaEnd(pos))
-					{ EditEnhanceElement.selectionEnd = getParaEnd(getNextParaStart(pos)); }
+					{ var end = getParaEnd(getNextParaStart(pos)); }
 					else
-					{ EditEnhanceElement.selectionEnd = getParaEnd(pos); }
+					{ var end = getParaEnd(pos); }
+					EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = end;
+					EditEnhanceElement.focus();
+					EditEnhanceElement.selectionStart = start;
 				}
 
 				// Move to the last/next paragraph. Turns out to be non-trivial. Unlike selecting a whole
@@ -193,16 +203,26 @@ window.addEventListener('keydown', function()
 			// Alt+Shift: continuous paragraph selection 
 			else if (event.shiftKey && event.keyCode == 38)
 			{
+				EditEnhanceElement.blur();
+			  var end = EditEnhanceElement.selectionEnd;
 				var pos = EditEnhanceElement.selectionStart;
-				EditEnhanceElement.selectionStart = getLastParaStart(pos);
+				var start = EditEnhanceElement.selectionEnd = 
+				            EditEnhanceElement.selectionStart = getLastParaStart(pos);
+				EditEnhanceElement.focus();
+				EditEnhanceElement.selectionEnd = end;
 			}
 			else if (event.shiftKey && event.keyCode == 40)
 			{
+				EditEnhanceElement.blur();
+				var start = EditEnhanceElement.selectionStart;			  
 				var pos = EditEnhanceElement.selectionEnd;
 				if (pos == getParaEnd(pos))
-				{ EditEnhanceElement.selectionEnd = getParaEnd(getNextParaStart(pos)); }
+				{ var end = getParaEnd(getNextParaStart(pos)); }
 				else
-				{ EditEnhanceElement.selectionEnd = getParaEnd(pos); }
+				{ var end = getParaEnd(pos); }
+        EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = end;
+				EditEnhanceElement.focus();
+				EditEnhanceElement.selectionStart = start;
 			}
 
 			// Move to the last/next paragraph. Turns out to be non-trivial. Unlike selecting a whole
