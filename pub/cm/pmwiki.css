@@ -1,0 +1,41 @@
+/* CodeMirror - An enhanced page editor for PmWiki
+ * Please refer to the main source module for copyright and license info.
+ * Latest required version: 2016-05-27
+ */
+.cm-pm-backslash-eol { color: red; font-weight: bold; }
+.cm-pm-big { font-size: 1.2em; }
+.cm-pm-block-code, .cm-pm-block-pre { background-color: lavender;  font-family: monospace; }
+.cm-pm-bold { font-weight: bold; color: darkslategray; }
+.cm-pm-break { color: blueviolet; }
+.cm-pm-builtin { color: firebrick; font-weight: bold; }
+.cm-pm-code { background-color: lavender; }
+.cm-pm-comment { color: gray; }
+.cm-pm-del { text-decoration: line-through; }
+.cm-pm-directive { color: firebrick; }
+.cm-pm-em { font-style: italic; }
+.cm-pm-emstrong { font-style: italic; font-weight: bold; }
+.cm-pm-entity { color: brown; }
+.cm-pm-expr { color: firebrick; }
+.cm-pm-header { font-weight: bold; color: violet; }
+.cm-pm-header-1 { font-size: 150%; }
+.cm-pm-header-2 { font-size: 130%; }
+.cm-pm-header-3 { font-size: 120%; }
+.cm-pm-header-4 { font-size: 110%; }
+.cm-pm-header-5 { font-size: 100%; }
+.cm-pm-header-6 { font-size: 90%; }
+.cm-pm-hr { border-bottom: .4em solid gainsboro; display: inline-block; width: 100%; height: .3em; margin-bottom: .3em; }
+.cm-pm-indent { color: red; }
+.cm-pm-ins { text-decoration: underline; }
+.cm-pm-italic { font-style: italic; color: darkslategray; }
+.cm-pm-italicbold { font-style: italic; font-weight: bold; color: darkslategray; }
+.cm-pm-link { color: blue; }
+.cm-pm-link-ref { color: blue; text-decoration: underline; }
+.cm-pm-list { font-weight: bold; color: darkorange; }
+.cm-pm-small { font-size: 0.8em; }
+.cm-pm-strong { font-weight: bold; }
+.cm-pm-style { color: olive; }
+.cm-pm-sub { font-size: 0.8em; vertical-align: sub; }
+.cm-pm-sup { font-size: 0.8em; vertical-align: super; }
+.cm-pm-table { font-weight: bold; color: teal; }
+.cm-pm-trail { color: darkolivegreen; }
+.cm-pm-var { color: coral; }

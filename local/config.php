@@ -305,43 +305,43 @@ if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
 if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 
 // Rich edit commands
-if ($action == 'edit')
-{	
-  $HTMLHeaderFmt['editEnhance'] .= "
-  <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>
-	<script type='text/javascript'> EditEnhanceOS = '$OS'; </script>";
-}
-
+// if ($action == 'edit')
+// {	
+//   $HTMLHeaderFmt['editEnhance'] .= "
+//   <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>
+// 	<script type='text/javascript'> EditEnhanceOS = '$OS'; </script>";
+// }
+// 
 // Some other keyboard commands
-else if ($action == 'browse')	
-{
-  $HTMLHeaderFmt[''] .= "
-		<script type='text/javascript''>
-		window.addEventListener('keydown', function()
-		{ 
-			// On esc, if there are text selected, deselect them
-			if (event.keyCode == 27)
-			{
-				var selString = window.getSelection();
-				if (selString != '') selString.removeAllRanges();
-			}
-		}, false);
-		</script>";
-}
-$HTMLHeaderFmt[''] .= "
-  <script type='text/javascript''>
-  window.addEventListener('keydown', function()
-	{
-  	// Ctrl+shift+f to open search in a new tab
-		if (event.keyCode == 70 && event.shiftKey && (event.ctrlKey || event.metaKey))
-    {
-      var url = window.location.href;
-      var match = url.match(/\?.+/i);
-      var pos = match==null ? url.length : match['index'];
-		  window.open(url.slice(0, pos)+'?n=Site.Search', '_blank');      
-    }
-	}, false);
-  </script>";
+// else if ($action == 'browse')	
+// {
+//   $HTMLHeaderFmt[''] .= "
+// 		<script type='text/javascript''>
+// 		window.addEventListener('keydown', function()
+// 		{ 
+// 			On esc, if there are text selected, deselect them
+// 			if (event.keyCode == 27)
+// 			{
+// 				var selString = window.getSelection();
+// 				if (selString != '') selString.removeAllRanges();
+// 			}
+// 		}, false);
+// 		</script>";
+// }
+// $HTMLHeaderFmt[''] .= "
+//   <script type='text/javascript''>
+//   window.addEventListener('keydown', function()
+// 	{
+//   	Ctrl+shift+f to open search in a new tab
+// 		if (event.keyCode == 70 && event.shiftKey && (event.ctrlKey || event.metaKey))
+//     {
+//       var url = window.location.href;
+//       var match = url.match(/\?.+/i);
+//       var pos = match==null ? url.length : match['index'];
+// 		  window.open(url.slice(0, pos)+'?n=Site.Search', '_blank');      
+//     }
+// 	}, false);
+//   </script>";
 
 
 /*
@@ -419,6 +419,9 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 #'showswitchsubtitles'=>1,
 #'srt'=>1
 ));
+
+
+include_once("$FarmD/cookbook/codemirror.php");
 
 # Replace some never-used full-width characters on saving.
 $ROSPatterns ['/＊/'] = "*";

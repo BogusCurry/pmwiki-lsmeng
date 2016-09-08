@@ -140,6 +140,7 @@ h6 { font-size:1.0em; }
 /* Meng. NOTE that the height of the textarea is configured in the PHP main program to
  * speed up rendering of text box with lots of content.
  */
+
 #wikiedit form
 {
 	background-image:url('http://localhost/pmwiki/pub/skins/pmwiki_gray/pencil_light.png');
@@ -156,7 +157,6 @@ h6 { font-size:1.0em; }
   font-family: Lucida Grande, Courier;
   font-size:21px;
   line-height: 22px;
-/*  border:1px #cccccc solid;*/
   border:none;
   resize: none;
 }
