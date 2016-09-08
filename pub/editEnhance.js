@@ -117,38 +117,101 @@ window.addEventListener('load',function()
 // window.addEventListener('focus', function()
 // { setTimeout("selectLine(EditEnhanceElement.selectionStart);",50); }, false);
 
+// When the meta key is down, other key presses can only be detected by key up on Windows.
+window.addEventListener('keyup', function()
+{
+	if (EditEnhanceOS == 'Windows')
+	{
+		// Up/Dn
+		if (event.keyCode == 38 || event.keyCode == 40)
+		{
+			if (event.metaKey)
+			{
+				event.preventDefault();  
+
+				// Ctrl+Cmd+Alt: scroll up long
+				if (event.ctrlKey && event.metaKey && event.altKey)
+					EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
+
+				// Ctrl or Cmd+Alt: scroll up short
+				else if (event.metaKey && event.altKey)
+					EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
+
+				// Alt+Shift: continuous paragraph selection 
+				else if (event.shiftKey && event.keyCode == 38)
+				{
+					var pos = EditEnhanceElement.selectionStart;
+					EditEnhanceElement.selectionStart = getLastParaStart(pos);
+				}
+				else if (event.shiftKey && event.keyCode == 40)
+				{
+					var pos = EditEnhanceElement.selectionEnd;
+					if (pos == getParaEnd(pos))
+					{ EditEnhanceElement.selectionEnd = getParaEnd(getNextParaStart(pos)); }
+					else
+					{ EditEnhanceElement.selectionEnd = getParaEnd(pos); }
+				}
+
+				// Move to the last/next paragraph. Turns out to be non-trivial. Unlike selecting a whole
+				// paragraph, detecting the start of a paragraph needs regex
+				else
+				{
+					var pos = EditEnhanceElement.selectionStart;
+					if (event.keyCode == 38)      var start = getLastParaStart(pos);
+					else if (event.keyCode == 40) var start = getNextParaStart(pos);
+					selectLine(start);
+				}
+			}
+		}
+  }
+}, false);
+
 window.addEventListener('keydown', function()
 {
-  // A fix for windows. Prevent the focus to go to browser's toolbar.
-  if (event.altKey && EditEnhanceOS == 'Windows') event.preventDefault();
-
-  // Up
-  if (event.keyCode == 38)
+	// A fix for windows. Prevent alt key to turn the focus to browser's toolbar.
+	if (event.keyCode == 18)
 	{
-	  if (event.altKey)
-	  {
+		event.preventDefault();
+		return;
+	}
+	
+	// Up/Dn
+	if (event.keyCode == 38 || event.keyCode == 40)
+	{
+		if (event.altKey)
+		{
 			event.preventDefault();  
 
-	    // Ctrl+Cmd+Alt: scroll up long
-			if (event.ctrlKey && event.metaKey)
-				EditEnhanceElement.scrollTop -= EditEnhanceLineHeight<<3;
+			// Ctrl+Cmd+Alt: scroll up long
+			if (event.ctrlKey && event.metaKey && event.altKey)
+				EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
 
-	    // Ctrl+Cmd+Alt: scroll up short
-			else if (event.ctrlKey || event.metaKey)
-				EditEnhanceElement.scrollTop -= EditEnhanceLineHeight<<3;
+			// Ctrl or Cmd+Alt: scroll up short
+			else if ((event.ctrlKey || event.metaKey) && event.altKey)
+				EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
 
 			// Alt+Shift: continuous paragraph selection 
-			else if (event.shiftKey)
+			else if (event.shiftKey && event.keyCode == 38)
 			{
 				var pos = EditEnhanceElement.selectionStart;
 				EditEnhanceElement.selectionStart = getLastParaStart(pos);
-			}  
+			}
+			else if (event.shiftKey && event.keyCode == 40)
+			{
+				var pos = EditEnhanceElement.selectionEnd;
+				if (pos == getParaEnd(pos))
+				{ EditEnhanceElement.selectionEnd = getParaEnd(getNextParaStart(pos)); }
+				else
+				{ EditEnhanceElement.selectionEnd = getParaEnd(pos); }
+			}
+
 			// Move to the last/next paragraph. Turns out to be non-trivial. Unlike selecting a whole
 			// paragraph, detecting the start of a paragraph needs regex
 			else
 			{
 				var pos = EditEnhanceElement.selectionStart;
-				var start = getLastParaStart(pos);
+				if (event.keyCode == 38)      var start = getLastParaStart(pos);
+				else if (event.keyCode == 40) var start = getNextParaStart(pos);
 				selectLine(start);
 			}
 		}
@@ -157,64 +220,31 @@ window.addEventListener('keydown', function()
 		{
 			event.preventDefault();  
 
-			if (event.shiftKey) { EditEnhanceElement.selectionStart = 0;	}
-			else { selectLine(0); }
-		}
-	}
-	// Down
-	else if (event.keyCode == 40)
-	{
-		if (event.altKey)
-		{
-			event.preventDefault();  
-
-	    // Ctrl+Cmd+Alt: scroll down long
-			if (event.ctrlKey && event.metaKey)
-				EditEnhanceElement.scrollTop += EditEnhanceLineHeight<<3;
-
-	    // Ctrl+Cmd+Alt: scroll down short
-			else if (event.ctrlKey || event.metaKey)
-				EditEnhanceElement.scrollTop += EditEnhanceLineHeight<<3;
-
-			// Alt+Shift: continuous paragraph selection 
-			else if (event.shiftKey)
+			if (event.shiftKey)
 			{
-				var pos = EditEnhanceElement.selectionEnd;
-				if (pos == getParaEnd(pos))
-				{ EditEnhanceElement.selectionEnd = getParaEnd(getNextParaStart(pos)); }
-				else
-				{ EditEnhanceElement.selectionEnd = getParaEnd(pos); }
+			  if (event.keyCode == 38)      EditEnhanceElement.selectionStart = 0;
+			  else if (event.keyCode == 40) EditEnhanceElement.selectionEnd = EditEnhanceElement.form.text.value.length;
 			}
-			// Move to the last/next paragraph.
 			else
 			{
-				var pos = EditEnhanceElement.selectionStart;
-				var start = getNextParaStart(pos);
-				selectLine(start);
+				if (event.keyCode == 38)      selectLine(0);
+			  else if (event.keyCode == 40) selectLine(EditEnhanceElement.form.text.value.length); 
 			}
-    }
-		// Ctrl+dn to go to the bottom of page and highlight line. A fix for Windows.
-		else if (event.ctrlKey || event.metaKey)
-		{
-			event.preventDefault();  
-
-			if (event.shiftKey)
-			{ EditEnhanceElement.selectionEnd = EditEnhanceElement.form.text.value.length;	}
-			else { selectLine(EditEnhanceElement.form.text.value.length); }
 		}
 	}
 
-  // Page up dn and highlight the current line
-  // To go back to exactly the same line between page up & dn, a little bit tweak is
-  // needed. This is again due to the text wrapping.
- 	else if (event.keyCode == 33 || event.keyCode == 34)
+
+	// Page up dn and highlight the current line
+	// To go back to exactly the same line between page up & dn, a little bit tweak is
+	// needed. This is again due to the text wrapping.
+	else if (event.keyCode == 33 || event.keyCode == 34)
 	{
-	  // Align the cursor at the start before the page changes
+		// Align the cursor at the start before the page changes
 		EditEnhanceElement.selectionStart =
 		EditEnhanceElement.selectionEnd = 
 		EditEnhanceElement.selectionStart;
 
-  	setTimeout(function()
+		setTimeout(function()
 		{ 
 			// Handle the special case of the last line
 			if (EditEnhanceElement.selectionEnd == EditEnhanceElement.form.text.value.length)
@@ -223,8 +253,8 @@ window.addEventListener('keydown', function()
 				EditEnhanceElement.selectionStart = start;
 			}
 
-      // Don't touch the selection start; only put the selection end at the end of the
-      // line. 
+			// Don't touch the selection start; only put the selection end at the end of the
+			// line. 
 			var pos = EditEnhanceElement.selectionStart;
 			var end = EditEnhanceElement.form.text.value.indexOf("\n",pos);
 			end = end==-1 ? EditEnhanceElement.form.text.value.length : end;
@@ -232,13 +262,13 @@ window.addEventListener('keydown', function()
 		},0);
 	}	
 
-  // Cmd/alt+shift+l: selection line, paragraph, or bullet
+	// Cmd/alt+shift+l: selection line, paragraph, or bullet
 	else if (event.keyCode == 76)
 	{
-	  if (event.ctrlKey || event.metaKey)
-	  {
+		if (event.ctrlKey || (EditEnhanceOS == 'Mac' && event.metaKey))
+		{
 			var pos = EditEnhanceElement.selectionStart;
-		
+	
 			// Shift dn, select paragraph
 			if (event.shiftKey)
 			{
@@ -259,12 +289,12 @@ window.addEventListener('keydown', function()
 						EditEnhanceElement.selectionEnd == end) { return; }
 
 				event.preventDefault();
-        selectLine(pos);
+				selectLine(pos);
 			}
-    }
+		}
 		// Select the whole bullet
-		else if (event.altKey && event.shiftKey)
-    {
+		else if ((event.altKey || event.metaKey) && event.shiftKey)
+		{
 			event.preventDefault();
 			var pos = EditEnhanceElement.selectionStart;
 			var bulletStart = getBulletStart(pos);
@@ -274,72 +304,74 @@ window.addEventListener('keydown', function()
 				EditEnhanceElement.selectionStart = bulletStart;
 				EditEnhanceElement.selectionEnd = getBulletEnd(pos);
 			}
-    }
+		}
 	}
-		
+	
 	// Ctrl+enter to open viewing page
 	else if (event.keyCode == 13 && (event.ctrlKey || event.metaKey))
-  {
-    event.preventDefault();
-    if (event.shiftKey)
-    { window.open(window.location.href.replace(/\?action=edit/i,''), '_blank'); }
-    else
-    { window.location = window.location.href.replace(/\?action=edit/i,''); }
-  }
+	{
+		event.preventDefault();
+		if (event.shiftKey)
+		{ window.open(window.location.href.replace(/\?action=edit/i,''), '_blank'); }
+		else
+		{ window.location = window.location.href.replace(/\?action=edit/i,''); }
+	}
 
-  // Ctrl+shift+del to delete till the end of the line
-  // Shift+del to delete the whole line
-  else if (event.keyCode == 8)
-  {
-  	var pos = EditEnhanceElement.selectionStart;
-  	if (event.shiftKey)
-  	{
-  		if (event.ctrlKey || event.metaKey)
-  		{
+	// Ctrl+shift+del to delete till the end of the line
+	// Shift+del to delete the whole line
+	else if (event.keyCode == 8)
+	{
+		var pos = EditEnhanceElement.selectionStart;
+		if (event.shiftKey)
+		{
+			if (event.ctrlKey || event.metaKey)
+			{
 				var start = EditEnhanceElement.form.text.value.lastIndexOf("\n",pos-1)+1;
 				var end = EditEnhanceElement.form.text.value.indexOf("\n",pos);
 				end = end==-1 ? EditEnhanceElement.form.text.value.length : end;
 				EditEnhanceElement.selectionStart = pos;
 				EditEnhanceElement.selectionEnd = end;
-      }
-      else
-	    {
+			}
+			else
+			{
 				var start = EditEnhanceElement.form.text.value.lastIndexOf("\n",pos-1)+1;
 				var end = EditEnhanceElement.form.text.value.indexOf("\n",pos);
 				end = end==-1 ? EditEnhanceElement.form.text.value.length : end+1;
 				EditEnhanceElement.selectionStart = start;
 				EditEnhanceElement.selectionEnd = end;
-	    }
+			}
 		}
-  }
-  
-  // Ctrl+k to record a jump point, ctrl+j to go to the jump point
-  else if (event.keyCode == 75 && (event.ctrlKey || event.metaKey))
-  {
-		event.preventDefault();  
-    EditEnhanceCursorPos = EditEnhanceElement.selectionStart;
-    EditEnhanceScrollPos = EditEnhanceElement.scrollTop;
-  }
-  else if (event.keyCode == 74 && (event.ctrlKey || event.metaKey))
-  {
-    if (EditEnhanceOS == 'Windows') event.preventDefault();  
-    if (typeof EditEnhanceCursorPos == 'undefined') return;
-    EditEnhanceElement.selectionStart = 
-    EditEnhanceElement.selectionEnd = EditEnhanceCursorPos;
-    EditEnhanceElement.scrollTop = EditEnhanceScrollPos;
-  }
+	}
 
-  // Ctrl+i to put the line with cursor at the center of the screen
-  else if (event.keyCode == 73 && (event.ctrlKey || event.metaKey))
-  {
+	// Ctrl+k to record a jump point, ctrl+j to go to the jump point
+	else if (event.keyCode == 75 && (event.ctrlKey || event.metaKey))
+	{
+		event.preventDefault();  
+		EditEnhanceCursorPos = EditEnhanceElement.selectionStart;
+		EditEnhanceScrollPos = EditEnhanceElement.scrollTop;
+	}
+	else if (event.keyCode == 74 && (event.ctrlKey || event.metaKey) && !event.shiftKey)
+	{
+		if (EditEnhanceOS == 'Windows')
+			event.preventDefault();  
+
+		if (typeof EditEnhanceCursorPos == 'undefined') return;
+		EditEnhanceElement.selectionStart = 
+		EditEnhanceElement.selectionEnd = EditEnhanceCursorPos;
+		EditEnhanceElement.scrollTop = EditEnhanceScrollPos;
+	}
+
+	// Ctrl+i to put the line with cursor at the center of the screen
+	else if (event.keyCode == 73 && (event.ctrlKey || event.metaKey))
+	{
 		EditEnhanceElement.blur();
-    var start = EditEnhanceElement.selectionStart;
-    var end = EditEnhanceElement.selectionEnd;
-    EditEnhanceElement.selectionStart =
-    EditEnhanceElement.selectionEnd = start;
-	  EditEnhanceElement.scrollTop = 0;
+		var start = EditEnhanceElement.selectionStart;
+		var end = EditEnhanceElement.selectionEnd;
+		EditEnhanceElement.selectionStart =
+		EditEnhanceElement.selectionEnd = start;
+		EditEnhanceElement.scrollTop = 0;
 		EditEnhanceElement.focus();
-    EditEnhanceElement.selectionEnd = end;
-  }
+		EditEnhanceElement.selectionEnd = end;
+	}
 }
 , false);
