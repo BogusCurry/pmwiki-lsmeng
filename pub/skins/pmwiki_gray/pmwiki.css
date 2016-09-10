@@ -169,7 +169,9 @@ h6 { font-size:1.0em; }
 #MengWikiFoot
 {
   position:fixed; 
-  font-family:Verdana,sans-serif; font-size:80%; 
+  font-family:Verdana,sans-serif;
+  font-size:80%;
+	font-weight:bold;
   bottom:0;
   right:20px;
   padding-left:5px;

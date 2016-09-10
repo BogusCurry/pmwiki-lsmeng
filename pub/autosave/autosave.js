@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160725
+ * Version 20160918
  */
 
 var AS = 
@@ -337,31 +337,32 @@ var AS =
 	{ 
     var textContent = AS.getTextContent();
     
-    var caretPos = AS.textID.selectionStart;
+    var caretPos = AS.text.selectionStart;
 		var HTML = textContent.substring(0,caretPos);
 
-		// This one liner is of course from the Internet. It computes the number of times
-		// the specified string appears in the string "HTML".
-		var numBullet1 = (HTML.match(/\n\*/g) || []).length;
-		var numBullet2 = (HTML.match(/\n\#/g) || []).length;
-		var numBullet = numBullet1+numBullet2;
-		if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#') { numBullet++; }
+		// Computes the number of times bullets appearing in the string "HTML".
+		var numBullet = (HTML.match(/\n\*/g) || []).length + (HTML.match(/\n＊/g) || []).length +
+                     (HTML.match(/\n#/g) || []).length + (HTML.match(/\n＃/g) || []).length;
+
+    var firstChar = HTML.substring(0,1);
+		if (firstChar == '*' || firstChar == '#' || firstChar == '＊' || firstChar == '＃')
+		  numBullet++;
 
     if (numBullet != 0)
-    { AS.setStorageByKey('VIEW-ScrollY', AS.pagenameU, 'n'+numBullet); }
+      AS.setStorageByKey('VIEW-ScrollY', AS.pagenameU, 'n'+numBullet);
 	},
 
   fixASStatusPos()
-  {
-			// Move the saving status to the bottom left of the textarea, ASSUMING the textarea
-			// height fills the browser area
-		  var rectObject = AS.textID.getBoundingClientRect();
-		  var top = document.getElementById('autosaveStatus').style.top = window.innerHeight-30+'px';
-		  var left = document.getElementById('autosaveStatus').style.left = rectObject.left+'px';
-		  
-      localStorage.setItem('AutosaveSymTop', top);
-      localStorage.setItem('AutosaveSymLeft', left);
-  },
+	{
+		// Move the saving status to the bottom left of the textarea, ASSUMING the textarea
+		// height fills the browser area
+		var rectObject = AS.text.getBoundingClientRect();
+		var top = AS.saveStatus.style.top = window.innerHeight-30+'px';
+		var left = AS.saveStatus.style.left = rectObject.left+'px';
+	
+		localStorage.setItem('AutosaveSymTop', top);
+		localStorage.setItem('AutosaveSymLeft', left);
+	},
   
 	init: function()
 	{   
@@ -377,12 +378,13 @@ var AS =
 
     AS.pagenameU = AS.pagename.toUpperCase();
     
-		AS.textID = document.getElementById('text');
-    AS.ef = AS.textID.form;
+		AS.text = document.getElementById('text');
+    AS.ef = AS.text.form;
+		AS.saveStatus = document.getElementById('autosaveStatus');
 
     // Set cursor to move it drag is enabled.
     if (AS.enableDrag)
-    { document.getElementById('autosaveStatus').style.cursor = 'move'; }
+    { AS.saveStatus.style.cursor = 'move'; }
     
     // Read from local storage to set the saving status position
     // If not set, or the position goes out the visible area,
@@ -393,8 +395,8 @@ var AS =
 		    parseInt(top)>0  && parseInt(top) <window.innerHeight &&
 	      parseInt(left)>0 && parseInt(left)< window.innerWidth)
 		{		
-			document.getElementById('autosaveStatus').style.top = top;
-		  document.getElementById('autosaveStatus').style.left = left;
+			AS.saveStatus.style.top = top;
+		  AS.saveStatus.style.left = left;
 		}
 		else
 		{ AS.fixASStatusPos(); }
@@ -413,7 +415,7 @@ var AS =
 		AS.req = new XMLHttpRequest();
 
 		if (!AS.req) return;
-		AS.txt = document.getElementById("autosaveStatus");
+		AS.txt = AS.saveStatus;
 
     AS.status = 'Init';
     AS.txt.innerHTML = AS.initStatusHtml;
@@ -428,7 +430,7 @@ var AS =
     // Implement drag and move of the autosaving status
     if (AS.enableDrag)
     {  
-      document.getElementById('autosaveStatus').onmouseup = function()
+      AS.saveStatus.onmouseup = function()
       {
 				var top = this.style.top;
 				var left = this.style.left;
@@ -437,7 +439,7 @@ var AS =
 				localStorage.setItem('AutosaveSymLeft', left);
 				window.onmousemove = '';
       }
-      document.getElementById('autosaveStatus').onmousedown = function(e)
+      AS.saveStatus.onmousedown = function(e)
       {
 				var mouseCoordX = e.clientX;
 				var mouseCoordY = e.clientY;
@@ -447,8 +449,8 @@ var AS =
 				
 				window.onmousemove = function(e)
 				{
-					document.getElementById('autosaveStatus').style.left = imgCoordX+e.clientX-mouseCoordX+'px';
-					document.getElementById('autosaveStatus').style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
+					AS.saveStatus.style.left = imgCoordX+e.clientX-mouseCoordX+'px';
+					AS.saveStatus.style.top  = imgCoordY+e.clientY-mouseCoordY+'px';
 				};
 				return false;
       }

@@ -12,7 +12,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160823
+ * Version 20160918
  */
  
 // Show an animation of a predetermined image to signify the result of file upload. 
@@ -35,7 +35,8 @@ document.addEventListener('drop', function(e)
   var files = e.dataTransfer.files;
   var items = e.dataTransfer.items;
   
-  for (var i=0;i<files.length;i++)
+  var filesLen = files.length;
+  for (var i=0;i<filesLen;i++)
   {
 //    var isFile = true;
 //    try { isFile = items[i].webkitGetAsEntry().isFile }

@@ -15,7 +15,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160818
+ * Version 20160918
  */
 
 // Main function handling the popup effects.
@@ -24,11 +24,30 @@ function ImgfocusPopupImgOnClick()
 {
   // Get the exception list length
   ImgfocusExceptionList = JSON.parse(ImgfocusExceptionList);
-  
+  var ImgfocusExceptionListLen = ImgfocusExceptionList.length;
+ 
+  // Get the list of the direct children of the document body.
+	var bodyElementLen = document.body.children.length;
+	var documentBodyElement = [];
+	for (var i=0;i<bodyElementLen;i++)
+	{ documentBodyElement[i] = document.body.children[i]; }
+
+	// Prepare a div element for overlaying the page as the dimmer.
+	var dimmer = document.createElement('div');
+	dimmer.id = 'ImgfocusDimmer';
+	dimmer.style.background = '#000';
+	dimmer.style.opacity = 0.5;
+	dimmer.style.position = 'fixed';
+	dimmer.style.top = 0;
+	dimmer.style.left = 0;
+	dimmer.style.width = '100%';
+	dimmer.style.height = '100%';
+	dimmer.style.zIndex = 9;
+		  
   // Get all the image elements
  	var imgElement = document.getElementsByTagName("img"); 
- 		
- 	for (var i=0;i<imgElement.length;i++)
+ 	var imgElementLen = imgElement.length;
+ 	for (var i=0;i<imgElementLen;i++)
  	{
  	  // Get the image filename
  	  var pos = imgElement[i].src.lastIndexOf('/');
@@ -36,7 +55,7 @@ function ImgfocusPopupImgOnClick()
 
  	  // Skip the images specified in the exception list
  	  var isException = false
- 	  for (var j=0;j<ImgfocusExceptionList.length;j++)
+ 	  for (var j=0;j<ImgfocusExceptionListLen;j++)
  	  {
  	    if (filename == ImgfocusExceptionList[j])
  	    { isException = true; break; }
@@ -54,33 +73,22 @@ function ImgfocusPopupImgOnClick()
 				// Create the popup image
 				var imgEnlarge = document.createElement('img');	
 				imgEnlarge.src = this.src;
-				
+
 				// Blur and dim the background and then show the popup image on image load.
 				imgEnlarge.onerror = function() { imgEnlarge.remove(); }
 				imgEnlarge.onload = function()
 				{
 					// Blur all the direct children of the document body.
-					for (var i=0;i<document.body.children.length;i++)
-					{ ImgfocusBlurElement(document.body.children[i]); }
-					
-					// Create a new div overlaying the page as the dimmer.
-					var dimmer = document.createElement('div');
-					dimmer.id = 'ImgfocusDimmer';
-					dimmer.style.background = '#000';
-					dimmer.style.opacity = 0.4;
-					dimmer.style.position = 'fixed';
-					dimmer.style.top = 0;
-					dimmer.style.left = 0;
-					dimmer.style.width = '100%';
-					dimmer.style.height = '100%';
-					dimmer.style.zIndex = 9;
+					for (var i=0;i<bodyElementLen;i++)
+					{ ImgfocusBlurElement(documentBodyElement[i]); }
+
+          // Overlay the dimmer					
 					document.body.appendChild(dimmer);
 
 					// Disable scrolling for the page so that later when we scroll the image to 
 					// enlarge, the page is not scrolled.
 					document.body.style.overflow = 'hidden';
-
-					document.body.appendChild(imgEnlarge);
+					
 					imgEnlarge.id = 'ImgfocusPopupImage';
 					imgEnlarge.style.zIndex = dimmer.style.zIndex+1;
 					imgEnlarge.style.position = 'fixed';
@@ -89,22 +97,27 @@ function ImgfocusPopupImgOnClick()
 					imgEnlarge.style.left = window.innerWidth/2 + 'px';
 					imgEnlarge.style.top  = window.innerHeight/2 + 'px';
 					imgEnlarge.style.transform = 'translate(-50%, -50%)';
-
-					imgEnlarge.style.visibility = 'hidden';
+          
+          // Shrink the image if it's bigger than the browser screen
 					var browserShrinkRatio = 0.8;
-					var aspectRatio = imgEnlarge.clientWidth/imgEnlarge.clientHeight;
-					imgEnlarge.style.width = Math.min(imgEnlarge.clientWidth, window.innerWidth*browserShrinkRatio) +'px';
+					var aspectRatio = imgEnlarge.width/imgEnlarge.height;
+					imgEnlarge.style.width = Math.min(imgEnlarge.width, window.innerWidth*browserShrinkRatio) +'px';
 					imgEnlarge.style.height = 'auto';
 					var winHeightShrink = window.innerHeight*browserShrinkRatio;
-					if (imgEnlarge.clientHeight > winHeightShrink)
+					if (imgEnlarge.height > winHeightShrink)
 					{
-						imgEnlarge.style.height = winHeightShrink +'px';
-						imgEnlarge.style.width = 'auto';
+						imgEnlarge.height = winHeightShrink +'px';
+						imgEnlarge.width = 'auto';
 					}
 					
 					// Apply shadow effect & fade in the popup image
 					imgEnlarge.style.webkitFilter = 'drop-shadow(20px 20px 10px black)';
+
+          // Hide it first for later fading in           
+					imgEnlarge.style.visibility = 'hidden';
 					
+					document.body.appendChild(imgEnlarge);
+
 					ImgfocusFadeElement(imgEnlarge, 0, 1, ImgfocusFadeInTime, NaN);
 
 					// On mouse down, if the popup image is not oversized, implement drag and move
@@ -324,8 +337,9 @@ function ImgfocusRemovePopupImg(style)
 	  try { dimmer.remove(); } catch(e) {}
     
     document.body.style.overflow = 'auto';		
-    	  
-		for (var i=0;i<document.body.children.length;i++)
+    
+		var bodyElementLen = document.body.children.length;
+		for (var i=0;i<bodyElementLen;i++)
 		{ ImgfocusUnBlurElement(document.body.children[i]); }
 
     if (style == 'immediately' || imgEnlarge.fadeTimerID != null)

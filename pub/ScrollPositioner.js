@@ -112,7 +112,7 @@ var ScrollPositioner =
   // etc), the method could be different. Currently they are the same.	
 	setScrollPos: function(y)
 	{
-		if (ScrollPositioner.action == 'edit') { document.getElementById('text').scrollTop = y; }
+		if (ScrollPositioner.action == 'edit') { ScrollPositioner.text.scrollTop = y; }
 		else { document.body.scrollTop = y;	}
 	},
 
@@ -120,7 +120,7 @@ var ScrollPositioner =
   // etc), the method could be different. Currently they are the same.	
 	getScrollPos: function()
 	{
-		if (ScrollPositioner.action == 'edit') { return document.getElementById('text').scrollTop; }
+		if (ScrollPositioner.action == 'edit') { return ScrollPositioner.text.scrollTop; }
 		else { return document.body.scrollTop; }
 	},
 
@@ -155,13 +155,13 @@ var ScrollPositioner =
   // div with content editable, legacy textarea), the methods are different.
   getCaretPos: function()
   {
-	  return document.getElementById('text').selectionStart;
+	  return ScrollPositioner.text.selectionStart;
   },
   setCaretPos: function(caret, caret2)
   {
     if (caret == null || caret2 == null) { return; }
-		document.getElementById('text').selectionStart = caret;
-		document.getElementById('text').selectionEnd = caret2;
+		ScrollPositioner.text.selectionStart = caret;
+		ScrollPositioner.text.selectionEnd = caret2;
   },  
 
   // Record the current caret position in cookie. If the current caret position is 0, the
@@ -194,7 +194,7 @@ var ScrollPositioner =
     if (timeDiff > 600) { return; }
 		 	  
 		var numBullet = value;
-		var bulletObj = document.getElementById('wikitext').getElementsByTagName("li")[numBullet-1];
+		var bulletObj = ScrollPositioner.wikitext.getElementsByTagName("li")[numBullet-1];
 		
 		// Leave if undefined; no bullets at all
     if (typeof bulletObj === 'undefined') { return; }		
@@ -218,7 +218,7 @@ var ScrollPositioner =
 		// It turns out another fix is needed for embedding youtube using ape.js. Also fix
 		// this by introducing a delay
     var positionDelay = 0;
-    if (/<[^<]+class="embed"[^>]*>/.test(document.getElementById('wikitext').innerHTML))
+    if (/<[^<]+class="embed"[^>]*>/.test(ScrollPositioner.wikitext.innerHTML))
     { positionDelay = Math.max(positionDelay,1000); }
     if (ScrollPositioner.isDiaryPage == 2) { positionDelay = Math.max(positionDelay,1000); }
 
@@ -229,8 +229,9 @@ var ScrollPositioner =
 		  // First scroll the lastEdit id into view, then get the id's position relative to 
 		  // the browser window. Adjust the scroll position so that the id is 1/3 of the 
 		  // browser window height.
-			document.getElementById(idName).scrollIntoView(true);
-			var idPosRelBrowser = Math.floor(document.getElementById(idName).getBoundingClientRect().top);
+			var idElement = document.getElementById(idName);
+			idElement.scrollIntoView(true);
+			var idPosRelBrowser = Math.floor(idElement.getBoundingClientRect().top);
       screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
 			ScrollPositioner.setScrollPos(ScrollPositioner.getScrollPos()-screenHeightAdj);
 		},positionDelay);
@@ -240,7 +241,7 @@ var ScrollPositioner =
   // Then call setScrollFromEdit();
   waitLatexThenSetScroll: function(value)
   {
-    var HTML = document.getElementById('wikitext').innerHTML;
+    var HTML = ScrollPositioner.wikitext.innerHTML;
 
     // See if the primitive markup for latex equations is still visible in the page HTML
     // This is non-ideal actually, as a fake target could block the the rest
@@ -339,7 +340,7 @@ var ScrollPositioner =
     var numBullet = value;
 
 		// Compute the caret offset given 'numBullet'.
-		var HTML = document.getElementById('text').textContent;
+		var HTML = ScrollPositioner.text.textContent;
 		isFirstLineBullet = -1;
 		if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#')
 		{ isFirstLineBullet = 0; }
@@ -351,16 +352,18 @@ var ScrollPositioner =
     // It turns out that Chrome will scroll automatically by first setting the caret
     // position then focusing. For some reason, highlighting a line then focusing
     // work on MAC but not on Windows. For compatibility, break this into 2 parts.
-    document.getElementById('text').blur();
+    ScrollPositioner.text.blur();
 		ScrollPositioner.setCaretPos(pos,pos);
-    document.getElementById('text').focus();		
+    ScrollPositioner.text.focus();		
 		ScrollPositioner.setCaretPos(pos,pos2);
   },
 
   init: function()
   {  
     ScrollPositioner.pagename = ScrollPositioner.pagename.toUpperCase();
-  
+    ScrollPositioner.text = document.getElementById('text');
+    ScrollPositioner.wikitext = document.getElementById('wikitext');
+    
 	  if (ScrollPositioner.action == 'browse')
 	  {
 	    ScrollPositioner.isBrowsing = true;
@@ -379,13 +382,13 @@ var ScrollPositioner =
 				{ ScrollPositioner.setScrollPosLS(null); }
 			}
 			      			
-      // When enter is pressed, check whether texts are selected. If yes, compute the number of
+      // When "/" is pressed, check whether texts are selected. If yes, compute the number of
       // html bullets before the selected text, record it in cookie, and then open a new tab
       // for editing.
       window.addEventListener('keydown', function()
       {
         // Spaces are all removed for comparison.
-    		if(event.keyCode == 13 && (event.ctrlKey || event.metaKey))
+    		if(event.keyCode == 191 && (event.ctrlKey || event.metaKey))
     		{
     		  // Remove spaces and replace special characters. 
     			var sel = window.getSelection();
@@ -405,7 +408,7 @@ var ScrollPositioner =
     			if (newlinePos != -1) { selString = selString.substring(0,newlinePos); }
     
     		  // Remove spaces and newlines, also remove all the tags except <li.
-          var HTML = document.getElementById('wikitext').innerHTML.replace(/ /g,'').replace(/\n/g,'').replace(/<(?!li)[^>]*>/ig, '');
+          var HTML = ScrollPositioner.wikitext.innerHTML.replace(/ /g,'').replace(/\n/g,'').replace(/<(?!li)[^>]*>/ig, '');
         
     			var selStringPos = HTML.indexOf( selString );
     			HTML = HTML.substring(0,selStringPos);
@@ -443,26 +446,21 @@ var ScrollPositioner =
 				// Note that the sequence of the following commands matters. If the caret 
 				// positioning comes before the focus, Chrome will scroll so that caret is
 				// centered in the screen, which interferes with the setScroll command.
-  			document.getElementById('text').focus();
+  			ScrollPositioner.text.focus();
 				var pos = ScrollPositioner.getCaretPosLS();
         if (typeof pos == 'undefined')
         {
           var start = 0;
-					var end = document.getElementById('text').form.text.value.indexOf("\n",0);
+					var end = ScrollPositioner.text.form.text.value.indexOf("\n",0);
         }
         else
         {
-					var start = document.getElementById('text').form.text.value.lastIndexOf("\n",pos-1)+1;
-					var end = document.getElementById('text').form.text.value.indexOf("\n",pos);
+					var start = ScrollPositioner.text.form.text.value.lastIndexOf("\n",pos-1)+1;
+					var end = ScrollPositioner.text.form.text.value.indexOf("\n",pos);
         }
-				end = end==-1 ? document.getElementById('text').form.text.value.length : end;
+				end = end==-1 ? ScrollPositioner.text.form.text.value.length : end;
         ScrollPositioner.setCaretPos(start, end);
 		  	ScrollPositioner.setScrollPos(value);
-
-// Delete this afterwards
-console.log('caret pos: '+pos);
-console.log('start pos: '+start);
-console.log('end pos  : '+end);
 			}
 			else
 			{
@@ -480,12 +478,12 @@ window.addEventListener('load', ScrollPositioner.init, false);
 function fixTextareaHeight()
 {
 	// Check if the textarea height is correct; if not then adjust
-	var rectObject = document.getElementById('text').getBoundingClientRect();
+	var rectObject = ScrollPositioner.text.getBoundingClientRect();
 	var correctTextAreaHeight = window.innerHeight - rectObject.top-4;
-  if (parseInt(document.getElementById('text').style.height) != correctTextAreaHeight)
+  if (parseInt(ScrollPositioner.text.style.height) != correctTextAreaHeight)
 	{
 		console.log('Adjusting textarea height...');
-		document.getElementById('text').style.height = correctTextAreaHeight + 'px';
+		ScrollPositioner.text.style.height = correctTextAreaHeight + 'px';
 	}
 }
 
@@ -504,7 +502,7 @@ function setScrollAndCaretPosCookie()
 	// Record the window height. 
 	if (ScrollPositioner.action == 'edit')
 	{
-    var rectObject = document.getElementById('text').getBoundingClientRect();
+    var rectObject = ScrollPositioner.text.getBoundingClientRect();
 		var value = window.innerHeight - rectObject.top-4;
 		var name = 'textAreaHeight';
 		ScrollPositioner.setCookie(name, value);

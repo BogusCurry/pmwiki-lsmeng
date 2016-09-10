@@ -2,7 +2,7 @@
  * 
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160821
+ * Version 20160918
  */
 
 function setStorageByKey(name, key, value)
@@ -43,7 +43,8 @@ window.addEventListener('load', function()
 
   // Manually set preload and then play/pause to get around Chrome's socket bug.
   // Also introduce the play icon
-  for (var i = 0; i < flashElement.length; i++)
+  var flashElementLen = flashElement.length;
+  for (var i = 0; i < flashElementLen; i++)
   {
     if (flashElement[i].type != 'application/x-shockwave-flash') continue;
     

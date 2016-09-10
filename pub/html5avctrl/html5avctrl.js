@@ -20,7 +20,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160806
+ * Version 20160918
  */
 
 // Arrange all the play icons so that they situate at the center of associated video 
@@ -31,7 +31,8 @@ function Html5AVCtrlArrangePlayIcon()
 
   // Manually set preload and then play/pause to get around Chrome's socket bug.
   // Also introduce the play icon
-  for (var i = 0; i < videoElement.length; i++)
+  var videoElementLen = videoElement.length;
+  for (var i = 0; i < videoElementLen; i++)
   {
 		// Position the play icon
 		var playIconElement = videoElement[i].playIconElement;
@@ -67,11 +68,13 @@ function Html5AVCtrlTogglePlay(element) {
 window.addEventListener('load', function() {
   // Capture the audio/video element by changing the controls
   var videoElement = document.getElementsByTagName('video');
+  var videoElementLen = videoElement.length;
   var audioElement = document.getElementsByTagName('audio');
+  var audioElementLen = audioElement.length;
 
   // Manually set preload and then play/pause to get around Chrome's socket bug.
   // Also introduce the play icon
-  for (var i = 0; i < videoElement.length; i++)
+  for (var i = 0; i < videoElementLen; i++)
   {  
     videoElement[i].preload = 'metadata';
     
@@ -141,7 +144,7 @@ window.addEventListener('load', function() {
       // Check if this is the last one processed. Actually the arrangement runs for 3 
       // times to ensure nothing goes wrong. This is lame.
       Html5AVCtrlNumLoad = (typeof Html5AVCtrlNumLoad == 'undefined') ? 1 : Html5AVCtrlNumLoad+1;
-      if (Html5AVCtrlNumLoad >= videoElement.length-2)
+      if (Html5AVCtrlNumLoad >= videoElementLen-2)
       {
         Html5AVCtrlArrangePlayIcon();
         window.addEventListener('resize', Html5AVCtrlArrangePlayIcon, false);
@@ -152,7 +155,7 @@ window.addEventListener('load', function() {
     videoElement[i].addEventListener('error', function()
     {
       Html5AVCtrlNumLoad = (typeof Html5AVCtrlNumLoad == 'undefined') ? 1 : Html5AVCtrlNumLoad+1;
-      if (Html5AVCtrlNumLoad >= videoElement.length-2)
+      if (Html5AVCtrlNumLoad >= videoElementLen-2)
       {
         Html5AVCtrlArrangePlayIcon();
         window.addEventListener('resize', Html5AVCtrlArrangePlayIcon, false);
@@ -162,8 +165,9 @@ window.addEventListener('load', function() {
 
 
   // Capture the video element on clicking or altering its control panel 
-  for (var i = 0; i < videoElement.length + audioElement.length; i++) {
-    var element = (i >= videoElement.length) ? audioElement[i - videoElement.length] : videoElement[i];    
+  var videoAudioLen = videoElementLen + audioElementLen;
+  for (var i = 0; i < videoAudioLen; i++) {
+    var element = (i >= videoElementLen) ? audioElement[i - videoElementLen] : videoElement[i];    
     element.onplay = function() {
       Html5AVCtrlElement = this;
     }
@@ -193,7 +197,7 @@ window.addEventListener('load', function() {
 
       Html5AVCtrlTogglePlay(this);
     }
-    if (i < videoElement.length) {
+    if (i < videoElementLen) {
 			element.ondblclick = function() {
   	     Html5AVCtrlElement = this;
 				 Html5AVCtrlToggleFC(Html5AVCtrlElement);
@@ -202,7 +206,7 @@ window.addEventListener('load', function() {
   }
 
   // Add click and keydown events only if there are html5 video audio elements found
-  if (videoElement.length + audioElement.length > 0) {
+  if (videoAudioLen > 0) {
   
 //    window.addEventListener('scroll', function(){delete(Html5AVCtrlElement);}, false);
   
