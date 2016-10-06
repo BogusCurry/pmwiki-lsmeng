@@ -332,9 +332,10 @@ $HTMLHeaderFmt[''] .= "
   <script type='text/javascript''>
   window.addEventListener('keydown', function()
 	{
-  	// Ctrl+shift+f to open search in a new tab
-		if (event.keyCode == 70 && event.shiftKey && (event.ctrlKey || event.metaKey))
+  	// Ctrl+cmd+f to open search in a new tab
+		if (event.keyCode == 70 && event.ctrlKey && event.metaKey)
     {
+      event.preventDefault();
       var url = window.location.href;
       var match = url.match(/\?.+/i);
       var pos = match==null ? url.length : match['index'];

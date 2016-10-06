@@ -12,7 +12,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160918
+ * Version 20161004
  */
  
 // Show an animation of a predetermined image to signify the result of file upload. 
@@ -226,6 +226,6 @@ function PasteImgUploadGetFormatTime()
 	var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
 	    hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
 
-	return year+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
+	return year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
 	       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
 }

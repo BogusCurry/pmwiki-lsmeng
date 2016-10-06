@@ -459,6 +459,11 @@ var ScrollPositioner =
 					var end = ScrollPositioner.text.form.text.value.indexOf("\n",pos);
         }
 				end = end==-1 ? ScrollPositioner.text.form.text.value.length : end;
+        
+console.log(pos);
+console.log(start);
+console.log(end);
+        
         ScrollPositioner.setCaretPos(start, end);
 		  	ScrollPositioner.setScrollPos(value);
 			}
@@ -493,11 +498,10 @@ window.addEventListener("beforeunload", setScrollAndCaretPosCookie, false);
 function setScrollAndCaretPosCookie()
 {
   var value = ScrollPositioner.getScrollPosLS();
-  if (String(value).substring(0,1) != 'n')
-  { ScrollPositioner.setScrollPosLS(); }
   
-  if (ScrollPositioner.action == 'edit')
-  { ScrollPositioner.setCaretPosLS(); }
+  if (String(value).substring(0,1) != 'n') { ScrollPositioner.setScrollPosLS(); }
+  
+  if (ScrollPositioner.action == 'edit') { ScrollPositioner.setCaretPosLS(); }
 
 	// Record the window height. 
 	if (ScrollPositioner.action == 'edit')
