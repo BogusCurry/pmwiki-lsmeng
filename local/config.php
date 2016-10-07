@@ -305,7 +305,7 @@ if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
 if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 
 // Rich edit commands
-if ($action == 'edit')
+if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
 {	
   $HTMLHeaderFmt['editEnhance'] .= "
   <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>
@@ -328,6 +328,8 @@ else if ($action == 'browse')
 		}, false);
 		</script>";
 }
+
+
 $HTMLHeaderFmt[''] .= "
   <script type='text/javascript''>
   window.addEventListener('keydown', function()
@@ -339,9 +341,67 @@ $HTMLHeaderFmt[''] .= "
       var url = window.location.href;
       var match = url.match(/\?.+/i);
       var pos = match==null ? url.length : match['index'];
-		  window.open(url.slice(0, pos)+'?n=Site.Search', '_blank');      
+		  window.open(url.slice(0, pos)+'?n=Site.Search', '_blank');
     }
-	}, false);
+  	// Ctrl+cmd+r to open all recent changes
+		if (event.keyCode == 82 && event.ctrlKey && event.metaKey)
+    {
+      event.preventDefault();
+      var url = window.location.href;
+      var match = url.match(/\?.+/i);
+      var pos = match==null ? url.length : match['index'];
+		  window.open(url.slice(0, pos)+'?n=Site.Allrecentchanges', '_blank');
+    }
+    // Ctrl+cmd+u to open the upload page
+		if (event.keyCode == 85 && event.ctrlKey && event.metaKey)
+    {
+      event.preventDefault();
+      var url = window.location.href;
+      if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=upload', '_blank'); }
+      else
+      {
+      	var pos = url.indexOf('?action=');
+      	if (pos != -1) { window.open(url.slice(0,pos+8) + 'upload', '_blank'); }
+      	else { window.open(url + '?action=upload', '_blank'); }
+      }
+    }
+    // Ctrl+cmd+h to open the history
+		if (event.keyCode == 72 && event.ctrlKey && event.metaKey)
+    {
+      event.preventDefault();
+      var url = window.location.href;
+      if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=diff', '_blank'); }
+      else
+      {
+      	var pos = url.indexOf('?action=');
+      	if (pos != -1) { window.open(url.slice(0,pos+8) + 'diff', '_blank'); }
+      	else { window.open(url + '?action=diff', '_blank'); }
+      }
+    }
+    // Ctrl+cmd+b to open the backlink
+    if (event.keyCode == 66 && event.ctrlKey && event.metaKey)
+    {
+      event.preventDefault();
+      var url = window.location.href;
+      var match = url.match(/\?.+/i);
+      var pos = match==null ? url.length : match['index'];
+		  window.location = url.slice(0, pos)+'?n=Site.Search?action=search&q=link='+'$pagename';
+    }
+    // Ctrl+cmd+a to open the attribute
+		if (event.keyCode == 65 && event.ctrlKey && event.metaKey)
+    {
+      event.preventDefault();
+      var url = window.location.href;
+      if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=attr', '_blank'); }
+      else
+      {
+      	var pos = url.indexOf('?action=');
+      	if (pos != -1) { window.open(url.slice(0,pos+8) + 'attr', '_blank'); }
+      	else { window.open(url + '?action=attr', '_blank'); }
+      }
+    }
+
+  }, false);
   </script>";
 
 

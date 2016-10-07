@@ -92,12 +92,12 @@ function getNextParaStart(pos)
   }
   
   // Find an empty line
-  var matchPos = str.search(/^ *$/m);
+  var matchPos = str.search(/^[ 	]*$/m);
   if (matchPos == -1) { return EditEnhanceElement.form.text.value.length; }
   var start = pos + matchPos;
   
   // Find a non empty line
-  matchPos = str.slice(matchPos).search(/^ *[^\s]/m);
+  matchPos = str.slice(matchPos).search(/^[ 	]*[^\s]/m);
   if (matchPos == -1) { return EditEnhanceElement.form.text.value.length; }
   
   return start + matchPos;
@@ -186,7 +186,8 @@ window.addEventListener('load',function()
   // For keeping track of the horizontal offset when performing next/previous line
   EditEnhanceElement.offset = 0;
   
-  // For keeping track of the selection direction. 0 for left, 1 for right
+  // For keeping track of the selection direction. 1 for forward selection, 
+  // 0 for backward selection
   EditEnhanceElement.selectDirection = 0;
   
   // Create a small div to show the char and line number
@@ -283,6 +284,8 @@ window.addEventListener('keyup', function()
 
 function getNextWordPos(pos)
 {
+  if (EditEnhanceElement.form.text.value[pos] == " ") { pos++; }
+  
   var end = EditEnhanceElement.form.text.value.length;
 //   var matchPos = EditEnhanceElement.form.text.value.slice(pos,end).search(/\uff0c/);
 //   \u3002
@@ -293,7 +296,9 @@ function getNextWordPos(pos)
 
 function getLastWordPos(pos)
 {
-  // get line start, and the content in bewteen
+  if (EditEnhanceElement.form.text.value[pos-1] == " ") { pos--; }
+  
+  // get line start, and the content in between
   var lineStart = getLastParaStart(pos);
   var lineStr = EditEnhanceElement.form.text.value.slice(lineStart,pos);
   
@@ -309,42 +314,39 @@ function getLastWordPos(pos)
   return matchPos;
 }
 
-// direction: 1 for forward selection
-// 						0 for backward selection
-// posOutwardSelect: the position to go to for outward selection when shift is pressed
-// posInwardSelect: the position to go to for inward selection when shift is pressed
-// posSimpleMove: the position to go to for simple cursor movement
-function makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, shouldUpdateOffset)
+// posOutwardSelect: the position to go to for outward selection
+// posInwardSelect: the position to go to for inward selection
+function makeSelection(posOutwardSelect, posInwardSelect)
 {
-  event.preventDefault();
   var start = EditEnhanceElement.selectionStart;
   var end = EditEnhanceElement.selectionEnd;
   EditEnhanceElement.blur();
   
-  if (event.shiftKey)
+  // If something has been selected
+  if (posOutwardSelect != null)
   {
-    // If something has been selected
-    if (end != start && EditEnhanceElement.selectDirection == (direction^1))
-    {
-      EditEnhanceElement.selectionEnd = EditEnhanceElement.selectionStart = posOutwardSelect;
-      EditEnhanceElement.focus();
-      if (direction) { EditEnhanceElement.selectionEnd = end; }
-      else { EditEnhanceElement.selectionStart = start; }
-    }
-    else
-    {
-      EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = posInwardSelect;
-      EditEnhanceElement.focus();
-      if (direction) { EditEnhanceElement.selectionStart = start; }
-      else { EditEnhanceElement.selectionEnd = end; }
-      EditEnhanceElement.selectDirection = direction;
-    }
+    EditEnhanceElement.selectionEnd = EditEnhanceElement.selectionStart = posOutwardSelect;
+    EditEnhanceElement.focus();
+    if (!EditEnhanceElement.selectDirection) { EditEnhanceElement.selectionEnd = end; }
+    else { EditEnhanceElement.selectionStart = start; }
   }
   else
   {
-    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = posSimpleMove;
+    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = posInwardSelect;
     EditEnhanceElement.focus();
+    if (EditEnhanceElement.selectDirection) { EditEnhanceElement.selectionStart = start; }
+    else { EditEnhanceElement.selectionEnd = end; }
   }
+}
+
+// Move caret to the specified position
+// The char offset relative to the line start is memorized if "shouldUpdateOffset" is set
+// to true
+function moveCaretAndFocus(pos, shouldUpdateOffset)
+{
+  EditEnhanceElement.blur();
+  EditEnhanceElement.selectionEnd = EditEnhanceElement.selectionStart = pos;
+  EditEnhanceElement.focus();
   
   if (shouldUpdateOffset) { updateOffset(); }
 }
@@ -389,31 +391,63 @@ window.addEventListener('keydown', function()
       else if ((event.ctrlKey || event.metaKey) && event.altKey)
       EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<2);
       
-      // Alt+Shift: continuous paragraph selection
+      // Alt: paragraph traversal
       else if (event.keyCode == 38)
       {
-        var direction = 0;
-        var posOutwardSelect = getLastParaStart(end);
-        if (posOutwardSelect <= start) { posOutwardSelect = start; }
-        var posInwardSelect = getLastParaStart(start);
-        var posSimpleMove = getLastParaStart(start);
-        
-        makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
-        
-        if (!event.shiftKey) { selectLine(posSimpleMove); }
+        if (!event.shiftKey)
+        {
+          var posSimpleMove = getLastParaStart(start);
+          moveCaretAndFocus(posSimpleMove, true);
+          selectLine(posSimpleMove);
+        }
+        else
+        {
+          var direction = 0;
+          
+          if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          {
+            var posOutwardSelect = getLastParaStart(end);
+            if (posOutwardSelect <= start) { posOutwardSelect = start; }
+            var posInwardSelect = null;
+          }
+          else
+          {
+            var posOutwardSelect = null;
+            var posInwardSelect = getLastParaStart(start);
+            EditEnhanceElement.selectDirection = direction;
+          }
+          
+          makeSelection(posOutwardSelect, posInwardSelect);
+        }
       }
       
       else if (event.keyCode == 40)
       {
-        var direction = 1;
-        var posOutwardSelect = getParaEnd(start);
-        if (posOutwardSelect > end) { posOutwardSelect = end; }
-        var posInwardSelect = getParaEnd(end+1);
-        var posSimpleMove = getNextParaStart(start);
-        
-        makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
-        
-        if (!event.shiftKey) { selectLine(posSimpleMove); }
+        if (!event.shiftKey)
+        {
+          var posSimpleMove = getNextParaStart(start);
+          moveCaretAndFocus(posSimpleMove, true);
+          selectLine(posSimpleMove);
+        }
+        else
+        {
+          var direction = 1;
+          
+          if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          {
+            var posOutwardSelect = getParaEnd(start);
+            if (posOutwardSelect > end) { posOutwardSelect = end; }
+            var posInwardSelect = null;
+          }
+          else
+          {
+            var posOutwardSelect = null;
+            var posInwardSelect = getParaEnd(end+1);
+            EditEnhanceElement.selectDirection = direction;
+          }
+          
+          makeSelection(posOutwardSelect, posInwardSelect);
+        }
       }
     }
     // Ctrl+up to go to the top of page and highlight line. A fix for Windows.
@@ -449,7 +483,7 @@ window.addEventListener('keydown', function()
     
     setTimeout(function()
     {
-      // After the browser performs page up/dn, get the updated selection start 
+      // After the browser performs page up/dn, get the updated selection start
       start = EditEnhanceElement.selectionStart;
       
       // Handle the special case of the last line
@@ -515,10 +549,10 @@ window.addEventListener('keydown', function()
   }
   
   // Ctrl+/ to open viewing page
-  else if (event.keyCode == 191 && (event.ctrlKey || event.metaKey))
+  else if (event.keyCode == 191 && event.metaKey)
   {
     event.preventDefault();
-    if (event.shiftKey)
+    if (event.ctrlKey)
     { window.open(window.location.href.replace(/\?action=edit/i,''), '_blank'); }
     else
     { window.location = window.location.href.replace(/\?action=edit/i,''); }
@@ -644,7 +678,10 @@ window.addEventListener('keydown', function()
     }
     else
     {
-      var lineEnd = getLineEnd(end);
+      // Deal with the special case where the ending newline char is selected
+      if (start != end && EditEnhanceElement.form.text.value[end-1] == "\n")
+      { var lineEnd = end; }
+      else { var lineEnd = getLineEnd(end); }
       if (lineEnd == EditEnhanceElement.form.text.value.length) { lineEnd++; }
       EditEnhanceElement.selectionStart =
       EditEnhanceElement.selectionEnd = lineEnd-1;
@@ -677,6 +714,11 @@ window.addEventListener('keydown', function()
   {
     // Get the position relative to the nearest newline
     setTimeout(function() { updateOffset(); }, 0);
+    
+    // Work with BTT key mapping for selecting till line start or line end.
+    // Update the selection direction here.
+    if (event.metaKey && event.shiftKey)
+    { EditEnhanceElement.selectDirection = (event.keyCode - 37) >> 1; }
   }
   
   // Ctrl-o open line
@@ -710,26 +752,62 @@ window.addEventListener('keydown', function()
     // Ctrl-f forward a char
     if (event.ctrlKey || event.metaKey)
     {
-      var direction = 1;
-      var posOutwardSelect = start + 1;
-      if (posOutwardSelect > end) { posOutwardSelect = end; }
-      var posInwardSelect = end + 1;
-      if (start != end) { var posSimpleMove = end; }
-      else { var posSimpleMove = end + 1; }
+      event.preventDefault();
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
+      if (!event.shiftKey)
+      {
+        if (start != end) { var posSimpleMove = end; }
+        else { var posSimpleMove = end + 1; }
+        moveCaretAndFocus(posSimpleMove, true);
+      }
+      else
+      {
+        var direction = 1;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        {
+          var posOutwardSelect = start + 1;
+          if (posOutwardSelect > end) { posOutwardSelect = end; }
+          var posInwardSelect = null;
+        }
+        else
+        {
+          var posOutwardSelect = null;
+          var posInwardSelect = end + 1;
+          EditEnhanceElement.selectDirection = direction;
+        }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
     // Alt-f forward a word
     // Alt-shift-f Select word forwards
     else if (event.altKey)
     {
-      var direction = 1;
-      var posOutwardSelect = getNextWordPos(start);
-      if (posOutwardSelect > end) { posOutwardSelect = end; }
-      var posInwardSelect = getNextWordPos(end);
-      var posSimpleMove = posInwardSelect;
+      event.preventDefault();
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
+      var posSimpleMove = getNextWordPos(end);
+      
+      if (!event.shiftKey) { moveCaretAndFocus(posSimpleMove, true); }
+      else
+      {
+        var direction = 1;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        {
+          var posOutwardSelect = getNextWordPos(start);
+          if (posOutwardSelect > end) { posOutwardSelect = end; }
+          var posInwardSelect = null;
+        }
+        else
+        {
+          var posOutwardSelect = null;
+          var posInwardSelect = posSimpleMove;
+          EditEnhanceElement.selectDirection = direction;
+        }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
   }
   // The B key
@@ -738,53 +816,126 @@ window.addEventListener('keydown', function()
     // Ctrl-b move backward a char
     if (event.ctrlKey || event.metaKey)
     {
-      var direction = 0;
-      var posOutwardSelect = end - 1;
-      if (posOutwardSelect <= start) { posOutwardSelect = start; }
-      var posInwardSelect = start - 1;
-      if (start != end) { var posSimpleMove = start; }
-      else { var posSimpleMove = start - 1; }
+      event.preventDefault();
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
+      if (!event.shiftKey)
+      {
+        if (start != end) { var posSimpleMove = start; }
+        else { var posSimpleMove = start - 1; }
+        moveCaretAndFocus(posSimpleMove, true);
+      }
+      else
+      {
+        var direction = 0;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        {
+          var posOutwardSelect = end - 1;
+          if (posOutwardSelect <= start) { posOutwardSelect = start; }
+          var posInwardSelect = null;
+        }
+        else
+        {
+          var posOutwardSelect = null;
+          var posInwardSelect = start - 1;
+          EditEnhanceElement.selectDirection = direction;
+        }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
     
     // Alt-b backward a word
     // Alt-shift-b select ward backwards
     else if (event.altKey)
     {
-      var direction = 0;
-      var posOutwardSelect =  getLastWordPos(end);
-      if (posOutwardSelect <= start) { posOutwardSelect = start; }
-      var posInwardSelect = getLastWordPos(start);
-      var posSimpleMove = posInwardSelect;
+      event.preventDefault();
+      var posSimpleMove = getLastWordPos(start);
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
+      if (!event.shiftKey) { moveCaretAndFocus(posSimpleMove, true); }
+      else
+      {
+        var direction = 0;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        {
+          var posOutwardSelect =  getLastWordPos(end);
+          if (posOutwardSelect <= start) { posOutwardSelect = start; }
+          var posInwardSelect = null;
+        }
+        else
+        {
+          var posOutwardSelect = null;
+          var posInwardSelect = posSimpleMove;
+          EditEnhanceElement.selectDirection = direction;
+        }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
   }
   
   // Ctrl-e go to line end
   else if (event.keyCode == 69 && (event.ctrlKey || event.metaKey))
   {
-    var direction = 1;
-    var posOutwardSelect = getLineEnd(start)-1;
+    event.preventDefault();
     var lineEnd = getLineEnd(end);
     var lastCharPos = EditEnhanceElement.form.text.value.length;
     if (lineEnd == lastCharPos) { lineEnd++; }
-    var posInwardSelect = lineEnd-1;
-    var posSimpleMove = lineEnd-1;
     
-    makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
+    if (!event.shiftKey)
+    {
+      var posSimpleMove = lineEnd-1;
+      moveCaretAndFocus(posSimpleMove, true);
+    }
+    else
+    {
+      var direction = 1;
+      
+      if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+      {
+        var posOutwardSelect = getLineEnd(start)-1;
+        var posInwardSelect = null;
+      }
+      else
+      {
+        var posOutwardSelect = null;
+        var posInwardSelect = lineEnd-1;
+        EditEnhanceElement.selectDirection = direction;
+      }
+      
+      makeSelection(posOutwardSelect, posInwardSelect);
+    }
   }
   
   // Ctrl-a go to line start
   else if (event.keyCode == 65 && (event.ctrlKey || event.metaKey))
   {
-    var direction = 0;
-    var posOutwardSelect = getLineStart(end);
-    var posInwardSelect = getLineStart(start);
-    var posSimpleMove = getLineStart(start);
+    event.preventDefault();
     
-    makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
+    if (!event.shiftKey)
+    {
+      var posSimpleMove = getLineStart(start);
+      moveCaretAndFocus(posSimpleMove, true);
+    }
+    else
+    {
+      var direction = 0;
+      
+      if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+      {
+        var posOutwardSelect = getLineStart(end);
+        var posInwardSelect = null;
+      }
+      else
+      {
+        var posOutwardSelect = null;
+        var posInwardSelect = getLineStart(start);
+        EditEnhanceElement.selectDirection = direction;
+      }
+      
+      makeSelection(posOutwardSelect, posInwardSelect);
+    }
   }
   
   // Ctrl-p previous line
@@ -792,34 +943,71 @@ window.addEventListener('keydown', function()
   {
     if (event.ctrlKey || event.metaKey)
     {
-      var direction = 0;
-      var posOutwardSelect = getLineStart(end-1);
-      if (posOutwardSelect <= start) { posOutwardSelect = start; }
-      var posInwardSelect = getLineStart(start-1);
-      var posSimpleMove = getLineStart(start);
-      if (posSimpleMove != 0)
-      {
-        posSimpleMove = getLineStart(posSimpleMove-1);
-        end = getLineEnd(posSimpleMove);
-        if (posSimpleMove + EditEnhanceElement.offset < end) { posSimpleMove += EditEnhanceElement.offset; }
-        else { posSimpleMove = end-1; }
-      }
+      event.preventDefault();
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, false);
+      if (!event.shiftKey)
+      {
+        var posSimpleMove = getLineStart(start);
+        if (posSimpleMove != 0)
+        {
+          posSimpleMove = getLineStart(posSimpleMove-1);
+          end = getLineEnd(posSimpleMove);
+          if (posSimpleMove + EditEnhanceElement.offset < end) { posSimpleMove += EditEnhanceElement.offset; }
+          else { posSimpleMove = end-1; }
+        }
+        moveCaretAndFocus(posSimpleMove, false);
+      }
+      else
+      {
+        var direction = 0;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          {
+            var posOutwardSelect = getLineStart(end-1);
+        if (posOutwardSelect <= start) { posOutwardSelect = start; }
+            var posInwardSelect = null;
+          }
+          else
+          {
+            var posOutwardSelect = null;
+            var posInwardSelect = getLineStart(start-1);
+            EditEnhanceElement.selectDirection = direction;
+          }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
     
     // Alt-p previous para
     else if (event.altKey)
     {
-      var direction = 0;
-      var posOutwardSelect = getLastParaStart(end);
-      if (posOutwardSelect <= start) { posOutwardSelect = start; }
-      var posInwardSelect = getLastParaStart(start);
-      var posSimpleMove = posInwardSelect;
+      event.preventDefault();
+      var posSimpleMove = getLastParaStart(start);
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
-      
-      if (!event.shiftKey) { selectLine(posSimpleMove); }
+      if (!event.shiftKey)
+      {
+        moveCaretAndFocus(posSimpleMove, true);
+        selectLine(posSimpleMove);
+      }
+      else
+      {
+        var direction = 0;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          {
+            var posOutwardSelect = getLastParaStart(end);
+        if (posOutwardSelect <= start) { posOutwardSelect = start; }
+            var posInwardSelect = null;
+          }
+          else
+          {
+            var posOutwardSelect = null;
+                            var posInwardSelect = posSimpleMove;
+            EditEnhanceElement.selectDirection = direction;
+          }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
   }
   // Ctrl-n next line
@@ -827,36 +1015,80 @@ window.addEventListener('keydown', function()
   {
     if (event.ctrlKey || event.metaKey)
     {
-      var direction = 1;
-      var posOutwardSelect = getLineEnd(start);
-      if (posOutwardSelect > end) { posOutwardSelect = end; }
-      var posInwardSelect = getLineEnd(end);
-      var posSimpleMove = posInwardSelect;
-      var lastCharPos = EditEnhanceElement.form.text.value.length;
-      if (posSimpleMove == lastCharPos) { posSimpleMove = lastCharPos; }
-      else if (EditEnhanceElement.form.text.value[posSimpleMove] != "\n")
-      {
-        posSimpleMove++;
-        end = getLineEnd(posSimpleMove)-1;
-        if (posSimpleMove + EditEnhanceElement.offset <= end) { posSimpleMove += EditEnhanceElement.offset-1; }
-        else { posSimpleMove = end; }
-      }
+      event.preventDefault();
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, false);
+      if (!event.shiftKey)
+      {
+        // Deal with the special case where the ending newline char is selected
+        if (start != end && EditEnhanceElement.form.text.value[end-1] == "\n")
+        { var posSimpleMove = end; }
+        else
+        {
+          var posSimpleMove = getLineEnd(end);;
+          var lastCharPos = EditEnhanceElement.form.text.value.length;
+          if (posSimpleMove == lastCharPos) { posSimpleMove = lastCharPos; }
+          else if (EditEnhanceElement.form.text.value[posSimpleMove] != "\n")
+          {
+            posSimpleMove++;
+            end = getLineEnd(posSimpleMove)-1;
+            if (posSimpleMove + EditEnhanceElement.offset <= end) { posSimpleMove += EditEnhanceElement.offset-1; }
+            else { posSimpleMove = end; }
+          }
+        }
+        
+        moveCaretAndFocus(posSimpleMove, false);
+      }
+      else
+      {
+        var direction = 1;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          {
+            var posOutwardSelect = getLineEnd(start);
+        if (posOutwardSelect > end) { posOutwardSelect = end; }
+            var posInwardSelect = null;
+          }
+          else
+          {
+            var posOutwardSelect = null;
+                            var posInwardSelect = getLineEnd(end);
+            EditEnhanceElement.selectDirection = direction;
+          }
+        
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
     // Alt-n go to next para
     // Alt-shift-n continuous para selection down
     else if (event.altKey)
     {
-      var direction = 1;
-      var posOutwardSelect = getParaEnd(start);
-      if (posOutwardSelect > end) { posOutwardSelect = end; }
-      var posInwardSelect = getParaEnd(end+1);
-      var posSimpleMove = getNextParaStart(start);
+      event.preventDefault();
       
-      makeSelection(direction, posOutwardSelect, posInwardSelect, posSimpleMove, true);
-      
-      if (!event.shiftKey) { selectLine(posSimpleMove); }
+      if (!event.shiftKey)
+      {
+        var posSimpleMove = getNextParaStart(start);
+        moveCaretAndFocus(posSimpleMove, true);
+        selectLine(posSimpleMove);
+      }
+      else
+      {
+        var direction = 1;
+        
+        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          {
+            var posOutwardSelect = getParaEnd(start);
+        if (posOutwardSelect > end) { posOutwardSelect = end; }
+            var posInwardSelect = null;
+          }
+          else
+          {
+            var posOutwardSelect = null;
+            var posInwardSelect = getParaEnd(end+1);
+            EditEnhanceElement.selectDirection = direction;
+          }
+
+        makeSelection(posOutwardSelect, posInwardSelect);
+      }
     }
   }
   

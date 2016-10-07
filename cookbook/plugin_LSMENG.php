@@ -1812,7 +1812,7 @@ function updatePageHistory()
 			Redirect($pagename.'?action=diff');
     }
     else
-    { return ".[[".$pagename."?action=diff&updateHistoryNow|"."Update]]"; }
+    { return "[[".$pagename."?action=diff&updateHistoryNow|"."Update]]"; }
   }
 }
 
