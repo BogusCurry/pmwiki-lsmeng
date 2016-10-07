@@ -169,7 +169,10 @@ var ScrollPositioner =
   setCaretPosLS: function()
   {
 		var value = ScrollPositioner.getCaretPos();
-		value = value==0 ? null : value;
+
+// For debugging, disable this for the moment. change it back later
+// 		value = value==0 ? null : value;
+
     ScrollPositioner.setStorageByKey('Caret', ScrollPositioner.pagename, value);
   },
 
@@ -388,7 +391,7 @@ var ScrollPositioner =
       window.addEventListener('keydown', function()
       {
         // Spaces are all removed for comparison.
-    		if(event.keyCode == 191 && (event.ctrlKey || event.metaKey))
+    		if(event.keyCode == 191 && event.metaKey)
     		{
     		  // Remove spaces and replace special characters. 
     			var sel = window.getSelection();
@@ -396,7 +399,7 @@ var ScrollPositioner =
     
     			if (selString == '')
 					{
-						if (event.shiftKey)
+						if (event.ctrlKey)
 						{ window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
 						else
 						{ window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }    			
@@ -422,7 +425,7 @@ var ScrollPositioner =
     
     			ScrollPositioner.setStorageByKey('EDIT-ScrollY', ScrollPositioner.pagename, 'n'+numBullet)
     
-          if (event.shiftKey)
+          if (event.ctrlKey)
           { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
           else
           { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
