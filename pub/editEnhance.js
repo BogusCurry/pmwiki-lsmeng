@@ -653,6 +653,7 @@ window.addEventListener('keydown', function()
     EditEnhanceElement.focus();
   }
   
+/*
   // Ctrl+(shift)+enter to begin a new line below or above the current line
   else if (event.keyCode == 13 && (event.ctrlKey || event.metaKey))
   {
@@ -690,6 +691,7 @@ window.addEventListener('keydown', function()
     EditEnhanceElement.blur();
     EditEnhanceElement.focus();
   }
+*/
   
   // Ctrl ; to scroll to the next mis-spelled word
   else if (event.keyCode == 186 && (event.ctrlKey || event.metaKey))
@@ -708,7 +710,8 @@ window.addEventListener('keydown', function()
   }
   
   /************** Emulate Emacs key bindings **************/
-  
+
+/*  
   // Left right key; memorize the horizontal position
   else if (event.keyCode == 39 || event.keyCode == 37)
   {
@@ -937,7 +940,8 @@ window.addEventListener('keydown', function()
       makeSelection(posOutwardSelect, posInwardSelect);
     }
   }
-  
+*/
+
   // Ctrl-p previous line
   else if (event.keyCode == 80)
   {
