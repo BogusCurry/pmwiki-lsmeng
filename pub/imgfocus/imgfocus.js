@@ -15,7 +15,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160918
+ * Version 20161030
  */
 
 // Main function handling the popup effects.
@@ -99,17 +99,20 @@ function ImgfocusPopupImgOnClick()
 					imgEnlarge.style.transform = 'translate(-50%, -50%)';
           
           // Shrink the image if it's bigger than the browser screen
-					var browserShrinkRatio = 0.8;
-					var aspectRatio = imgEnlarge.width/imgEnlarge.height;
-					imgEnlarge.style.width = Math.min(imgEnlarge.width, window.innerWidth*browserShrinkRatio) +'px';
-					imgEnlarge.style.height = 'auto';
-					var winHeightShrink = window.innerHeight*browserShrinkRatio;
-					if (imgEnlarge.height > winHeightShrink)
-					{
-						imgEnlarge.height = winHeightShrink +'px';
-						imgEnlarge.width = 'auto';
-					}
-					
+					var browserShrinkRatio = 1.0;
+					var aspectRatio = imgEnlarge.width/imgEnlarge.height;          
+          var screenAspectRatio = window.innerWidth/window.innerHeight;
+          if (aspectRatio < screenAspectRatio)
+          {
+						imgEnlarge.style.height = window.innerHeight*browserShrinkRatio +'px';
+						imgEnlarge.style.width = 'auto';
+          }
+          else
+          {
+						imgEnlarge.style.width = window.innerWidth*browserShrinkRatio +'px';
+						imgEnlarge.style.height = 'auto';
+          }
+
 					// Apply shadow effect & fade in the popup image
 					imgEnlarge.style.webkitFilter = 'drop-shadow(20px 20px 10px black)';
 
