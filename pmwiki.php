@@ -2292,12 +2292,12 @@ function PostPage($pagename, &$page, &$new)
         Abort('$[The page has an "attr" attribute and cannot be deleted.]');
       else 
       {
+        // Delete its backup
+//         preservePageBackup($pagename, null);
+				
         // Meng. The original delete() doesn't seem to work. 
         global $WorkDir;
         @unlink("$WorkDir/$pagename");
-
-        // Delete its backup
-        preservePageBackup($pagename, null);
 
         // Meng. Call pageindex update here to remove the page's content from pageindex.
         // Go to a special link address to perform pageindex update in a non-block way.

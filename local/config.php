@@ -329,13 +329,12 @@ else if ($action == 'browse')
 		</script>";
 }
 
-
 $HTMLHeaderFmt[''] .= "
   <script type='text/javascript''>
   window.addEventListener('keydown', function()
 	{
-  	// Ctrl+cmd+f to open search in a new tab
-		if (event.keyCode == 70 && event.ctrlKey && event.metaKey)
+  	// Ctrl+cmd+f or +z to open search in a new tab
+		if ((event.keyCode == 70 || event.keyCode == 90) && event.ctrlKey && event.metaKey)
     {
       event.preventDefault();
       var url = window.location.href;

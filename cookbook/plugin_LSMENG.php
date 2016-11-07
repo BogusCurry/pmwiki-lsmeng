@@ -96,13 +96,33 @@ function getNoEmptyRandLine($pagename)
 
 
 // Return a string of random characters for password.
-// Usage: {L$RandomPwd}
+// Usage: {L$RandomPwdSym}
 // L is the length of password to be generated.
-$FmtPV['$RandomPwd'] = 'RandomPwd($name)';
-function RandomPwd($length)
+$FmtPV['$RandomPwdSym'] = 'RandomPwdSym($name)';
+function RandomPwdSym($length)
 {
 	if ($length != (string)(int)$length)
-	{ echo_("Format error in RandomPwd()!"); return; }
+	{ echo_("Format error in RandomPwdSym()!"); return; }
+	
+  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{:;\'"/?<>,.';
+  $charactersLength = strlen($characters);
+    
+  $length = (int)$length;
+  $randomString = '';
+  for ($i = 0; $i < $length; $i++)
+  { $randomString .= $characters[rand(0, $charactersLength - 1)]; }
+  
+  return $randomString;
+}
+
+// Return a string of random characters for password.
+// Usage: {L$RandomPwdWord}
+// L is the length of password to be generated.
+$FmtPV['$RandomPwdWord'] = 'RandomPwdWord($name)';
+function RandomPwdWord($length)
+{
+	if ($length != (string)(int)$length)
+	{ echo_("Format error in RandomPwdWord()!"); return; }
 	
   $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   $charactersLength = strlen($characters);
@@ -110,9 +130,7 @@ function RandomPwd($length)
   $length = (int)$length;
   $randomString = '';
   for ($i = 0; $i < $length; $i++)
-  {
-    $randomString .= $characters[rand(0, $charactersLength - 1)];
-  }
+  { $randomString .= $characters[rand(0, $charactersLength - 1)]; }
   
   return $randomString;
 }

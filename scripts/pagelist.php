@@ -833,7 +833,9 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   $pageIndexContent = decryptStr($pageIndexContent);
   if ($pageIndexContent === -1)
   {
-    @unlink($PageIndexFile);
+//     @unlink($PageIndexFile);
+Abort("PageIndex Decrytion Error!");
+
     global $pagename;
     redirect($pagename);
   }
@@ -899,7 +901,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   fputs($ofp,$updatedPageIndexContent);
   fclose($ofp);
 
-  if (file_exists($PageIndexFile)) unlink($PageIndexFile); 
+//   if (file_exists($PageIndexFile)) unlink($PageIndexFile); 
 
   // Meng. Suppress the rename warning, and skip the fixperms since they cause errors sometimes
   @rename($file, $PageIndexFile);
@@ -952,6 +954,7 @@ function PageIndexGrep($terms, $invert = false)
   if ($wholePageText === false || $wholePageText === -1)
   {
 //    @unlink($PageIndexFile);
+Abort("PageIndex Decrytion Error!");
     global $pagename;
     redirect($pagename);
   }
