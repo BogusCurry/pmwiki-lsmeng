@@ -1,2 +1,0 @@
-[@
-    1| The result is: 12@]
