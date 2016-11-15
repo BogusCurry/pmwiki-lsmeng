@@ -2700,16 +2700,20 @@ function IsAuthorized($chal, $source, &$from)
       // Execute the original password check if the decryption passphrase has been 
       // captured. 
       if (isset($_SESSION['MASTER_KEY']))
-      {
-        if (crypt($AllowPassword, $pw) == $pw) { $auth=1; continue; } # nopass
-      }
+      { if (crypt($AllowPassword, $pw) == $pw) { $auth=1; continue; } } # nopass
       
       foreach((array)$AuthPw as $pwresp)                       # password
       {
 				// Execute the original password check if the decryption passphrase has been 
 				// captured.
         if (isset($_SESSION['MASTER_KEY']))
-        { if (crypt($pwresp, $pw) == $pw) { $auth = 1; continue; } }
+        {
+          // The password for encryption is a universal key; it unlocks everything
+          if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
+          { $auth = 1; continue; }
+          // Else it's the default action
+          else if (crypt($pwresp, $pw) == $pw) { $auth = 1; continue; }
+        }
         
         // If the passphrase just entered is correct. Redirect. Otherwise it conflicts 
         // with the password retry limit check later.

@@ -1681,7 +1681,7 @@ function isPasswdCorrect($passwd)
       // Read file as $text from Main.HomePage
       // if (passMAC($text, $HMAC_KEY) === false) { Abort("Content tampered!"); }
    // }
-   
+  
   global $WorkDir;
   $file = "$WorkDir/Main.HomePage";
 	$text = file_get_contents($file);
@@ -1694,9 +1694,9 @@ function isPasswdCorrect($passwd)
 		$_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
 		unset($_SESSION['authpw']);
 
-		// This is to copy the master password to the password buffer used by pmwiki. A temp
-		// solution to avoid typing the same pw if the master pw and the page lock pw are the same
-		// To be improved.
+		// Copy the master password to the password buffer used by pmwiki. This password 
+		// unlocks everything, until the buffer is flushed by the pagelock timer
+		// This has to work with IsAuthorized() in pmwiki.php
 		$_SESSION['authpw'][base64_encode($passwd)] = 1;
 
 		@session_write_close();
