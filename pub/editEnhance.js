@@ -571,7 +571,12 @@ window.addEventListener('keydown', function()
   {
     event.preventDefault();
     if ((event.ctrlKey && EditEnhanceOS == 'Mac') || event.altKey)
-    { window.open(window.location.href.replace(/\?action=edit/i,''), '_blank'); }
+    { 
+    	// Declare a global property to keep track of whether the associated view page has
+			// been opened. This is to work with autosave.js to auto refresh the view page.
+			window.EditEnhanceViewWindow =
+			window.open(window.location.href.replace(/\?action=edit/i,''), '_blank');
+    }
     else
     { window.location = window.location.href.replace(/\?action=edit/i,''); }
   }
@@ -1137,7 +1142,10 @@ window.addEventListener('keydown', function()
     else if (event.ctrlKey)
     {
       EditEnhanceElement.selectionStart = start;
-      EditEnhanceElement.selectionEnd = getLineEnd(start)-1;
+      var lineEnd = getLineEnd(start);
+      if (lineEnd == EditEnhanceElement.form.text.value.length)
+      		 { EditEnhanceElement.selectionEnd = lineEnd; }
+      else { EditEnhanceElement.selectionEnd = lineEnd-1; }
     }
     else
     {

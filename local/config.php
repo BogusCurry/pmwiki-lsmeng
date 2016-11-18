@@ -202,7 +202,7 @@ $emailAddress1 = "f95942117@gmail.com";
 $emailAddress2 = "lsmeng@ece.gatech.edu";
 
 // Php login password. Have to be correct at the $pwRetryLimit th time
-$pwRetryLimit = 2; 
+$pwRetryLimit = 3;
 
 // Idle timer duration for logging out & shutting down the site.
 $siteLogoutIdleDuration = ($isAtHome) ? INF : 7200;
