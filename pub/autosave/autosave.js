@@ -100,7 +100,15 @@ var AS =
 				AS.txt.innerHTML = AS.savedStatusHtml;
 				var as_time = AS.req.getResponseHeader("X-AutoSaveTime");
 				if (AS.basetime != as_time) { AS.setLastModLS(); }
-				AS.basetime = as_time;    
+				AS.basetime = as_time;
+
+				// If the associated view page has been opened, refresh it upon saving.
+				if (typeof EditEnhanceViewWindow != "undefined")
+				{
+					var pagename = EditEnhanceViewWindow.location.href.substr(EditEnhanceViewWindow.location.href.indexOf('=')+1).toUpperCase();
+					if (pagename == AS.pagenameU) { EditEnhanceViewWindow.location.reload(); }
+				}
+
         break;
 			        
 			case "Autosaving":
