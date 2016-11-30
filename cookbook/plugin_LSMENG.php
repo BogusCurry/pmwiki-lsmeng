@@ -177,7 +177,7 @@ function printOnThisDay()
       }
     }
     
-    $onThisDayStr["$i"] = pasteImgURLToDiary($onThisDayStr["$i"], "$i", $monStr);
+    $onThisDayStr["$i"] = pasteImgURLToDiary($onThisDayStr["$i"]."\n", "$i", $monStr);
   }
   
   return join("",$onThisDayStr);
