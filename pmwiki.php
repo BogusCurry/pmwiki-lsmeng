@@ -2389,8 +2389,29 @@ function HandleEdit($pagename, $auth = 'edit') {
   $FmtV['$EditText'] = 
     str_replace('$','&#036;',PHSC(@$new['text'],ENT_NOQUOTES));
 
+/****************************************************************************************/
   // Meng. The fix for the mysteriously removed newline at the beginning.    
 	if( $FmtV['$EditText'][0] == "\n") { $FmtV['$EditText'] = "\n".$FmtV['$EditText']; }
+
+	// Set a template for diary pages
+	if (PageExists($pagename) != 1 && isDiaryPage() == 2)
+	{
+		$lastDay = mktime(0, 0, 0, intval(substr($pagename,9,2))+1, 0, substr($pagename,5,4));
+		$dateStr = '';
+		for ($i=1;$i<=31;$i++)
+		{
+      $date = mktime(0, 0, 0, substr($pagename,9,2), $i, substr($pagename,5,4));
+      if ($date <= $lastDay)
+      {
+				$weekDay = date("l", $date);
+				$weekDay = substr($weekDay,0,3);
+				$dateStr .= '* '.$i.", ".$weekDay."\n\n";        
+      }
+		}
+		
+		$FmtV['$EditText'] = $dateStr;
+	}
+/****************************************************************************************/
 
   $FmtV['$EditBaseTime'] = $Now;
   if (@$PageEditForm) {
