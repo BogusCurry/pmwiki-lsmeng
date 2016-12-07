@@ -4,4 +4,5 @@ favicon.ico
 uploads
 wiki.d
 readme.txt
-pub/runCode
+pub/runCode/a.out
+pub/runCode/output.txt
