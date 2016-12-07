@@ -1299,17 +1299,11 @@ function WritePage($pagename,$page) {
   $wd->write($pagename,$page);
 
 /****************************************************************************************/
+
   // Meng. Comment out the following. They require ".lastmod" in wiki.d to be writable.
   // The functionality of .lastmod is unknown.
 //  if ($LastModFile && !@touch($LastModFile)) 
 //    { unlink($LastModFile); touch($LastModFile); fixperms($LastModFile); }
-    
-/****************************************************************************************/
-  // Meng.
-  // If the pagename matches a specific predetermined pagename, then invoke the php
-  // execution procedures.
-  if ($pagename == "Main.Runcode") { runCode($pagename); }
-/****************************************************************************************/
 }
 
 function PageExists($pagename) {
@@ -2009,10 +2003,21 @@ echo $time_elapsed_secs."<br>";
 		// grab the results in the case of c programs) and the source code 
 		else if (strcasecmp($pagename,"Main.Runcode") == 0)
 		{
-			global $runCodePath;
-			$srcFile = $runCodePath."/main.cpp";
-			$outputFile = $runCodePath."/output.txt";
-			$text = "[+'''Result'''+]\n----\n".@file_get_contents($outputFile)."\n\n[+'''Script'''+]\n----\n".@file_get_contents($srcFile);
+			if ($_GET["exe"])
+			{
+				runCode($pagename);
+				Redirect($pagename);
+			}
+			else
+			{
+				global $runCodePath;
+				$srcFile = $runCodePath."/main.cpp";
+				$outputFile = $runCodePath."/output.txt";
+				$text = "[+'''Output'''+]\n----\n".@file_get_contents($outputFile)."\n\n";
+				// if the source file has been modified since last compilation
+				if (filemtime($srcFile) > filemtime($outputFile)) { $text .= "%color=red%"; }
+				$text .= "[+'''Source'''+]\n----\n[@".addLineNum(@file_get_contents($srcFile))."@]";
+			}
 		}
 		
 		// If this is the special page "BookKeep", calculate and show the monthly expense at the
