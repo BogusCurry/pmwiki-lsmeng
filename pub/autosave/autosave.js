@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160918
+ * Version 20161204
  */
 
 var AS = 
@@ -463,14 +463,16 @@ var AS =
 				return false;
       }
     }
+    
+    AS.text.addEventListener("input", AS.onNewInput, false);
 	}
 };
 
 
 window.addEventListener("load", AS.init, false);
-window.addEventListener("input", AS.onNewInput, false);
-window.addEventListener("paste", AS.onNewInput, false);
-window.addEventListener("drop", AS.onNewInput, false);
+// window.addEventListener("input", AS.onNewInput, false);
+// window.addEventListener("paste", AS.onNewInput, false);
+// window.addEventListener("drop", AS.onNewInput, false);
 
 // Perform a synchronous saving if there are unsaved changes before the the page is closed
 window.addEventListener("beforeunload", function(event)
