@@ -521,7 +521,7 @@ function FmtUploadList($pagename, $args) {
    		</script>
    		", $pagename);
    		
-			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='float:right; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
+			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
     }
     else { echo 'Not an image!'; }
 	}
@@ -563,9 +563,9 @@ function FmtUploadList($pagename, $args) {
 			href='\$LinkDel'>&nbsp;&Chi;</a>",
 			$pagename);
 			
-		$lnk = FmtPageName($fmt, $pagename);
+// 		$lnk = FmtPageName($fmt, $pagename);
 
-    // Meng. Get the image dimensions.
+        // Meng. Get the image dimensions.
     $imgDimension = '';
     if (function_exists(getimagesize))
     {
@@ -573,14 +573,28 @@ function FmtUploadList($pagename, $args) {
       if (isset($width)) { $imgDimension = $width.'x'.$height.' ... '; }
     }
 		
-	// Meng. Add the symbol for deletion.
-		$out[$stat['mtime'].$file] = "<li> $lnk$overwrite$del ... ". 
-//    $out[] = "<li> $lnk$overwrite ... ".
+		$imgSrc = getImgFileContent($uploaddir.'/'.$file);
 		
-		$imgDimension.
+  	// Meng. Add the symbol for deletion.
+		$out[$stat['mtime'].$file] = "<li>".
 
+				"<span style=\"cursor: pointer;\" onclick=\"
+		if (window.uploadImg) { window.uploadImg.remove(); }
+		window.uploadImg = document.createElement('img');	
+  	uploadImg.src = '$imgSrc';
+  	uploadImg.style.position = 'fixed';
+  	uploadImg.style.right = '0';
+  	uploadImg.style.bottom = '50px';
+  	uploadImg.style.maxWidth = '500px';
+  	uploadImg.style.maxHeight = '500px';
+		document.body.appendChild(uploadImg);
+ 		uploadImg.onclick = function() { ImgfocusClickHandle(this); }
+		\">".$file."</span>." .
+
+		"$lnk$overwrite$del ... ". 
+		$imgDimension.
 		number_format($stat['size']/1000) . " KB ... " . 
-		strftime($TimeFmt, $stat['mtime']) . "</li>";
+		strftime($TimeFmt, $stat['mtime'])  . '</li>';
   }
 
   // Meng. Sort the filelist by date
