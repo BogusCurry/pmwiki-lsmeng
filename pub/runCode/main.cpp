@@ -6,10 +6,10 @@
 double test(double x)
 {
   static int count = 0;
-  int i;
+  int i; 
   
   // Test Array
-  int ALen = 100000000;
+  int ALen = 1;
   int *A = new int[ALen];
   for (i=0;i<ALen;i++)
   {
@@ -17,7 +17,7 @@ double test(double x)
   }
   
   // Test computation
-  for (i=0;i<1;i++)
+  for (i=0;i<160000000;i++)
   {
     double r = ((double) rand() / (RAND_MAX));
     double r1 = exp(r);
@@ -49,11 +49,11 @@ int main(int argc, char *argv[])
   /**************************************************************************************/
   sec2 = time (NULL);
   printf ("\n\nExecution time: %ld", sec2-sec1);
-	char buffer[26];
-	struct tm* tm_info;
-	time(&sec2);
-	tm_info = localtime(&sec2);
-	strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-	printf ("\nTime stamp: %s", buffer);
+  char buffer[26];
+  struct tm* tm_info;
+  time(&sec2);
+  tm_info = localtime(&sec2);
+  strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+  printf ("\nTime stamp: %s", buffer);
   return 0;
 }

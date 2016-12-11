@@ -15,7 +15,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161030
+ * Version 20161211
  */
 
 // Main function handling the popup effects.
@@ -145,10 +145,6 @@ function ImgfocusPopupImgOnClick()
 						}
 					}
 
-					// On double click anywhere, remove the image
-//					window.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
-//        	imgEnlarge.addEventListener('dblclick', ImgfocusRemovePopupImg, false);
-        	
 					// On wheel, zoom the pop up image
 					window.addEventListener('wheel', ImgfocusWheelZoom, false);
 				}
@@ -277,18 +273,12 @@ function ImgfocusMouseUpStopDragOrRemoveImg(e)
 {	
 	if (e.target.id != 'ImgfocusPopupImage')
 	{ ImgfocusRemovePopupImg(); return; }
-
 	var imgEnlarge = document.getElementById('ImgfocusPopupImage');
 		
-	// Get the last mouse up time on this object. If it's close, then it's a dblclick
-	// Remove the pic and leave
-	var lastClickTime = 0;
-	if (typeof imgEnlarge.lastClickTime != 'undefined') { lastClickTime = imgEnlarge.lastClickTime; }
-  var clock = new Date();
-  var currentClickTime = clock.getTime();
-	if (currentClickTime - lastClickTime < 300) { ImgfocusRemovePopupImg(); return; }
-	else { imgEnlarge.lastClickTime = currentClickTime; }
-
+	// The detail property of event gives the number of consecutive clicks in a short amount
+	// of time. Remove the pic and leave if it's a double click.
+	if (e.detail == 2) { ImgfocusRemovePopupImg(); return; }
+	
 	if (imgEnlarge.height>=window.innerHeight || imgEnlarge.width>=window.innerWidth)
 	{ window.onmousemove = ''; }
   else { ImgfocusZoomToFit(); }
@@ -351,7 +341,6 @@ function ImgfocusRemovePopupImg(style)
     { ImgfocusFadeElement(imgEnlarge, 1, 0, ImgFocusFadeOutTime); }
 
     window.removeEventListener('mouseup', ImgfocusMouseUpStopDragOrRemoveImg, false);
-//    window.removeEventListener('dblclick', ImgfocusRemovePopupImg, false);
     window.removeEventListener('wheel', ImgfocusWheelZoom, false);
   }
 }
