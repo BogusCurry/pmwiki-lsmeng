@@ -868,6 +868,10 @@ function PageVar($pagename, $var, $pn = '') {
   global $action;
   if ($var == '$action') { return PUE($action); }
 
+	// This is to work with the tmpl file of the gray skin theme
+  if ($var == '$EditLinkMark' && $action != 'edit')
+	{ return '<span style=\'transform:rotate(90deg); position:absolute;\'>&#9998;</span>'; }
+	
 /****************************************************************************************/
 
   if ($pn) {
