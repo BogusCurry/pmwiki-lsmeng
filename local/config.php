@@ -258,7 +258,7 @@ $autoSaveDelayHttp = 5000;
 $autoSaveDelayHttps = 1000;
 include_once("$FarmD/cookbook/autosave.php");
 
-if ($action == 'edit' || $action == 'browse')
+if ($action == 'edit' || $action == 'browse' || $action == 'upload')
 {
   if (substr($pagename,0,4) != 'LOCK')
   {

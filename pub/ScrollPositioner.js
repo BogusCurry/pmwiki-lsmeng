@@ -363,7 +363,7 @@ var ScrollPositioner =
     ScrollPositioner.text = document.getElementById('text');
     ScrollPositioner.wikitext = document.getElementById('wikitext');
     
-    if (ScrollPositioner.action == 'browse')
+    if (ScrollPositioner.action == 'browse' || ScrollPositioner.action == 'upload')
     {
       ScrollPositioner.isBrowsing = true;
       
