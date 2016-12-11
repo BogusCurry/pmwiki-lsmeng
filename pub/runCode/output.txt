@@ -1,5 +1,5 @@
 [@
     1| 4.000000
     2| 
-    3| Execution time: 15
-    4| Time stamp: 2016-12-11 11:56:37@]
+    3| Execution time: 19
+    4| Time stamp: 2016-12-11 12:20:35@]
