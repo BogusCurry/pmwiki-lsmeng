@@ -497,7 +497,17 @@ function FmtUploadList($pagename, $args) {
 	
 	// Meng. Show the selected uploaded image, and the delete link.
   else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
-	{		
+	{	
+$imgSrc = getImgFileContent($uploaddir.'/'.$_GET["show"]);
+echo "
+<script>
+document.body.innerHTML = '';
+</script>;";
+
+echo 'testetse';
+echo "<img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".$imgSrc." />";
+// redirect($imgSrc);
+
 	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
 	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
     {
@@ -574,21 +584,22 @@ function FmtUploadList($pagename, $args) {
     }
 		
 		$imgSrc = getImgFileContent($uploaddir.'/'.$file);
+		$srcTest = 'http://localhost/pmwiki/pmwiki.php?n=HTC.HomePage?action=upload&show=20161205_092026.jpg';
 		
   	// Meng. Add the symbol for deletion.
 		$out[$stat['mtime'].$file] = "<li>".
 
-				"<span style=\"cursor: pointer;\" onclick=\"
+		"<span style=\"cursor: pointer;\" onclick=\"
 		if (window.uploadImg) { window.uploadImg.remove(); }
-		window.uploadImg = document.createElement('img');	
-  	uploadImg.src = '$imgSrc';
-  	uploadImg.style.position = 'fixed';
-  	uploadImg.style.right = '0';
-  	uploadImg.style.bottom = '50px';
-  	uploadImg.style.maxWidth = '500px';
-  	uploadImg.style.maxHeight = '500px';
+		window.uploadImg = document.createElement('iframe');	
+  	uploadImg.src = '$srcTest';
+    uploadImg.style.position = 'fixed';
+    uploadImg.style.width = '700px';
+    uploadImg.style.height = '500px';
+    uploadImg.style.right = '0';
+    uploadImg.style.bottom = '0';
 		document.body.appendChild(uploadImg);
- 		uploadImg.onclick = function() { ImgfocusClickHandle(this); }
+
 		\">".$file."</span>." .
 
 		"$lnk$overwrite$del ... ". 
