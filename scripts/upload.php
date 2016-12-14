@@ -17,26 +17,30 @@
     Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
-// Meng
-if($action == "upload")
-{
-   $HTMLHeaderFmt['uploadshowimg'] = "
-   <script src='$PubDirUrl/uploadshowimg.js'></script>";
-}
-
-if ($action=='upload' && isset($_GET["show"]))
+// Meng. Append the JS file for downloading the image using AJAX.
+// Reply the client with the requested image file.
+if ($action =='upload')
 {	
-	global $UploadDir, $UploadPrefixFmt;
-  $uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
+	$HTMLHeaderFmt['getAndShowImgFile'] = "
+  <script src='$PubDirUrl/getAndShowImgFile.js'></script>";
   
-	if (isset($_SERVER['HTTP_REQUESTIMG']) && file_exists($uploaddir.'/'.$_GET["show"]))
-	{
-	  $file = $_GET["show"];
-	  $imgSrc = getImgFileContent($uploaddir.'/'.$file);
-		echo $imgSrc;
+  if (isset($_GET["show"]))
+  {
+		global $UploadDir, $UploadPrefixFmt;
+		$uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
 		
-		exit;
-	}
+		if (file_exists($uploaddir.'/'.$_GET["show"]))
+		{
+			$file = $_GET["show"];
+			$imgSrc = getImgFileContent($uploaddir.'/'.$file);
+			header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
+			header("Pragma: no-cache"); // HTTP 1.0.
+			header("Expires: 0"); // Proxies.
+			echo $imgSrc;
+			
+			exit;
+		}    
+  }
 }
 
 
@@ -589,28 +593,28 @@ function FmtUploadList($pagename, $args) {
 			
 // 		$lnk = FmtPageName($fmt, $pagename);
 
-        // Meng. Get the image dimensions.
-    $imgDimension = '';
-    if (function_exists(getimagesize))
+    // Meng. Get the image dimensions.
+ 	  $imgDimension = '';
+ 	  $ext = strtolower(pathinfo($uploaddir.'/'.$file, PATHINFO_EXTENSION));
+	  if (function_exists(getimagesize) && 
+	  ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp'))
     {
-      list($width,$height) = getimagesize($uploaddir.'/'.$file);
-      if (isset($width)) { $imgDimension = $width.'x'.$height.' ... '; }
+			list($width,$height) = getimagesize($uploaddir.'/'.$file);
+			if (isset($width)) { $imgDimension = $width.'x'.$height.' ... '; }
     }
-		
-		$imgSrc = getImgFileContent($uploaddir.'/'.$file);
-		
-  	// Meng. Add the symbol for deletion.
+
+  	// Meng. Download the image file on demand using getAndShowImgFile.js
 		$out[$stat['mtime'].$file] = "<li>".
 
-		"<span style=\"cursor: pointer;\" onclick=\"
-		
-		getImg('$file');
-		
-		\">".$file."</span>." .
+		"<span style=\"cursor: pointer;\"
+		onclick=\"getAndShowImgFile('$file');\">".$file."</span>" .
 
 		"$lnk$overwrite$del ... ". 
+		
 		$imgDimension.
+		
 		number_format($stat['size']/1000) . " KB ... " . 
+		
 		strftime($TimeFmt, $stat['mtime'])  . '</li>';
   }
 

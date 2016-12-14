@@ -3,7 +3,7 @@
 *
 * This also works with 'autosave.js',
 * which sets a cookie storing the number of bullets before the caret position when
-* performing autosave. When browsing, ScrollPositioner reads the cookie and tries to
+* performing autosave. When browsing, scrollPositioner reads the cookie and tries to
 * locate the position in page HTML corresponding to that stored in the cookie. Once
 * found, a special html string is dynamically inserted as an anchor for scrolling.
 *
@@ -29,7 +29,7 @@
 * Email: f95942117@gmail.com
 */
 
-var ScrollPositioner =
+var scrollPositioner =
 {
   pagename: '',
   action: '',
@@ -112,7 +112,7 @@ var ScrollPositioner =
   // etc), the method could be different. Currently they are the same.
   setScrollPos: function(y)
   {
-    if (ScrollPositioner.action == 'edit') { ScrollPositioner.text.scrollTop = y; }
+    if (scrollPositioner.action == 'edit') { scrollPositioner.text.scrollTop = y; }
     else { document.body.scrollTop = y;	}
   },
   
@@ -120,7 +120,7 @@ var ScrollPositioner =
   // etc), the method could be different. Currently they are the same.
   getScrollPos: function()
   {
-    if (ScrollPositioner.action == 'edit') { return ScrollPositioner.text.scrollTop; }
+    if (scrollPositioner.action == 'edit') { return scrollPositioner.text.scrollTop; }
     else { return document.body.scrollTop; }
   },
   
@@ -129,24 +129,24 @@ var ScrollPositioner =
   // deleted. If the current scroll position is 0, the entry is also deleted.
   setScrollPosLS: function(value)
   {
-    if (ScrollPositioner.isBrowsing == false)
+    if (scrollPositioner.isBrowsing == false)
     { var name = 'EDIT-ScrollY'; }
     else { var name = 'VIEW-ScrollY'; }
     
-    value = value===null ? value : ScrollPositioner.getScrollPos();
+    value = value===null ? value : scrollPositioner.getScrollPos();
     value = value==0 ? null : value;
-    ScrollPositioner.setStorageByKey(name, ScrollPositioner.pagename, value);
+    scrollPositioner.setStorageByKey(name, scrollPositioner.pagename, value);
     return value;
   },
   
   // Return the scroll position stored in local storage based on the current action.
   getScrollPosLS: function()
   {
-    if (ScrollPositioner.isBrowsing == false)
+    if (scrollPositioner.isBrowsing == false)
     { var name = 'EDIT-ScrollY'; }
     else { var name = 'VIEW-ScrollY'; }
     
-    return ScrollPositioner.getStorageByKey(name, ScrollPositioner.pagename);
+    return scrollPositioner.getStorageByKey(name, scrollPositioner.pagename);
   },
   
 /* The following is for caret positioning */
@@ -154,26 +154,26 @@ var ScrollPositioner =
   
   // Get & set the caret position. Depending on the current editing mechanism (codemirror,
   // div with content editable, legacy textarea), the methods are different.
-  getCaretPos: function() { return ScrollPositioner.text.selectionStart; },
+  getCaretPos: function() { return scrollPositioner.text.selectionStart; },
   setCaretPos: function(caret, caret2)
   {
     if (caret == null || caret2 == null) { return; }
-    ScrollPositioner.text.selectionStart = caret;
-    ScrollPositioner.text.selectionEnd = caret2;
+    scrollPositioner.text.selectionStart = caret;
+    scrollPositioner.text.selectionEnd = caret2;
   },
   
   // Record the current caret position in cookie. If the current caret position is 0, the
   // entry is deleted.
   setCaretPosLS: function(value)
   {
-    value = value===null ? value : ScrollPositioner.getCaretPos();
+    value = value===null ? value : scrollPositioner.getCaretPos();
     value = value==0 ? null : value;
-    ScrollPositioner.setStorageByKey('Caret', ScrollPositioner.pagename, value);
+    scrollPositioner.setStorageByKey('Caret', scrollPositioner.pagename, value);
   },
   
   // Read from local storage to get the last caret position.
   getCaretPosLS: function()
-  { return ScrollPositioner.getStorageByKey('Caret', ScrollPositioner.pagename); },
+  { return scrollPositioner.getStorageByKey('Caret', scrollPositioner.pagename); },
   
 /****************************************************************************************/
   
@@ -183,16 +183,16 @@ var ScrollPositioner =
   setScrollFromEdit: function(value)
   {
     if (value == null) { return; }
-    else if (String(value).substring(0,1) != 'n') { ScrollPositioner.setScrollPos(value); return; }
+    else if (String(value).substring(0,1) != 'n') { scrollPositioner.setScrollPos(value); return; }
     else { value = value.slice(1); }
     
     // Get timestamp, if expired then return
     var clock = new Date();
-    var timeDiff = Math.floor(clock.getTime()/1000) - ScrollPositioner.getStorageByKey('LastMod', ScrollPositioner.pagename);
+    var timeDiff = Math.floor(clock.getTime()/1000) - scrollPositioner.getStorageByKey('LastMod', scrollPositioner.pagename);
     if (timeDiff > 600) { return; }
     
     var numBullet = value;
-    var bulletObj = ScrollPositioner.wikitext.getElementsByTagName("li")[numBullet-1];
+    var bulletObj = scrollPositioner.wikitext.getElementsByTagName("li")[numBullet-1];
     
     // Leave if undefined; no bullets at all
     if (typeof bulletObj === 'undefined') { return; }
@@ -216,9 +216,9 @@ var ScrollPositioner =
     // It turns out another fix is needed for embedding youtube using ape.js. Also fix
     // this by introducing a delay
     var positionDelay = 0;
-    if (/<[^<]+class="embed"[^>]*>/.test(ScrollPositioner.wikitext.innerHTML))
+    if (/<[^<]+class="embed"[^>]*>/.test(scrollPositioner.wikitext.innerHTML))
     { positionDelay = Math.max(positionDelay,1000); }
-    if (ScrollPositioner.isDiaryPage == 2) { positionDelay = Math.max(positionDelay,1000); }
+    if (scrollPositioner.isDiaryPage == 2) { positionDelay = Math.max(positionDelay,1000); }
     
     var screenHeightAdj = Math.round(window.innerHeight/3);
     
@@ -231,7 +231,7 @@ var ScrollPositioner =
       idElement.scrollIntoView(true);
       var idPosRelBrowser = Math.floor(idElement.getBoundingClientRect().top);
       screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
-      ScrollPositioner.setScrollPos(ScrollPositioner.getScrollPos()-screenHeightAdj);
+      scrollPositioner.setScrollPos(scrollPositioner.getScrollPos()-screenHeightAdj);
     }
     ,positionDelay);
   },
@@ -240,7 +240,7 @@ var ScrollPositioner =
   // Then call setScrollFromEdit();
   waitLatexThenSetScroll: function(value)
   {
-    var HTML = ScrollPositioner.wikitext.innerHTML;
+    var HTML = scrollPositioner.wikitext.innerHTML;
     
     // See if the primitive markup for latex equations is still visible in the page HTML
     // This is non-ideal actually, as a fake target could block the the rest
@@ -248,15 +248,15 @@ var ScrollPositioner =
     if (startLatexMarkPos != -1 && HTML.indexOf('$}',startLatexMarkPos+1) != -1 &&
     HTML.slice(startLatexMarkPos,HTML.indexOf('$}',startLatexMarkPos+1)+2).indexOf("\n") == -1)
     {
-      ScrollPositioner.nWaitForLatex++;
-      if (ScrollPositioner.nWaitForLatex > 100)
+      scrollPositioner.nWaitForLatex++;
+      if (scrollPositioner.nWaitForLatex > 100)
       {
         alert('Latex rendering exceeds 10 seconds!');
-        ScrollPositioner.setScrollFromEdit(value);
+        scrollPositioner.setScrollFromEdit(value);
         return;
       }
       
-      setTimeout(function(){ScrollPositioner.waitLatexThenSetScroll(value)},100);
+      setTimeout(function(){scrollPositioner.waitLatexThenSetScroll(value)},100);
     }
     else
     {
@@ -270,24 +270,24 @@ var ScrollPositioner =
         // 30 is the length of the above search string; 7 is for '</span>'
         if (HTML.substring(mathJaxTagPos+30,mathJaxTagPos+30+7) != '</span>')
         {
-          ScrollPositioner.nWaitForLatex++;
-          if (ScrollPositioner.nWaitForLatex > 100)
+          scrollPositioner.nWaitForLatex++;
+          if (scrollPositioner.nWaitForLatex > 100)
           {
             alert('Latex rendering exceeds 10 seconds!');
-            ScrollPositioner.setScrollFromEdit(value);
+            scrollPositioner.setScrollFromEdit(value);
             return;
           }
           
-          setTimeout(function(){ScrollPositioner.waitLatexThenSetScroll(value)},100);
+          setTimeout(function(){scrollPositioner.waitLatexThenSetScroll(value)},100);
         }
         else
         {
-          ScrollPositioner.nWaitForLatex = 0;
-          ScrollPositioner.setScrollFromEdit(value);
+          scrollPositioner.nWaitForLatex = 0;
+          scrollPositioner.setScrollFromEdit(value);
         }
       }
       // No primitive markup, no latex header, means no latex on this page
-      else { ScrollPositioner.setScrollFromEdit(value); }
+      else { scrollPositioner.setScrollFromEdit(value); }
     }
   },
   
@@ -339,46 +339,46 @@ var ScrollPositioner =
     var numBullet = value;
     
     // Compute the caret offset given 'numBullet'.
-    var HTML = ScrollPositioner.text.textContent;
+    var HTML = scrollPositioner.text.textContent;
     isFirstLineBullet = -1;
     if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#')
     { isFirstLineBullet = 0; }
     
-    pos = ScrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
+    pos = scrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
     var pos2 = HTML.indexOf("\n",pos);
     if (pos2 == -1) { pos2 = pos+1; }
     
     // It turns out that Chrome will scroll automatically by first setting the caret
     // position then focusing. For some reason, highlighting a line then focusing
     // work on MAC but not on Windows. For compatibility, break this into 2 parts.
-    ScrollPositioner.text.blur();
-    ScrollPositioner.setCaretPos(pos,pos);
-    ScrollPositioner.text.focus();
-    ScrollPositioner.setCaretPos(pos,pos2);
+    scrollPositioner.text.blur();
+    scrollPositioner.setCaretPos(pos,pos);
+    scrollPositioner.text.focus();
+    scrollPositioner.setCaretPos(pos,pos2);
   },
   
   init: function()
   {
-    ScrollPositioner.pagename = ScrollPositioner.pagename.toUpperCase();
-    ScrollPositioner.text = document.getElementById('text');
-    ScrollPositioner.wikitext = document.getElementById('wikitext');
+    scrollPositioner.pagename = scrollPositioner.pagename.toUpperCase();
+    scrollPositioner.text = document.getElementById('text');
+    scrollPositioner.wikitext = document.getElementById('wikitext');
     
-    if (ScrollPositioner.action == 'browse' || ScrollPositioner.action == 'upload')
+    if (scrollPositioner.action == 'browse')
     {
-      ScrollPositioner.isBrowsing = true;
+      scrollPositioner.isBrowsing = true;
       
       // Read from the local storage to set the scroll position.
       // Before any scrolling we have to wait until the latex rendering is
       // completed; otherwise the scroll is not correct.
       // If the local storage content begins with 'n', the page has just been
       // modified. Delete it in such cases.
-      var value = ScrollPositioner.getScrollPosLS();
+      var value = scrollPositioner.getScrollPosLS();
       if (value != null)
       {
-        ScrollPositioner.waitLatexThenSetScroll(value);
+        scrollPositioner.waitLatexThenSetScroll(value);
         
         if (String(value).substring(0,1) == 'n')
-        { ScrollPositioner.setScrollPosLS(null); }
+        { scrollPositioner.setScrollPosLS(null); }
       }
       
       // When "/" is pressed, check whether texts are selected. If yes, compute the number of
@@ -395,7 +395,7 @@ var ScrollPositioner =
           
           if (selString == '')
           {
-            if ((event.ctrlKey && ScrollPositioner.OS == 'Mac') || event.altKey)
+            if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || event.altKey)
             { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
             else
             { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
@@ -407,7 +407,7 @@ var ScrollPositioner =
           if (newlinePos != -1) { selString = selString.substring(0,newlinePos); }
           
           // Remove spaces and newlines, also remove all the tags except <li.
-          var HTML = ScrollPositioner.wikitext.innerHTML.replace(/ /g,'').replace(/\n/g,'').replace(/<(?!li)[^>]*>/ig, '');
+          var HTML = scrollPositioner.wikitext.innerHTML.replace(/ /g,'').replace(/\n/g,'').replace(/<(?!li)[^>]*>/ig, '');
           
           var selStringPos = HTML.indexOf( selString );
           HTML = HTML.substring(0,selStringPos);
@@ -419,9 +419,9 @@ var ScrollPositioner =
           // "<li" appears in the string "HTML".
           var numBullet = (HTML.match(/<li/g) || []).length;
           
-          ScrollPositioner.setStorageByKey('EDIT-ScrollY', ScrollPositioner.pagename, 'n'+numBullet)
+          scrollPositioner.setStorageByKey('EDIT-ScrollY', scrollPositioner.pagename, 'n'+numBullet)
           
-					if ((event.ctrlKey && ScrollPositioner.OS == 'Mac') || event.altKey)
+					if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || event.altKey)
           { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
           else
           { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
@@ -432,41 +432,41 @@ var ScrollPositioner =
       , false);
     }
     
-    else if (ScrollPositioner.action == 'edit')
+    else if (scrollPositioner.action == 'edit')
     {
       fixTextareaHeight();
       
       // Check cookie. If the cookie content begins with 'n', texts from browsing have
       // just been selected for editing. Delete it and scroll to the specified position.
       // focus() is not called before setScrollFromBrowse() in order not to disturb it.
-      var value = ScrollPositioner.getScrollPosLS();
+      var value = scrollPositioner.getScrollPosLS();
       value = value==null ? 0 : value;
       if (String(value).substring(0,1) != 'n')
       {
         // Note that the sequence of the following commands matters. If the caret
         // positioning comes before the focus, Chrome will scroll so that caret is
         // centered in the screen, which interferes with the setScroll command.
-        ScrollPositioner.text.focus();
-        var pos = ScrollPositioner.getCaretPosLS();
+        scrollPositioner.text.focus();
+        var pos = scrollPositioner.getCaretPosLS();
         if (typeof pos == 'undefined')
         {
           var start = 0;
-          var end = ScrollPositioner.text.form.text.value.indexOf("\n",0);
+          var end = scrollPositioner.text.form.text.value.indexOf("\n",0);
         }
         else
         {
-          var start = ScrollPositioner.text.form.text.value.lastIndexOf("\n",pos-1)+1;
-          var end = ScrollPositioner.text.form.text.value.indexOf("\n",pos);
+          var start = scrollPositioner.text.form.text.value.lastIndexOf("\n",pos-1)+1;
+          var end = scrollPositioner.text.form.text.value.indexOf("\n",pos);
         }
-        end = end==-1 ? ScrollPositioner.text.form.text.value.length : end;
+        end = end==-1 ? scrollPositioner.text.form.text.value.length : end;
         
-        ScrollPositioner.setCaretPos(start, end);
-        ScrollPositioner.setScrollPos(value);
+        scrollPositioner.setCaretPos(start, end);
+        scrollPositioner.setScrollPos(value);
       }
       else
       {
-        ScrollPositioner.setScrollFromBrowse(String(value).slice(1));
-        ScrollPositioner.setScrollPosLS(null);
+        scrollPositioner.setScrollFromBrowse(String(value).slice(1));
+        scrollPositioner.setScrollPosLS(null);
       }
       
       window.addEventListener('resize', fixTextareaHeight, false);
@@ -474,17 +474,17 @@ var ScrollPositioner =
   }
 }
 
-window.addEventListener('load', ScrollPositioner.init, false);
+window.addEventListener('load', scrollPositioner.init, false);
 
 function fixTextareaHeight()
 {
   // Check if the textarea height is correct; if not then adjust
-  var rectObject = ScrollPositioner.text.getBoundingClientRect();
+  var rectObject = scrollPositioner.text.getBoundingClientRect();
   var correctTextAreaHeight = window.innerHeight - rectObject.top-4;
-  if (parseInt(ScrollPositioner.text.style.height) != correctTextAreaHeight)
+  if (parseInt(scrollPositioner.text.style.height) != correctTextAreaHeight)
   {
 //     console.log('Adjusting textarea height...');
-    ScrollPositioner.text.style.height = correctTextAreaHeight + 'px';
+    scrollPositioner.text.style.height = correctTextAreaHeight + 'px';
   }
 }
 
@@ -494,15 +494,15 @@ window.addEventListener("beforeunload", setScrollAndCaretPosCookie, false);
 function setScrollAndCaretPosCookie()
 {
   // Remove the LS data if the page text contains only the delete keyword
-  if (ScrollPositioner.action == 'edit' && ScrollPositioner.text.form.text.value.trim() == 'delete')
+  if (scrollPositioner.action == 'edit' && scrollPositioner.text.form.text.value.trim() == 'delete')
   {
-    ScrollPositioner.setScrollPosLS(null);
-    ScrollPositioner.setCaretPosLS(null);
+    scrollPositioner.setScrollPosLS(null);
+    scrollPositioner.setCaretPosLS(null);
   }
   else
   {
-    var scrollPos = ScrollPositioner.getScrollPosLS();
-    if (String(scrollPos).substring(0,1) != 'n') { scrollPos = ScrollPositioner.setScrollPosLS(); }
+    var scrollPos = scrollPositioner.getScrollPosLS();
+    if (String(scrollPos).substring(0,1) != 'n') { scrollPos = scrollPositioner.setScrollPosLS(); }
     
     // The missing caret position problem... 
     // It seems that sometimes when before the event beforeunload triggers, selectionStart
@@ -510,21 +510,21 @@ function setScrollAndCaretPosCookie()
     // to tell that a value of 0 is genuine or an unexpected one. The temp solution is 
     // to also check the scroll position, and accept a caret position of 0 only if the 
     // scroll position is also 0.
-    if (ScrollPositioner.action == 'edit')
+    if (scrollPositioner.action == 'edit')
     {
-			var caretPos = ScrollPositioner.getCaretPos();
+			var caretPos = scrollPositioner.getCaretPos();
     	if (caretPos == 0 && scrollPos == null) { caretPos = null; }
     	if (caretPos != 0 || caretPos == null)
-    	{ ScrollPositioner.setStorageByKey('Caret', ScrollPositioner.pagename, caretPos); }
+    	{ scrollPositioner.setStorageByKey('Caret', scrollPositioner.pagename, caretPos); }
     }
     
     // Record the window height.
-    if (ScrollPositioner.action == 'edit')
+    if (scrollPositioner.action == 'edit')
     {
-      var rectObject = ScrollPositioner.text.getBoundingClientRect();
+      var rectObject = scrollPositioner.text.getBoundingClientRect();
       var value = window.innerHeight - rectObject.top-4;
       var name = 'textAreaHeight';
-      ScrollPositioner.setCookie(name, value);
+      scrollPositioner.setCookie(name, value);
     }
   }
 }

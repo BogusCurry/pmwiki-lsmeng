@@ -15,7 +15,7 @@
  * Version 20160725
  */
 
-var PageTimer = 
+var pageTimer = 
 {
   TIMER_EXP_DURATION: 0,
   STANDBY_LOGOUT_DURATION: 0,
@@ -33,24 +33,24 @@ var PageTimer =
 	updateClock: function()
 	{
 	  // In case that the initialization is not completed, return immediately.
-	  if (PageTimer.timer == 0) { return; }
+	  if (pageTimer.timer == 0) { return; }
 	  
     var clock = new Date();
-    var diff = PageTimer.timer - clock.getTime()/1000;
+    var diff = pageTimer.timer - clock.getTime()/1000;
     
     // Check computer standby and logout
-		if (PageTimer.lastDiff - diff >= PageTimer.STANDBY_LOGOUT_DURATION)
+		if (pageTimer.lastDiff - diff >= pageTimer.STANDBY_LOGOUT_DURATION)
 		{	
-      window.location = PageTimer.ScriptUrl + '?n=CLICKLOGOUT' + PageTimer.pagename + '?action=' + PageTimer.action;
+      window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action;
 	    return;
 		}
 
-		PageTimer.lastDiff = diff;
+		pageTimer.lastDiff = diff;
 		
     // Timer expires
 		if (diff <= 0)
 		{
-		  window.location = 'http://' + PageTimer.pagename;
+		  window.location = 'http://' + pageTimer.pagename;
 		  return;
 		}
 
@@ -71,27 +71,27 @@ var PageTimer =
   // Reset the timer.
   resetTimer: function()
   {
-		document.querySelector('#ID_LOGOUTTIMER').textContent = PageTimer.hourInit + ":" + PageTimer.minutesInit + ":" + PageTimer.secondsInit;
+		document.querySelector('#ID_LOGOUTTIMER').textContent = pageTimer.hourInit + ":" + pageTimer.minutesInit + ":" + pageTimer.secondsInit;
 
 		var clock = new Date();    
-		PageTimer.timer = clock.getTime()/1000 + PageTimer.TIMER_EXP_DURATION;
+		pageTimer.timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
   },
   
   init: function()
   {
-		var hour = parseInt(PageTimer.TIMER_EXP_DURATION / 3600, 10);
-		var minutes = parseInt((PageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
-		var seconds = parseInt(PageTimer.TIMER_EXP_DURATION % 60, 10);
+		var hour = parseInt(pageTimer.TIMER_EXP_DURATION / 3600, 10);
+		var minutes = parseInt((pageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
+		var seconds = parseInt(pageTimer.TIMER_EXP_DURATION % 60, 10);
 
- 		PageTimer.hourInit = hour < 10 ? "0" + hour : hour;
-		PageTimer.minutesInit = minutes < 10 ? "0" + minutes : minutes;
-		PageTimer.secondsInit = seconds < 10 ? "0" + seconds : seconds;
+ 		pageTimer.hourInit = hour < 10 ? "0" + hour : hour;
+		pageTimer.minutesInit = minutes < 10 ? "0" + minutes : minutes;
+		pageTimer.secondsInit = seconds < 10 ? "0" + seconds : seconds;
   
- 	  PageTimer.resetTimer();
-	  setInterval(PageTimer.updateClock, 1000);
+ 	  pageTimer.resetTimer();
+	  setInterval(pageTimer.updateClock, 1000);
   }
 };
 
-window.addEventListener('load', PageTimer.init, false);
-//window.addEventListener('focus', PageTimer.updateClock, false);
-window.addEventListener('input', PageTimer.resetTimer, false);
+window.addEventListener('load', pageTimer.init, false);
+//window.addEventListener('focus', pageTimer.updateClock, false);
+window.addEventListener('input', pageTimer.resetTimer, false);

@@ -1119,7 +1119,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 /****************************************************************************************/
 
 // Configure and add pageTimer.js. To be called in pmwikiAuth()
-function addPageTimerJs($countdownTimer)
+function addpageTimerJs($countdownTimer)
 {
   // Logout is called 5 mins after the computer standby.
   // Has to be > countDownTimerUpdateInterval+1 for correct behavior due to jitters in the
@@ -1128,13 +1128,13 @@ function addPageTimerJs($countdownTimer)
   
   // Java logout timer update period.
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
-  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pagetimer.js'></script>
+  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
   <script type='text/javascript'>
-  PageTimer.TIMER_EXP_DURATION = $countdownTimer;
-  PageTimer.STANDBY_LOGOUT_DURATION = $standbyLogoutDuration;
-  PageTimer.pagename = '$pagename';
-  PageTimer.ScriptUrl = '$ScriptUrl';
-  PageTimer.action = '$action';
+  pageTimer.TIMER_EXP_DURATION = $countdownTimer;
+  pageTimer.STANDBY_LOGOUT_DURATION = $standbyLogoutDuration;
+  pageTimer.pagename = '$pagename';
+  pageTimer.ScriptUrl = '$ScriptUrl';
+  pageTimer.action = '$action';
   </script>";
 }
 
@@ -1779,9 +1779,9 @@ function httpAuth()
 
 if ($action == 'browse')
 {
-  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/AutoRefresher.js'></script>
+  $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/autoRefresher.js'></script>
   <script type='text/javascript'>
-  AutoRefresher.pagename = '$pagename';
+  autoRefresher.pagename = '$pagename';
   </script>";
 }
 

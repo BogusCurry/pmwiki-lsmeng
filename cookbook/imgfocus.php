@@ -17,7 +17,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160728
+ * Version 20161214
  */
 
 $RecipeInfo['Imgfocus']['Version'] = '20160728';
@@ -37,12 +37,12 @@ $ImgfocusExceptionList = json_encode($ImgfocusExceptionList);
 if($action == "browse" || $action == "upload" || $_REQUEST['preview'])
 {
    $HTMLHeaderFmt['imgfocus'] = "
-   <script type='text/javascript' src='$PubDirUrl/imgfocus/imgfocus.js'></script>
-   <script type='text/javascript'>
-		 ImgfocusFadeInTime = $ImgfocusFadeInTime; 
-		 ImgFocusFadeOutTime = $ImgFocusFadeOutTime;
-		 ImgfocusZoomToFitTime = $ImgfocusZoomToFitTime;
-		 ImgfocusExceptionList = '$ImgfocusExceptionList';
+   <script src='$PubDirUrl/imgfocus/imgfocus.js'></script>
+   <script>
+		 imgfocus.fadeInTime = $ImgfocusFadeInTime; 
+		 imgfocus.fadeOutTime = $ImgFocusFadeOutTime;
+		 imgfocus.zoomToFitTime = $ImgfocusZoomToFitTime;
+		 imgfocus.exceptionList = '$ImgfocusExceptionList';
 	 </script>
    <link rel='stylesheet' href='$PubDirUrl/imgfocus/imgfocus.css' type='text/css'>";
 }

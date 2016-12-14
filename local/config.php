@@ -258,19 +258,19 @@ $autoSaveDelayHttp = 5000;
 $autoSaveDelayHttps = 1000;
 include_once("$FarmD/cookbook/autosave.php");
 
-if ($action == 'edit' || $action == 'browse' || $action == 'upload')
+if ($action == 'edit' || $action == 'browse')
 {
   if (substr($pagename,0,4) != 'LOCK')
   {
     $isDiaryPage = isDiaryPage();
     $OS = getOS();
 		// Memorize and set the scroll position.
-		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/ScrollPositioner.js'></script>
+		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/scrollPositioner.js'></script>
 		<script type='text/javascript'>
-		ScrollPositioner.pagename = '$pagename';
-		ScrollPositioner.isDiaryPage = '$isDiaryPage';		
-		ScrollPositioner.OS = '$OS';
-		ScrollPositioner.action = '$action';
+		scrollPositioner.pagename = '$pagename';
+		scrollPositioner.isDiaryPage = '$isDiaryPage';		
+		scrollPositioner.OS = '$OS';
+		scrollPositioner.action = '$action';
 		</script>";
 	}
 }

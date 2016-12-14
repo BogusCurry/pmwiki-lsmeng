@@ -6,7 +6,7 @@
  * Email: f95942117@gmail.com
  */
  
-var AutoRefresher = 
+var autoRefresher = 
 {
   basetime: 0,
   pagename: '',
@@ -28,8 +28,8 @@ var AutoRefresher =
   reloadIfUpdate: function()
   {
   	// Get cookie to obtain the lastModTime;
-  	var lastModTime = AutoRefresher.getStorageByKey('LastMod', AutoRefresher.pagename.toUpperCase());
-  	if (lastModTime > AutoRefresher.basetime)
+  	var lastModTime = autoRefresher.getStorageByKey('LastMod', autoRefresher.pagename.toUpperCase());
+  	if (lastModTime > autoRefresher.basetime)
   	{	
 //    window.location = window.location.href;
       location.reload();
@@ -40,10 +40,10 @@ var AutoRefresher =
   {
     // On load, record the current time.
     var clock = new Date();
-    AutoRefresher.basetime = Math.round(clock.getTime()/1000);
+    autoRefresher.basetime = Math.round(clock.getTime()/1000);
   }
 }
 
-window.addEventListener('load', AutoRefresher.init, false);
-window.addEventListener('focus', AutoRefresher.reloadIfUpdate, false);
+window.addEventListener('load', autoRefresher.init, false);
+window.addEventListener('focus', autoRefresher.reloadIfUpdate, false);
 
