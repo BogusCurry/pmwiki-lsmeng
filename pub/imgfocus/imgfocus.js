@@ -41,10 +41,6 @@ function ImgfocusClickHandle(element)
 			// Overlay the dimmer					
 			document.body.appendChild(dimmer);
 
-			// Disable scrolling for the page so that later when we scroll the image to 
-			// enlarge, the page is not scrolled.
-			document.body.style.overflow = 'hidden';
-			
 			imgEnlarge.id = 'ImgfocusPopupImage';
 			imgEnlarge.style.zIndex = dimmer.style.zIndex+1;
 			imgEnlarge.style.position = 'fixed';
@@ -154,7 +150,7 @@ function ImgfocusPopupImgOnClick()
 
 		// Apply the popup function on clicking the image
 // 		imgElement[i].onclick = ImgfocusClickHandle(imgElement[i], dimmer);
-		imgElement[i].onclick = function() { ImgfocusClickHandle(this, documentBodyElement, dimmer); }
+		imgElement[i].onclick = function() { ImgfocusClickHandle(this); }
  	}
 }
 
@@ -295,6 +291,8 @@ function ImgfocusMouseUpStopDragOrRemoveImg(e)
 // transition
 function ImgfocusWheelZoom(e)
 {
+  e.preventDefault();
+  
   var imgEnlarge = document.getElementById('ImgfocusPopupImage');
 	var minWidth = 50;
   
@@ -333,8 +331,6 @@ function ImgfocusRemovePopupImg(style)
     
     var dimmer = document.getElementById('ImgfocusDimmer');
 	  try { dimmer.remove(); } catch(e) {}
-    
-    document.body.style.overflow = 'auto';		
     
 		var bodyElementLen = document.body.children.length;
 		for (var i=0;i<bodyElementLen;i++)

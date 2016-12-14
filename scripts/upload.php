@@ -17,6 +17,29 @@
     Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
+// Meng
+if($action == "upload")
+{
+   $HTMLHeaderFmt['uploadshowimg'] = "
+   <script src='$PubDirUrl/uploadshowimg.js'></script>";
+}
+
+if ($action=='upload' && isset($_GET["show"]))
+{	
+	global $UploadDir, $UploadPrefixFmt;
+  $uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
+  
+	if (isset($_SERVER['HTTP_REQUESTIMG']) && file_exists($uploaddir.'/'.$_GET["show"]))
+	{
+	  $file = $_GET["show"];
+	  $imgSrc = getImgFileContent($uploaddir.'/'.$file);
+		echo $imgSrc;
+		
+		exit;
+	}
+}
+
+
 ## $EnableUploadOverwrite determines if we allow previously uploaded
 ## files to be overwritten.
 SDV($EnableUploadOverwrite,1);
@@ -478,7 +501,7 @@ function FmtUploadList($pagename, $args) {
                           ? "$UploadUrlFmt$UploadPrefixFmt/"
                           : "\$PageUrl?action=download&amp;upname=",
                       $pagename);
-                
+  
   // Meng. Delete an uploaded file.
 	if (isset($_GET["delete"]) && file_exists($uploaddir.'/'.$_GET["delete"]))
 	{
@@ -498,42 +521,33 @@ function FmtUploadList($pagename, $args) {
 	// Meng. Show the selected uploaded image, and the delete link.
   else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
 	{	
-$imgSrc = getImgFileContent($uploaddir.'/'.$_GET["show"]);
-echo "
-<script>
-document.body.innerHTML = '';
-</script>;";
-
-echo 'testetse';
-echo "<img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".$imgSrc." />";
-// redirect($imgSrc);
-
-	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
-	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
-    {
-      $fileName = $_GET['show'];
-      $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
-      global $PubDirUrl;
-      $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
-      $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
-
-      // Meng. The trash can open/close images downloaded from the Internet.
-   		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
-   		<script>
-   		function showTrashClose()
-   		{
-     		document.getElementById('trashCanImg').src='$trashCloseImgUrl';
-   		}
-   		function showTrashOpen()
-   		{
-     		document.getElementById('trashCanImg').src='$trashOpenImgUrl';
-   		}
-   		</script>
-   		", $pagename);
-   		
-			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
-    }
-    else { echo 'Not an image!'; }
+    		
+// 	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
+// 	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
+//     {
+//       $fileName = $_GET['show'];
+//       $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
+//       global $PubDirUrl;
+//       $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
+//       $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
+// 
+//       // Meng. The trash can open/close images downloaded from the Internet.
+//    		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
+//    		<script>
+//    		function showTrashClose()
+//    		{
+//      		document.getElementById('trashCanImg').src='$trashCloseImgUrl';
+//    		}
+//    		function showTrashOpen()
+//    		{
+//      		document.getElementById('trashCanImg').src='$trashOpenImgUrl';
+//    		}
+//    		</script>
+//    		", $pagename);
+//    		
+// 			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
+//     }
+//     else { echo 'Not an image!'; }
 	}
 
   $dirp = @opendir($uploaddir);
@@ -584,22 +598,14 @@ echo "<img style='position:fixed; right:0; max-height:500px; max-width:500px;' s
     }
 		
 		$imgSrc = getImgFileContent($uploaddir.'/'.$file);
-		$srcTest = 'http://localhost/pmwiki/pmwiki.php?n=HTC.HomePage?action=upload&show=20161205_092026.jpg';
 		
   	// Meng. Add the symbol for deletion.
 		$out[$stat['mtime'].$file] = "<li>".
 
 		"<span style=\"cursor: pointer;\" onclick=\"
-		if (window.uploadImg) { window.uploadImg.remove(); }
-		window.uploadImg = document.createElement('iframe');	
-  	uploadImg.src = '$srcTest';
-    uploadImg.style.position = 'fixed';
-    uploadImg.style.width = '700px';
-    uploadImg.style.height = '500px';
-    uploadImg.style.right = '0';
-    uploadImg.style.bottom = '0';
-		document.body.appendChild(uploadImg);
-
+		
+		getImg('$file');
+		
 		\">".$file."</span>." .
 
 		"$lnk$overwrite$del ... ". 
