@@ -139,6 +139,8 @@ var AS =
 		}
 		if (AS.req.status == 200 || AS.req.status == 304)
 		{
+var headers = AS.req.getAllResponseHeaders();
+console.log(headers);
 			AS.busy = false;
 			AS.set_status(AS.req.responseText);
 		} 

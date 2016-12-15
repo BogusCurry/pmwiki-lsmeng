@@ -13,6 +13,8 @@ function getAndShowImgFile(fileName)
 		{
 			if (this.status == 200)
 			{
+// var headers = this.getAllResponseHeaders();
+// console.log(headers);
 				var imgSrc = this.responseText;
 				
 				// create an image element, and append this thing

@@ -36,6 +36,10 @@ if ($action =='upload')
 			header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
 			header("Pragma: no-cache"); // HTTP 1.0.
 			header("Expires: 0"); // Proxies.
+			
+			// Explicitly indicating the content type as plaintext to avoid the client wasting 
+			// effort parsing the content into XML
+			header("Content-type: text/plain");
 			echo $imgSrc;
 			
 			exit;
@@ -523,9 +527,9 @@ function FmtUploadList($pagename, $args) {
  	}
 	
 	// Meng. Show the selected uploaded image, and the delete link.
+	// Replaced by client side AJAX solution.
   else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
 	{	
-    		
 // 	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
 // 	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
 //     {
@@ -587,9 +591,33 @@ function FmtUploadList($pagename, $args) {
         href='\$LinkUpload'>&nbsp;&Delta;</a>",
         $pagename);
         
-		$del = FmtPageName("<a rel='nofollow' class='createlink'
-			href='\$LinkDel'>&nbsp;&Chi;</a>",
-			$pagename);
+/*********************/
+//       global $PubDirUrl;
+//       $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
+//       $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
+// 
+//       // Meng. The trash can open/close images downloaded from the Internet.
+//    		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg$file' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
+//    		<script>
+//    		function showTrashClose()
+//    		{
+//      		document.getElementById('trashCanImg$file').src='$trashCloseImgUrl';
+//    		}
+//    		function showTrashOpen()
+//    		{
+//      		document.getElementById('trashCanImg$file').src='$trashOpenImgUrl';
+//    		}
+//    		</script>
+//    		", $pagename);
+/*********************/
+
+
+
+		$del = FmtPageName(
+		"<span style=\"cursor: pointer; color:red; \"onclick=\"
+		if (confirm('Delete the file?')) { window.location = '\$LinkDel'; }
+		\">&nbsp;&Chi;</span>
+		",$pagename);
 			
 // 		$lnk = FmtPageName($fmt, $pagename);
 
@@ -609,7 +637,7 @@ function FmtUploadList($pagename, $args) {
 		"<span style=\"cursor: pointer;\"
 		onclick=\"getAndShowImgFile('$file');\">".$file."</span>" .
 
-		"$lnk$overwrite$del ... ". 
+		"$lnk$overwrite$del$delMarkup ... ". 
 		
 		$imgDimension.
 		
