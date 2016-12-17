@@ -70,9 +70,19 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
 		$EditFunctions,
 		$EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
 
+	// Since I change the mechanism of Autosave from posting with content-type: 
+	// application/x-www-form-urlencoded to text/plain, the variable $_POST is not working
+	// and is simply filled in manually with corresponding information.
+	// Particularly, the basetime is replaced by a specific header sent by the client
+	// the text content is then the raw input sent using text/plain
+	$_POST['action'] = 'edit';
+	$_POST['n'] = $pagename;
+	$_POST['basetime'] = $_SERVER['HTTP_BASETIME'];
+	$_POST['text'] =  file_get_contents('php://input');
+
 	Lock(2);
-		$page = RetrieveAuthPage($pagename, $auth, false);
-		if (!$page) { echo 'Autosave read error'; return; }
+	$page = RetrieveAuthPage($pagename, $auth, false);
+	if (!$page) { echo 'Autosave read error'; return; }
 		
   // Meng: The following controls simultaneous editing. 
 	if ( ( $page['time'] != $Now) && ( $_POST['basetime'] < $page['time'] ) )

@@ -366,6 +366,8 @@ function updateOffset()
 
 window.addEventListener('keydown', function()
 {
+  if (!EditEnhanceElement) { return; }
+  
   // A fix for windows. Prevent alt key to turn the focus to browser's toolbar.
   if (event.keyCode == 18)
   {

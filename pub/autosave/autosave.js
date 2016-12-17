@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161204
+ * Version 20161217
  */
 
 var AS = 
@@ -32,7 +32,7 @@ var AS =
   id1: null,
   id2: null,
   textID: null,
-  prefix: '',
+//   prefix: '',
   lastTextContent: '',
   pagename: '',
   pagenameU: '',
@@ -139,8 +139,6 @@ var AS =
 		}
 		if (AS.req.status == 200 || AS.req.status == 304)
 		{
-var headers = AS.req.getAllResponseHeaders();
-console.log(headers);
 			AS.busy = false;
 			AS.set_status(AS.req.responseText);
 		} 
@@ -188,26 +186,16 @@ console.log(headers);
   //        false otherwise.
 	make_new_post_str: function()
 	{	
-  	AS.post_str = AS.prefix+AS.basetime+'&text=';
-  	
-  	// encodeURIComponent() replace special characters including Chinese and special
-  	// symbols with http symbols. The only changes that matter to me seem to be only these 
-  	// two symbols though: & +
-  	// Replacing encodeURIComponent() with explicit string replace could improve the 
-  	// performance a little bit; however, I am not absolutely sure if this is absolutely 
-  	// safe.
 	  var textContent = AS.ifTextChange();
     if (textContent != null)
     {
       AS.lastTextContent = textContent;
-      AS.post_str = AS.post_str + encodeURIComponent(AS.lastTextContent);
-      
+			AS.post_str = AS.lastTextContent;
       return true;
     }
     else
     {
-      AS.post_str = AS.post_str + encodeURIComponent(AS.lastTextContent);
-      
+			AS.post_str = AS.lastTextContent;
       return false;
     }
 	},
@@ -221,8 +209,7 @@ console.log(headers);
 	saveOnUnload: function()
 	{
 		AS.req.open("POST",AS.url,false);
-		AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-  
+  	AS.req.setRequestHeader( "BASETIME", AS.basetime );
     AS.countBulletWriteCookie();
     AS.setLastModLS();
 		AS.req.send(AS.post_str);  
@@ -264,7 +251,7 @@ console.log(headers);
 				AS.set_status("Autosaving");
 				AS.busy = true;
 				AS.req.open("POST",AS.url,true);
-				AS.req.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+				AS.req.setRequestHeader( "BASETIME", AS.basetime );
 				AS.req.onreadystatechange = AS.reply;
 				AS.req.send(AS.post_str);
 	      AS.countBulletWriteCookie(); 
@@ -419,8 +406,6 @@ console.log(headers);
     var clock = new Date();
     AS.basetime = Math.floor(clock.getTime()/1000);
 
-		AS.prefix = 'action=edit&n='+AS.pagename+'&basetime=';
-
 		AS.make_new_post_str();
 		AS.req = new XMLHttpRequest();
 
@@ -496,8 +481,8 @@ window.addEventListener("beforeunload", function(event)
 			  // simultaneous editing; this might happen because there is already an ongoing 
 			  // saving process.
         AS.basetime = '9999999999';
-		  	AS.post_str = AS.prefix+AS.basetime+'&text=' + encodeURIComponent(AS.lastTextContent);
-  	 
+  	    AS.post_str = AS.lastTextContent;
+			  
 			  AS.saveOnUnload();
 			}
 		}
