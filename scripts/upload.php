@@ -40,6 +40,8 @@ if ($action =='upload')
 			// Explicitly indicating the content type as plaintext to avoid the client wasting 
 			// effort parsing the content into XML
 			header("Content-type: text/plain");
+			$contentLen = strlen($imgSrc);
+			header("Content-length: $contentLen");
 			echo $imgSrc;
 			
 			exit;
@@ -154,7 +156,8 @@ SDV($FmtPV['$PasswdUpload'], 'PasswdVar($pn, "upload")');
 
 Markup_e('attachlist', 'directives',
   '/\\(:attachlist\\s*(.*?):\\)/i',
-  "Keep('<ul>'.FmtUploadList('$pagename',\$m[1]).'</ul>')");
+// Meng. Change from ul to ol; specify line-height
+  "Keep('<ol style=\"line-height:33px;\">'.FmtUploadList('$pagename',\$m[1]).'</ol>')");
 SDV($GUIButtons['attach'], array(220, 'Attach:', '', '$[file.ext]',
   '$GUIButtonDirUrlFmt/attach.gif"$[Attach file]"'));
 SDV($LinkFunctions['Attach:'], 'LinkUpload');
@@ -573,6 +576,7 @@ function FmtUploadList($pagename, $args) {
   
   $overwrite = '';
   $fmt = IsEnabled($IMapLinkFmt['Attach:'], $UrlLinkFmt);
+  $fileCount = 0;
   foreach($filelist as $file=>$encfile)
   {  
     // Meng. Change the link.
@@ -611,8 +615,6 @@ function FmtUploadList($pagename, $args) {
 //    		", $pagename);
 /*********************/
 
-
-
 		$del = FmtPageName(
 		"<span style=\"cursor: pointer; color:red; \"onclick=\"
 		if (confirm('Delete the file?')) { window.location = '\$LinkDel'; }
@@ -644,11 +646,38 @@ function FmtUploadList($pagename, $args) {
 		number_format($stat['size']/1000) . " KB ... " . 
 		
 		strftime($TimeFmt, $stat['mtime'])  . '</li>';
+		
+		$fileCount++;
   }
 
   // Meng. Sort the filelist by date
 	ksort($out);
 	$out = array_reverse($out);
+	
+	// Meng. Show thumbnail image for a few most recent image files
+  $fileCount = 0;
+	foreach ($out as $key => $value)
+  {
+  	if ($fileCount < 5)
+  	{
+			$file = substr($key,10);
+			$ext = strtolower(substr($file, strrpos($file, '.')+1));
+
+      // If this is an image
+  		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png' || $ext == 'bmp' || $ext == 'gif')
+	  	{
+				$imgSrc = getImgFileContent($uploaddir.'/'.$file);
+				
+				$thumbImgHTML = "<span style=\"color:red;display:inline-block;height:22px;width:50px;\">
+				<img style='max-height:100%;max-width:100%;' src='$imgSrc'/></span>";
+	
+				$out[$key] = "<li>".$thumbImgHTML.substr($out[$key],4);
+	  	}
+			
+    	$fileCount++;
+  	}
+    else { break; }
+  }
 	
   return implode("\n",$out);
 }
@@ -671,3 +700,4 @@ function AttachExist($pagename, $condparm='*') {
   }
   return count($flist);
 }
+

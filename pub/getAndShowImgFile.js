@@ -6,6 +6,12 @@ function getAndShowImgFile(fileName)
 	var uploadUrl = window.location.href+'&show='+fileName;
 	req.open('GET',uploadUrl,true);
 	req.send();
+
+	// Show download progress
+	req.onprogress = function(e)
+	{ 
+		console.log("Downloading... " + Math.round(100*e.loaded/e.total) + "%");
+	}
 	
 	req.onreadystatechange = function()
 	{
@@ -35,3 +41,8 @@ function getAndShowImgFile(fileName)
 		}
 	}
 }
+
+window.addEventListener('keydown', function()
+{  
+	if (event.keyCode == 27 && window.uploadImg) { window.uploadImg.remove(); }
+},false);
