@@ -8,10 +8,8 @@ function getAndShowImgFile(fileName)
 	req.send();
 
 	// Show download progress
-	req.onprogress = function(e)
-	{ 
-		console.log("Downloading... " + Math.round(100*e.loaded/e.total) + "%");
-	}
+// 	req.onprogress = function(e)
+//   { console.log("Downloading... " + Math.round(100*e.loaded/e.total) + "%"); }
 	
 	req.onreadystatechange = function()
 	{

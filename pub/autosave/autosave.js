@@ -252,6 +252,11 @@ var AS =
 				AS.busy = true;
 				AS.req.open("POST",AS.url,true);
 				AS.req.setRequestHeader( "BASETIME", AS.basetime );
+
+				// Show saving progress
+// 				AS.req.upload.onprogress = function(e)
+// 				{ console.log("Saving... " + Math.round(e.loaded/e.total*100) + "%"); };
+
 				AS.req.onreadystatechange = AS.reply;
 				AS.req.send(AS.post_str);
 	      AS.countBulletWriteCookie(); 
