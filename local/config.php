@@ -186,6 +186,12 @@ if (!file_exists("wiki.d/backup"))
   { Abort("Permission change for \"wiki.d/backup\" failed!"); }
 }
 
+// Abort if encryption related extension is not enabled
+if (!function_exists(openssl_encrypt)) { Abort("\"openssl_encrypt\" is not supported!"); }
+
+// Abort if compression related extension is not enabled
+if (!function_exists(bzcompress)) { Abort("\"bzcompress\" is not supported!"); }
+
 // Various enhancements written by me
 $URI = $_SERVER['REQUEST_URI'];
 $homeSSID = "Sam Base";

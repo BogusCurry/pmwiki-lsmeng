@@ -1173,12 +1173,12 @@ class PageStore {
       $r0 = array('%', "\n", '<');
       $r1 = array('%25', '%0a', '%3c');
       $x = "version=$Version ordered=1 urlencoded=1\n";
-      $s = true && $updatedText=$x; $sz = strlen($x);
+      $s = true && $updatedText=$x; // $sz = strlen($x);
       foreach($page as $k=>$v) 
         if ($k > '' && $k{0} != '=')
         {
           $x = str_replace($r0, $r1, "$k=$v") . "\n";
-          $s = $s && $updatedText.=$x; $sz += strlen($x);
+          $s = $s && $updatedText.=$x; // $sz += strlen($x);
         }
 
       // The encryption
@@ -1189,7 +1189,9 @@ class PageStore {
 
       $s = fputs($fp,$updatedText) && $s;
       $s = fclose($fp) && $s;
-      $s = $s && (filesize("wiki.d/$pagename,new") > $sz * 0.95);
+      // Meng. $sz seems to be used for doing a file size check. This will fail after
+      // compression is used. 
+//       $s = $s && (filesize("wiki.d/$pagename,new") > $sz * 0.95);
 			if (!$s) { Abort("Writing to new file failed for $pagename ($pagefile)"); }
 
 			if (noEncryptPage($pagename) == 0) 
@@ -1959,29 +1961,14 @@ function HandleBrowse($pagename, $auth = 'read') {
 /****************************************************************************************/
 /* Ling-San Meng: */
 
-//var_dump($_SESSION);
 
 // Speed test
 /*
-$testStr = '<img></img>';
-$testStr = Keep($testStr);
-$text = '(:groupheader:)'.$testStr.substr($text,strlen('(:groupheader:)'));
-*/
-/*
 $start = microtime(true);
-
-$password = "password";
-$iterations = 80000;
-$salt = "1234";// mcrypt_create_iv(16, MCRYPT_DEV_URANDOM);
-$hash = hash_pbkdf2("sha512", $password, $salt, $iterations, 0, true);
-
-//echo $hash."<br>";
-//echo strlen($hash)."<br>";
     
 $time_elapsed_secs = microtime(true) - $start;
-echo $time_elapsed_secs."<br>";
+echo 'Execution time: '.$time_elapsed_secs."<br>";
 */
-
 
 		// Update the pageindex if the pageindex does not reflect the newest changes in this 
 		// page based on some timestamps. The field and hence the page itself will also be

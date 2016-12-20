@@ -1335,6 +1335,10 @@ function encryptStr($text, $key = "")
   // Don't encrypt the text if it's been encrypted already.
   global $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
   if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
+
+	// Insert data compression here
+// 	$text = "GZCOMPRESS\n".gzcompress($text,9);
+	$text = "BZCOMPRESS\n".bzcompress($text,9);
   
   // Generate a random salt for deriving the encryption key and IV
   global $SALT_LEN;
@@ -1347,7 +1351,7 @@ function encryptStr($text, $key = "")
   global $IV_LEN;
   $iv = openssl_random_pseudo_bytes($IV_LEN);
   
-  $encryptText = openssl_encrypt ($text, $OPENSSL_METHOD, $AES_KEY, OPENSSL_RAW_DATA, $iv);
+  $encryptText = openssl_encrypt($text, $OPENSSL_METHOD, $AES_KEY, OPENSSL_RAW_DATA, $iv);
   if ($encryptText === false) { Abort("$pagename encryption error!"); }
   
   $KEYWORD = $ENC_KEYWORD;
@@ -1423,7 +1427,13 @@ function decryptStr($text, $key = "")
   if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
   else
   { cacheRecentPageAESKey($AES_KEY, $key.$salt); }
-  
+
+	// Insert data decompression here
+	if (substr($decryptText,0,10) == 'GZCOMPRESS')
+	{ $decryptText = gzuncompress(substr($decryptText,11)); }
+  else if (substr($decryptText,0,10) == 'BZCOMPRESS')
+	{ $decryptText = bzdecompress(substr($decryptText,11)); }
+
   return $decryptText;
 }
 
