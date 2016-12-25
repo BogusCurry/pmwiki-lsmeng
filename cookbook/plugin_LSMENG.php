@@ -1118,6 +1118,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
 /****************************************************************************************/
 
+
 // Configure and add pageTimer.js. To be called in pmwikiAuth()
 function addpageTimerJs($countdownTimer)
 {
@@ -1128,11 +1129,20 @@ function addpageTimerJs($countdownTimer)
   
   // Java logout timer update period.
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
+
+	// Determine the dummy pagename to redirect upon timer expiration 
+	$_pagename = substr($pagename,strpos($pagename,'.')+1);
+	$groupname = substr($pagename,0,strpos($pagename,'.'));
+	if (substr($groupname,0,strlen("LOCK")) == "LOCK")
+	{ $groupname = substr($groupname,strlen("LOCK")); }
+	$closeRedirectName = $_pagename.'/'.$groupname;
+
   $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
   <script type='text/javascript'>
   pageTimer.TIMER_EXP_DURATION = $countdownTimer;
   pageTimer.STANDBY_LOGOUT_DURATION = $standbyLogoutDuration;
   pageTimer.pagename = '$pagename';
+  pageTimer.closePagename = '$closeRedirectName';
   pageTimer.ScriptUrl = '$ScriptUrl';
   pageTimer.action = '$action';
   </script>";

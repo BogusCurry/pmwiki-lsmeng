@@ -143,6 +143,7 @@ h6 { font-size:1.0em; }
 #wikiedit form
 {
 	background-image:url('http://localhost/pmwiki/pub/skins/pmwiki_gray/pencil_light.png');
+	background-size:contain;
 	background-position:100% 100%;
 	background-repeat:no-repeat;
 }

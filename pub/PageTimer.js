@@ -50,7 +50,7 @@ var pageTimer =
     // Timer expires
 		if (diff <= 0)
 		{
-		  window.location = 'http://' + pageTimer.pagename;
+		  window.location = 'http://' + pageTimer.closePagename;
 		  return;
 		}
 

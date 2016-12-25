@@ -20,7 +20,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160918
+ * Version 20161223
  */
 
 // Arrange all the play icons so that they situate at the center of associated video 
@@ -268,8 +268,8 @@ window.addEventListener('load', function() {
           Html5AVCtrlElement.currentTime = Html5AVCtrlElement.duration / 10 * numKey;
         }
 
-        // V: Scroll into view the current captured element
-        else if (e.keyCode == 86) {
+        // J: Scroll into view the current captured element
+        else if (e.keyCode == 74) {
           e.preventDefault();
      			Html5AVCtrlElement.scrollIntoView(true);
         }                
