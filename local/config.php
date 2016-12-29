@@ -488,12 +488,13 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 
 # Replace some never-used full-width characters on saving.
 $ROSPatterns ['/＊/'] = "*";
-$ROSPatterns ['/＃/'] = "#";
-$ROSPatterns ['/＋/'] = "+";
-$ROSPatterns ['/＼/'] = "\\";
-$ROSPatterns ['/，/'] = ", ";
-$ROSPatterns ['/。/'] = ". ";
+$ROSPatterns ['/＃/'] = "#"; // \uFF03
+$ROSPatterns ['/＋/'] = "+"; // \uFF0B
+$ROSPatterns ['/＼/'] = "\\"; // \uFF3C
+$ROSPatterns ['/，/'] = ", "; // \uFF0C
+$ROSPatterns ['/。/'] = ". "; // \u3002
 $ROSPatterns ['/：/'] = ": ";
+$ROSPatterns ['/；/'] = "; ";
 $ROSPatterns ['/％/'] = "%";
 $ROSPatterns ['/＄/'] = "$";
 $ROSPatterns ['/＆/'] = "&";

@@ -105,8 +105,18 @@ var AS =
 				// If the associated view page has been opened, refresh it upon saving.
 				if (typeof EditEnhanceViewWindow != "undefined")
 				{
-					var pagename = EditEnhanceViewWindow.location.href.substr(EditEnhanceViewWindow.location.href.indexOf('=')+1).toUpperCase();
-					if (pagename == AS.pagenameU) { EditEnhanceViewWindow.location.reload(); }
+					// If the viewing page is suspended by a browser plugin and the url has been
+					// replaced, security error might result due to same-origin policy
+					try
+					{
+						var pageURL = EditEnhanceViewWindow.location.href;
+						if (pageURL)
+						{
+							var pagename = pageURL.substr(pageURL.indexOf('=')+1).toUpperCase();
+							if (pagename == AS.pagenameU) { EditEnhanceViewWindow.location.reload(); }  
+						}
+					}
+					catch(e) {}
 				}
 
         break;

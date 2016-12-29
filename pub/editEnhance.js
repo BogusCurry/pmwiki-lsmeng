@@ -364,8 +364,36 @@ function updateOffset()
 // When receiving input, update the char offset relative to line start
 // window.addEventListener('input', function() { updateOffset(); }, false);
 
+// On textInput, replace some frequently used full-width characters
+// Comma, dot is too tricky to deal with as an extra space has to be inserted after
+// replacement.
+window.addEventListener('textInput', function()
+{
+	var inputText = event.data;
+	
+	if (inputText.indexOf('＊') != -1)
+	{ inputText = inputText.replace(/\uff0a/g,'*'); }
+	
+	if (inputText.indexOf('＃') != -1)
+	{ inputText = inputText.replace(/\uFF03/g,'#'); }
+
+	if (inputText.indexOf('＼') != -1)
+	{ inputText = inputText.replace(/\uFF3C/g,'\\'); }
+	
+	if (inputText.indexOf('、') != -1)
+	{ inputText = inputText.replace(/\u3001/g,'\''); }
+
+  if (inputText != event.data)
+  {
+    document.execCommand("insertText", false, inputText);
+    event.preventDefault();
+  }
+}, false);
+
 window.addEventListener('keydown', function()
 {
+//   console.log(event);
+
   if (!EditEnhanceElement) { return; }
   
   // A fix for windows. Prevent alt key to turn the focus to browser's toolbar.
@@ -380,7 +408,37 @@ window.addEventListener('keydown', function()
     var start = EditEnhanceElement.selectionStart;
     var end = EditEnhanceElement.selectionEnd;
   }
-  
+
+  /************** Fix some annoying full-width characters **************/
+  // Fixes for simple full-width char do not work. Even after replacement and
+  // preventDefault, the original full-width char still shows up after a blur/focus,
+  // which is a required step in my caret positioning mechanism.
+	if (event.key == '9' && event.metaKey) 
+  {
+    document.execCommand("insertText", false, '()');
+   	EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 
+   	(EditEnhanceElement.selectionStart - 1);
+    event.preventDefault();
+    return;
+  }
+  else if (event.key == ';' && event.metaKey) 
+  {
+    document.execCommand("insertText", false, '[]');
+   	EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 
+   	(EditEnhanceElement.selectionStart - 1);
+    event.preventDefault();
+    return;
+  }
+  else if (event.key == ':' && event.shiftKey && event.metaKey) 
+  {
+		document.execCommand("insertText", false, '{}');
+		EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 
+		(EditEnhanceElement.selectionStart - 1);
+    event.preventDefault();
+    return;
+  }
+  /************** End of full-width character fix **************/
+
   // Up/Dn
   if (event.keyCode == 38 || event.keyCode == 40)
   {
@@ -569,7 +627,8 @@ window.addEventListener('keydown', function()
   }
   
   // Ctrl+/ to open viewing page
-  else if (event.keyCode == 191 && (event.ctrlKey || event.metaKey))
+  // The 'Slash' is a fix for Yahoo Chinese input on Windows
+  else if ((event.keyCode == 191 || event.code == 'Slash') && (event.ctrlKey || event.metaKey))
   {
     event.preventDefault();
     if ((event.ctrlKey && EditEnhanceOS == 'Mac') || event.altKey)
@@ -1040,7 +1099,8 @@ window.addEventListener('keydown', function()
     }
   }
   // Ctrl-n next line
-  else if (event.keyCode == 78)
+  // Checking the event.code property is a fix for MAC, and only works in Chrome
+  else if (event.keyCode == 78 || event.code == 'KeyN')
   {
     if (event.ctrlKey || event.metaKey)
     {
@@ -1120,15 +1180,7 @@ window.addEventListener('keydown', function()
       }
     }
   }
-  
-  // Fix for go to next paragraph; alt+n is recognized as another key in MAC
-  else if (event.keyCode == 229 && event.altKey)
-  {
-    event.preventDefault();
-    pos = getNextParaStart(start);
-    selectLine(pos);
-  }
-  
+
   // Ctrl-k kill a line
   // Ctrl-alt-k kill backward till line start
   // Ctrl-cmd-k kill forward till line end
