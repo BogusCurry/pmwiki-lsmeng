@@ -15,7 +15,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161215
+ * Version 20170103
  */
 
 var imgfocus = {};
@@ -44,8 +44,8 @@ imgfocus.clickHandle = function(element)
 			this.style.position = 'fixed';
 			
 			// Place the image right at the center of the browser.
-			this.style.left = window.innerWidth/2 + 'px';
-			this.style.top  = window.innerHeight/2 + 'px';
+			this.style.left = Math.floor(window.innerWidth/2) + 'px';
+			this.style.top  = Math.floor(window.innerHeight/2) + 'px';
 			this.style.transform = 'translate(-50%, -50%)';
 			
 			// Shrink the image if it's bigger than the browser screen
@@ -99,7 +99,6 @@ imgfocus.clickHandle = function(element)
 		}
 	}	
 }
-
 
 imgfocus.popupImgOnClick = function()
 {
@@ -198,9 +197,9 @@ imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, cal
 	if (typeof element === 'undefined') { console.log('Error: element undefined in ImgfocusFadeElement()!'); return; }
 	else if (startOpacity == endOpacity) { return; }
 	
-	var initialWidth = element.clientWidth;
+	var initialWidth = element.width;
 	
-	var stepDuration = 5;
+	var stepDuration = 40;
 	if (duration < stepDuration) { duration = stepDuration; }
 	
 	var op = startOpacity;
@@ -221,7 +220,7 @@ imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, cal
 	}
 
 	element.fadeTimerID = setInterval(function ()
-	{			
+	{					
 		if (startOpacity > endOpacity)
 		{
 			if (op <= endOpacity)
@@ -250,6 +249,19 @@ imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, cal
 	}, stepDuration);
 }
 
+// An aux function that returns true is the img element is zoomed beyond and including
+// fitting the screen
+imgfocus.isZoomOverFit = function()
+{
+	var element = imgfocus.imgEnlarge;
+	
+	if (!element) { return false; }
+
+	if (element.width>=window.innerWidth || element.height>=window.innerHeight)
+	{ return true; }
+	else { return false; }
+};
+
 // An aux function that returns true is the img element is zoomed and centered
 imgfocus.isZoomToFit = function()
 {
@@ -258,8 +270,8 @@ imgfocus.isZoomToFit = function()
 	if (!element) { return false; }
 	
 	if ((element.height==window.innerHeight || element.width==window.innerWidth) && 
-			element.style.top == window.innerHeight/2 + 'px' && 
-			element.style.top == window.innerHeight/2 + 'px') { return true; }
+			element.style.left == Math.floor(window.innerWidth/2) + 'px' && 
+			element.style.top == Math.floor(window.innerHeight/2) + 'px') { return true; }
 	else { return false; }
 }
 	
@@ -270,13 +282,13 @@ imgfocus.zoomToFit = function()
 	element.style.cursor = 'move';
 
 	// Center the image first
-	element.style.left = window.innerWidth/2 + 'px';
-	element.style.top  = window.innerHeight/2 + 'px';
+	element.style.left = Math.floor(window.innerWidth/2) + 'px';
+	element.style.top  = Math.floor(window.innerHeight/2) + 'px';
 	element.style.transform = 'translate(-50%, -50%)';
 
 	// Which direction to zoom (width or height) is determined based on comparing the
 	// aspect ratio of the image and the browser.
-	var dimension = window.innerWidth/window.innerHeight > element.clientWidth/element.clientHeight ? 'height' : 'width';
+	var dimension = window.innerWidth/window.innerHeight > element.width/element.height ? 'height' : 'width';
 	var size = dimension == 'width' ? window.innerWidth : window.innerHeight;
 	imgfocus.zoomElement(element, dimension, size, imgfocus.zoomToFitTime, 7, 'true');
 }
@@ -286,9 +298,6 @@ imgfocus.zoomToFit = function()
 // it's best to avoid the use of "this"
 imgfocus.mouseUpStopDragOrRemoveImg = function(e)
 {
-	if (e.target != imgfocus.imgEnlarge)
-	{ imgfocus.removeImgRecoverBackground(); return; }
-	
 	// If the image is zoomed, a single click removes it	
 	if (imgfocus.isZoomToFit()) { imgfocus.removeImgRecoverBackground(); return; }
 	
@@ -296,9 +305,17 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
 	// of time. Remove the pic and leave if it's a double click.
 	if (e.detail == 2) { imgfocus.removeImgRecoverBackground(); return; }
 
+	// If the image is zoomed
 	if (imgfocus.imgEnlarge.height>=window.innerHeight || imgfocus.imgEnlarge.width>=window.innerWidth)
 	{ window.removeEventListener('mousemove', imgfocus.trackMouse, false); }
-	else { imgfocus.zoomToFit(); }
+	// Else the image is not zoomed
+	else
+	{
+		// if the click is not on the image, remove it
+	  if (e.target != imgfocus.imgEnlarge) { imgfocus.removeImgRecoverBackground(); }
+	  // else zoom the image
+		else { imgfocus.zoomToFit();  }
+	}
 }
 						
 // Zoom the pop up image on wheel. The visual experience of directly modifying the image
@@ -315,13 +332,13 @@ imgfocus.wheelZoom = function(e)
 	
 	// A too small wheelDelta, therefore stepPx, seems to cause problem
 	var stepPx = e.wheelDelta;
-	if (imgfocus.imgEnlarge.clientWidth <= minWidth && stepPx < 0)	{ return; }
+	if (imgfocus.imgEnlarge.width <= minWidth && stepPx < 0)	{ return; }
 	
 	if (Math.abs(stepPx) < 10) { stepPx = stepPx>0 ? 10 : -10; }
 
 	// Call zoomElement() to smooth the size transition. The minimum possible width is 
 	// set to 50px.
-	var newW = imgfocus.imgEnlarge.clientWidth + stepPx;
+	var newW = imgfocus.imgEnlarge.width + stepPx;
 	if (newW > minWidth)
 	{ imgfocus.zoomElement(imgfocus.imgEnlarge, 'width', newW, 20, 0, 'none'); }
 	else
@@ -353,16 +370,19 @@ imgfocus.removeImgRecoverBackground = function(style)
 		for (var i=0;i<bodyElementLen;i++)
 		{ imgfocus.unBlurElement(imgfocus.documentBodyElement[i]); }
 
-		if (style == 'immediately' || element.fadeTimerID != null)
-		{ removeImg(); }
-		else
-		{	imgfocus.fadeElement(element, 1, 0, imgfocus.fadeOutTime, removeImg); }
+		window.removeEventListener('mousemove', imgfocus.trackMouse, false);
+		window.removeEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
+		window.removeEventListener('wheel', imgfocus.wheelZoom, false);
+
+  	if (style == 'immediately' || element.fadeTimerID != null) { removeImg(); }
+		else { imgfocus.fadeElement(element, 1, 0, imgfocus.fadeOutTime, removeImg);	}
 
 		function removeImg()
 		{
-			window.removeEventListener('mousemove', imgfocus.trackMouse, false);
-			window.removeEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
-			window.removeEventListener('wheel', imgfocus.wheelZoom, false);
+// Remove this INGO
+// 			window.removeEventListener('mousemove', imgfocus.trackMouse, false);
+// 			window.removeEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
+// 			window.removeEventListener('wheel', imgfocus.wheelZoom, false);
 			element.remove();
 			delete imgfocus.imgEnlarge;
 		}
@@ -406,8 +426,8 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
 		element.style.opacity = '0.4';
 	}
 
-	if (zoom == 'width') { var originalSize = element.clientWidth; }
-	else { var originalSize = element.clientHeight; }
+	if (zoom == 'width') { var originalSize = element.width; }
+	else { var originalSize = element.height; }
 	var stepPx = (targetSize-originalSize)*stepDuration/duration;
 
 	element.zoomTimerID = setInterval(function ()
@@ -465,7 +485,7 @@ window.addEventListener('keydown', function()
 		// On pressing M, zoom the popup image to fit the browser.
 		else if (event.keyCode == 77)
 		{
-			if ((imgfocus.imgEnlarge.clientWidth>=window.innerWidth || imgfocus.imgEnlarge.clientHeight>=window.innerHeight))
+			if (imgfocus.isZoomOverFit())
 			{ imgfocus.removeImgRecoverBackground(); }
 			else { imgfocus.zoomToFit(); }
 		}
@@ -473,16 +493,17 @@ window.addEventListener('keydown', function()
 		// Up or Down
 		else if (event.keyCode == 38 || event.keyCode == 40)
 		{
-			if ((imgfocus.imgEnlarge.clientWidth>=window.innerWidth || imgfocus.imgEnlarge.clientHeight>=window.innerHeight))
+			if (imgfocus.isZoomOverFit())
 			{
 				event.preventDefault();
 				imgfocus.imgEnlarge.style.top = parseInt(imgfocus.imgEnlarge.style.top)+(event.keyCode-39)*10+'px';
 			}
 		}
+		
 		// Left or Right
 		else if (event.keyCode == 37 || event.keyCode == 39)
 		{
-			if ((imgfocus.imgEnlarge.clientWidth>=window.innerWidth || imgfocus.imgEnlarge.clientHeight>=window.innerHeight))
+			if (imgfocus.isZoomOverFit())
 			{
 				event.preventDefault();
 				imgfocus.imgEnlarge.style.left = parseInt(imgfocus.imgEnlarge.style.left)+(event.keyCode-38)*10+'px';
