@@ -271,12 +271,12 @@ if ($action == 'edit' || $action == 'browse')
     $isDiaryPage = isDiaryPage();
     $OS = getOS();
 		// Memorize and set the scroll position.
-		$HTMLHeaderFmt[] .=  "<script type='text/javascript' src='$PubDirUrl/scrollPositioner.js'></script>
+		$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/scrollPositioner.js'></script>
 		<script type='text/javascript'>
-		scrollPositioner.pagename = '$pagename';
-		scrollPositioner.isDiaryPage = '$isDiaryPage';		
-		scrollPositioner.OS = '$OS';
-		scrollPositioner.action = '$action';
+			scrollPositioner.pagename = '$pagename';
+			scrollPositioner.isDiaryPage = '$isDiaryPage';		
+			scrollPositioner.OS = '$OS';
+			scrollPositioner.action = '$action';
 		</script>";
 	}
 }
@@ -285,11 +285,11 @@ include_once("$FarmD/cookbook/pasteimgupload.php");
 
 if ($action == 'browse' || $_REQUEST['preview'])
 {
-  $HTMLHeaderFmt['html5avctrl'] =
-   "<script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
+  $HTMLHeaderFmt['html5avctrl'] = "
+  <script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
 
-  $HTMLHeaderFmt['flashCtrl.js'] =
-   "<script type='text/javascript' src='$PubDirUrl/neolao/flashCtrl.js'></script>";
+  $HTMLHeaderFmt['flashCtrl.js'] = "
+  <script type='text/javascript' src='$PubDirUrl/neolao/flashCtrl.js'></script>";
 }
 
 if ($action == 'browse' || $_REQUEST['preview'])
@@ -300,10 +300,10 @@ if ($action == 'browse' || $_REQUEST['preview'])
 
 if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
 {
-  $HTMLHeaderFmt['map'] =
-   "<script src='$PubDirUrl/map/OSC.js'></script>
-    <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
-    <script src='$PubDirUrl/map/map.js'></script>";
+  $HTMLHeaderFmt['map'] = "
+  <script src='$PubDirUrl/map/OSC.js'></script>
+  <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
+  <script src='$PubDirUrl/map/map.js'></script>";
 }
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
@@ -313,102 +313,18 @@ if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 // Rich edit commands
 if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
 {	
-  $HTMLHeaderFmt['editEnhance'] .= "
+  $HTMLHeaderFmt['editEnhance'] = "
   <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>
 	<script type='text/javascript'> EditEnhanceOS = '$OS'; </script>";
 }
 
-// Some other keyboard commands
-else if ($action == 'browse')	
-{
-  $HTMLHeaderFmt[''] .= "
-		<script type='text/javascript''>
-		window.addEventListener('keydown', function()
-		{ 
-			// On esc, if there are text selected, deselect them
-			if (event.keyCode == 27)
-			{
-				var selString = window.getSelection();
-				if (selString != '') selString.removeAllRanges();
-			}
-		}, false);
-		</script>";
-}
-
-$HTMLHeaderFmt[''] .= "
-  <script type='text/javascript''>
-  window.addEventListener('keydown', function()
-	{
-  	// Ctrl+cmd+f or +z to open search in a new tab
-		if ((event.keyCode == 70 || event.keyCode == 90) && event.ctrlKey && event.metaKey)
-    {
-      event.preventDefault();
-      var url = window.location.href;
-      var match = url.match(/\?.+/i);
-      var pos = match==null ? url.length : match['index'];
-		  window.open(url.slice(0, pos)+'?n=Site.Search', '_blank');
-    }
-  	// Ctrl+cmd+r to open all recent changes
-		if (event.keyCode == 82 && event.ctrlKey && event.metaKey)
-    {
-      event.preventDefault();
-      var url = window.location.href;
-      var match = url.match(/\?.+/i);
-      var pos = match==null ? url.length : match['index'];
-		  window.open(url.slice(0, pos)+'?n=Site.Allrecentchanges', '_blank');
-    }
-    // Ctrl+cmd+u to open the upload page
-		if (event.keyCode == 85 && event.ctrlKey && event.metaKey)
-    {
-      event.preventDefault();
-      var url = window.location.href;
-      if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=upload', '_blank'); }
-      else
-      {
-      	var pos = url.indexOf('?action=');
-      	if (pos != -1) { window.open(url.slice(0,pos+8) + 'upload', '_blank'); }
-      	else { window.open(url + '?action=upload', '_blank'); }
-      }
-    }
-    // Ctrl+cmd+h to open the history
-		if (event.keyCode == 72 && event.ctrlKey && event.metaKey)
-    {
-      event.preventDefault();
-      var url = window.location.href;
-      if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=diff', '_blank'); }
-      else
-      {
-      	var pos = url.indexOf('?action=');
-      	if (pos != -1) { window.open(url.slice(0,pos+8) + 'diff', '_blank'); }
-      	else { window.open(url + '?action=diff', '_blank'); }
-      }
-    }
-    // Ctrl+cmd+b to open the backlink
-    if (event.keyCode == 66 && event.ctrlKey && event.metaKey)
-    {
-      event.preventDefault();
-      var url = window.location.href;
-      var match = url.match(/\?.+/i);
-      var pos = match==null ? url.length : match['index'];
-		  window.location = url.slice(0, pos)+'?n=Site.Search?action=search&q=link='+'$pagename';
-    }
-    // Ctrl+cmd+a to open the attribute
-		if (event.keyCode == 65 && event.ctrlKey && event.metaKey)
-    {
-      event.preventDefault();
-      var url = window.location.href;
-      if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=attr', '_blank'); }
-      else
-      {
-      	var pos = url.indexOf('?action=');
-      	if (pos != -1) { window.open(url.slice(0,pos+8) + 'attr', '_blank'); }
-      	else { window.open(url + '?action=attr', '_blank'); }
-      }
-    }
-
-  }, false);
-  </script>";
-
+// Rich universal page commands
+$HTMLHeaderFmt['pageCommand'] = "
+<script type='text/javascript' src='$PubDirUrl/pageCommand.js'></script>
+<script type='text/javascript'>
+	pageCommand.pagename = '$pagename';
+  pageCommand.action = '$action';
+</script>";
 
 /*
 // For debugging
@@ -426,7 +342,7 @@ include_once("$FarmD/scripts/xlpage-utf-8.php");
 //XLPage('zhtw','PmWikiZhTw.XLPage');
 
 # Latex
-if ($action == 'browse' || $action == 'diff')
+if ($action == 'browse')
 //if (!stripos($URI, '?action=edit') && !stripos($URI, '?action=diff'))
 { include_once("$FarmD/cookbook/MathJax.php"); }
 

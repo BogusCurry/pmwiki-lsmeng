@@ -392,8 +392,6 @@ window.addEventListener('textInput', function()
 
 window.addEventListener('keydown', function()
 {
-//   console.log(event);
-
   if (!EditEnhanceElement) { return; }
   
   // A fix for windows. Prevent alt key to turn the focus to browser's toolbar.
@@ -1208,7 +1206,14 @@ window.addEventListener('keydown', function()
     }
     document.execCommand("insertText", false, "");
   }
-  
+
+	// Tab inserts two white spaces
+	else if (event.keyCode == 9 && !(event.ctrlKey || event.metaKey || event.altKey))  
+	{
+	  event.preventDefault();
+	  document.execCommand("insertText", false, "  ");
+	}
+	
 //   console.log(event.keyCode);
 }
 , false);
