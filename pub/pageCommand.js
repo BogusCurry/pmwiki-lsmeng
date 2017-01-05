@@ -177,14 +177,16 @@ window.addEventListener('keydown', function()
 	  }
 	}
 
-  else if (pageCommand.action != 'edit' && (event.keyCode == 9 && !(event.ctrlKey || event.metaKey || event.altKey)))
+	// Tab/~ to traverse the hyperlinks in the wikitext element
+  else if (pageCommand.action != 'edit' && ((event.keyCode == 9 || event.keyCode == 192) &&
+   !(event.ctrlKey || event.metaKey || event.altKey)))
   {
 		event.preventDefault();
 
 		// Some initialization
-		if (!pageCommand.tabCount)
+		if (pageCommand.tabCount === undefined)
 		{
-			pageCommand.tabCount = 0;
+			pageCommand.tabCount = -1;
 			pageCommand.hyperLinkElementWikiText = [];
 			for (var i=0;i<pageCommand.hyperLinkElement.length;i++)
 			{
@@ -193,6 +195,22 @@ window.addEventListener('keydown', function()
 				pageCommand.hyperLinkElement[i].className != 'createlink')
 				{ pageCommand.hyperLinkElementWikiText.push(pageCommand.hyperLinkElement[i]); }
 			}
+		}
+
+		// Loop count for the highlighted link element
+		if (event.keyCode == 9)
+		{
+			pageCommand.tabCount++;
+			if (pageCommand.tabCount == pageCommand.hyperLinkElementWikiText.length)
+			{ pageCommand.tabCount -= pageCommand.hyperLinkElementWikiText.length; }
+		}
+		else if (pageCommand.tabCount == -1)
+		{ pageCommand.tabCount += pageCommand.hyperLinkElementWikiText.length; }
+		else
+		{
+			pageCommand.tabCount--;
+			if (pageCommand.tabCount < 0)
+			{ pageCommand.tabCount += pageCommand.hyperLinkElementWikiText.length; }
 		}
 		
 		// Remove the previous highlight box
@@ -222,11 +240,6 @@ window.addEventListener('keydown', function()
 		pageCommand.box.style.border = '1px solid blue';
 		pageCommand.box.style.webkitFilter = 'drop-shadow(0 0 3px blue)';
 		document.body.appendChild(pageCommand.box);
-	
-		// Loop count for the highlighted link element
-		pageCommand.tabCount++;
-		if (pageCommand.tabCount == pageCommand.hyperLinkElementWikiText.length)
-		{ pageCommand.tabCount -= pageCommand.hyperLinkElementWikiText.length; }
   }
   
   // Go to the link if a link is selected

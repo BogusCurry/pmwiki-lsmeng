@@ -533,7 +533,8 @@ window.addEventListener('keydown', function()
       }
     }
   }
-  
+
+/*
   // Alt+right/left to move forward/backward a word
   else if (event.keyCode == 37 && (event.altKey || (event.ctrlKey && EditEnhanceOS == 'Windows')) && !event.shiftKey)
   {
@@ -547,6 +548,7 @@ window.addEventListener('keydown', function()
     var posSimpleMove = getNextWordPos(end);
     if (!event.shiftKey) { moveCaretAndFocus(posSimpleMove, true); }
   }
+*/
   
   // Page up dn and highlight the current line
   // To go back to exactly the same line between page up & dn, a little bit tweak is

@@ -90,9 +90,16 @@ $RCDelimPattern = '  ';
 // Meng. $ChangeSummary is not functioning. Probably because I changed the postPage.
 $RecentChangesFmt = array(
   '$SiteGroup.AllRecentChanges' => 
+    '* [[{$Group}.{$Name}]]  . . . $CurrentTime $[by] $AuthorLink from $IP',//: [=$ChangeSummary=]',
+  '$Group.RecentChanges' =>
+    '* [[{$Group}/{$Name}]]  . . . $CurrentTime $[by] $AuthorLink from $IP');//: [=$ChangeSummary=]');
+/*
+$RecentChangesFmt = array(
+  '$SiteGroup.AllRecentChanges' => 
     '* [[{$Group}.{$Name}]][[{$Group}.{$Name}?action=edit|.E]]  . . . $CurrentTime $[by] $AuthorLink from $IP',//: [=$ChangeSummary=]',
   '$Group.RecentChanges' =>
     '* [[{$Group}/{$Name}]][[{$Group}.{$Name}?action=edit|.E]]  . . . $CurrentTime $[by] $AuthorLink from $IP');//: [=$ChangeSummary=]');
+*/
 
 $UrlScheme = (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443)
              ? 'https' : 'http';
@@ -2461,6 +2468,10 @@ $textAreaHeightPx = isset($_COOKIE['textAreaHeight']) ? $_COOKIE['textAreaHeight
 $pos = strpos($FmtV['$EditForm'],'height:1234px');
 if ($pos !== false)
 	$FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
+
+// Another crazy fix for Chrome's font problem.
+if (strcasecmp($pagename,'main.vocabulary2') != 0) 
+{ $FmtV['$EditForm'] = str_replace('font-family:Heiti TC;', '', $FmtV['$EditForm']); }
 
 /****************************************************************************************/
 
