@@ -25,9 +25,18 @@ pageCommand.mapSpecialEditLink = function(link)
   { link = link.replace(pagename, 'ComputerScience.Journal'+year); }
   else if (pagenameL == 'main.onthisday')
   {
-    var mon = clock.getMonth()+1
+    var mon = clock.getMonth()+1;
     mon = mon<10 ? '0'+mon : mon;
     link = link.replace(pagename, 'Main.'+year+mon);
+
+    // Create a LS storing the wiki markup for editing today. E.g., "n* 11, Wed" for 11th
+    // Wednesday. This is to work with scrollPositioner.js, which implements the mechanism
+    // to scroll there when the edit page is opened.
+		if (scrollPositioner)
+		{
+			var weekDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+		  scrollPositioner.setStorageByKey('EDIT-ScrollY', 'MAIN.'+year+mon, 'n* '+clock.getDate()+', '+weekDays[clock.getDay()]);
+		}
   }
   
   else {}

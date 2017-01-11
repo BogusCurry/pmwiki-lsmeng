@@ -288,8 +288,8 @@ if ($action == 'browse' || $_REQUEST['preview'])
   $HTMLHeaderFmt['html5avctrl'] = "
   <script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
 
-  $HTMLHeaderFmt['flashCtrl.js'] = "
-  <script type='text/javascript' src='$PubDirUrl/neolao/flashCtrl.js'></script>";
+//   $HTMLHeaderFmt['flashCtrl.js'] = "
+//   <script type='text/javascript' src='$PubDirUrl/neolao/flashCtrl.js'></script>";
 }
 
 if ($action == 'browse' || $_REQUEST['preview'])
@@ -363,7 +363,7 @@ include_once("$FarmD/cookbook/flipbox.php");
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
 
-
+/*
 # Neo mp3 and video player.
 $EnableDirectDownload = 1;
 include_once("$FarmD/cookbook/flashmediaplayer.php");
@@ -401,6 +401,7 @@ $FlashMediaPlayerInfo['neo_flv_V'] = array(
 #'showswitchsubtitles'=>1,
 #'srt'=>1
 ));
+*/
 
 # Replace some never-used full-width characters on saving.
 $ROSPatterns ['/＊/'] = "*";

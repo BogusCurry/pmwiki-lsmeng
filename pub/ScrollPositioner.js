@@ -315,12 +315,12 @@ var scrollPositioner =
       if (isFirstLineBullet != -1)
       {
         // Get the numBullet-1 occurrence of "\n*" or "\n#"
-        charOffset = nthIndex(HTML, "\n*", "\n#", numBullet-1);
+        charOffset = this.nthIndex(HTML, "\n*", "\n#", numBullet-1);
       }
       else
       {
         // Get the numBullet occurrence of "\n*" or "\n#"
-        charOffset = nthIndex(HTML, "\n*", "\n#", numBullet);
+        charOffset = this.nthIndex(HTML, "\n*", "\n#", numBullet);
       }
     }
     
@@ -330,23 +330,38 @@ var scrollPositioner =
   },
   
   // When browsing, if enter is pressed with texts selected, the caret position will
-  // be computed and stored in a cookie. The editing page will be open in a new tab
+  // be computed and stored in a cookie. The editing page will be opened in a new tab
   // automatically with scroll and caret situated at the beginning of the selected bullet.
   // Also called the "Edit here" mechanism.
+  // In addition, for the mechanism of "editing today", the stored value will be of the 
+  // form "n* date, WeekDay". In this case, simply find the character offset of it and 
+  // scroll there. This mechanism works with pageCommand.js
   setScrollFromBrowse: function(value)
   {
     // The number of bullets appearing before the selected text.
     var numBullet = value;
-    
-    // Compute the caret offset given 'numBullet'.
-    var HTML = scrollPositioner.text.textContent;
-    isFirstLineBullet = -1;
-    if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#')
-    { isFirstLineBullet = 0; }
-    
-    pos = scrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
-    var pos2 = HTML.indexOf("\n",pos);
-    if (pos2 == -1) { pos2 = pos+1; }
+
+		// Compute the caret offset given 'numBullet'.
+		var HTML = scrollPositioner.text.textContent;
+
+		// This is for the editing today mechanism
+		if (numBullet[0] == '*')
+		{
+			// Calculate its char offset
+			var pos = HTML.indexOf(numBullet);
+			var pos2 = HTML.indexOf("\n\n", pos);
+		}
+		// Else, this is for editing the selected text
+		else
+		{
+			isFirstLineBullet = -1;
+			if (HTML.substring(0,1) == '*' || HTML.substring(0,1) == '#')
+			{ isFirstLineBullet = 0; }
+			
+			var pos = scrollPositioner.computeCharOffsetForBullet(HTML, numBullet, isFirstLineBullet);
+			var pos2 = HTML.indexOf("\n",pos);
+			if (pos2 == -1) { pos2 = pos+1; }
+    }
     
     // It turns out that Chrome will scroll automatically by first setting the caret
     // position then focusing. For some reason, highlighting a line then focusing
@@ -488,10 +503,7 @@ function fixTextareaHeight()
   }
 }
 
-// Record the scroll and caret position on focusout and page close.
-//window.addEventListener("focusout", setScrollAndCaretPosCookie, false);
-window.addEventListener("beforeunload", setScrollAndCaretPosCookie, false);
-function setScrollAndCaretPosCookie()
+scrollPositioner.setScrollAndCaretPosCookie = function()
 {
   // Remove the LS data if the page text contains only the delete keyword
   if (scrollPositioner.action == 'edit' && scrollPositioner.text.form.text.value.trim() == 'delete')
@@ -527,10 +539,13 @@ function setScrollAndCaretPosCookie()
       scrollPositioner.setCookie(name, value);
     }
   }
-}
+};
+// Record the scroll and caret position on focusout and page close.
+//window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie, false);
+window.addEventListener("beforeunload", scrollPositioner.setScrollAndCaretPosCookie, false);
 
 // Get the indexOf the nth occurrence of either "pat1" or "pat2"
-function nthIndex(str, pat1, pat2, n)
+scrollPositioner.nthIndex = function(str, pat1, pat2, n)
 {
   var L= str.length, i= -1;
   while(n-- && i++<L)
@@ -555,4 +570,4 @@ function nthIndex(str, pat1, pat2, n)
   }
   
   return i;
-}
+};
