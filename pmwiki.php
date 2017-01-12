@@ -2018,9 +2018,10 @@ echo 'Execution time: '.$time_elapsed_secs."<br>";
 			}
 		}
 		
-		// If this is the special page "BookKeep", calculate and show the monthly expense at the
-		// at the top of the page
-		else if (strcasecmp($pagename,"Main.BookKeep") == 0) { $text = bookKeepProcess($pagename,$text); }
+		// If the pagename begins with "Main.BookKeep", calculate and show the monthly expense
+		// at the at the top of the page
+		else if (strcasecmp(substr($pagename,0,13),"Main.BookKeep") == 0)
+		{ $text = bookKeepProcess($pagename,$text); }
 		
 		// Should be clear.
 		else if (strcasecmp($pagename,"Main.Phpinfo") == 0) { phpinfo(); return; }
@@ -2032,10 +2033,7 @@ echo 'Execution time: '.$time_elapsed_secs."<br>";
 			$text = substr_replace($text, "@]", strpos($text,"(:groupfooter:)"), 0);
 		}
 
-		else if (strcasecmp($pagename,"Main.Map") == 0)
-		{
-		
-		}
+		else if (strcasecmp($pagename,"Main.Map") == 0) {}
 
 		// All other pages, including diary pages.
 		else

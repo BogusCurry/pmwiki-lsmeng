@@ -76,7 +76,7 @@ function Html5AVCtrlRemoveIconAndPlay(element)
 	playIcon.style.height = 1.2*playIcon.clientHeight + 'px';
 	playIcon.style.opacity = 0;
 	playIcon.addEventListener('webkitTransitionEnd', function()
-	{ playIcon.remove(); }, false );
+	{ playIcon.remove(); delete element.playIconElement; }, false );
 
 	// Keep polling until the video actually starts 
 	var playPollTimerID = setInterval(function()
@@ -211,7 +211,7 @@ window.addEventListener('load', function()
       Html5AVCtrlElement = this;
 
       // Click on the other part of the video, remove the play icon & play
-			if (this.playIconElement != null)	{ Html5AVCtrlRemoveIconAndPlay(this); }
+			if (this.playIconElement)	{ Html5AVCtrlRemoveIconAndPlay(this); }
 			else { Html5AVCtrlTogglePlay(this); }
     }
     if (i < videoElementLen) {

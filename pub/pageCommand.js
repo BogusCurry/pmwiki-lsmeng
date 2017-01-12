@@ -231,27 +231,30 @@ window.addEventListener('keydown', function()
 		pageCommand.selectLink = pageCommand.hyperLinkElementWikiText[pageCommand.tabCount];
 		
 		// Scroll in to view the link & then adjust the position a bit
-		pageCommand.selectLink.scrollIntoView(true);
-		var screenHeightAdj = Math.round(window.innerHeight/3);
-		var idPosRelBrowser = Math.floor(pageCommand.selectLink.getBoundingClientRect().top);
-    screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
-		document.body.scrollTop -= screenHeightAdj;
-
-		// Get the dimension of the link element
-		var bound = pageCommand.selectLink.getBoundingClientRect();
-		var width = Math.ceil(bound.right - bound.left);
-		var height = Math.ceil(bound.bottom - bound.top);
+		if (pageCommand.selectLink)
+		{
+			pageCommand.selectLink.scrollIntoView(true);
+			var screenHeightAdj = Math.round(window.innerHeight/3);
+			var idPosRelBrowser = Math.floor(pageCommand.selectLink.getBoundingClientRect().top);
+			screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
+			document.body.scrollTop -= screenHeightAdj;
 		
-		// Prepare the highlight box element
-		pageCommand.box = document.createElement('div');
-		pageCommand.box.style.top = Math.floor(bound.top-1+document.body.scrollTop)+'px';
-		pageCommand.box.style.left = Math.floor(bound.left-1)+'px';
-		pageCommand.box.style.width = width+1+'px';
-		pageCommand.box.style.height = height+1+'px';
-		pageCommand.box.style.position = 'absolute';
-		pageCommand.box.style.border = '1px solid blue';
-		pageCommand.box.style.webkitFilter = 'drop-shadow(0 0 3px blue)';
-		document.body.appendChild(pageCommand.box);
+			// Get the dimension of the link element
+			var bound = pageCommand.selectLink.getBoundingClientRect();
+			var width = Math.ceil(bound.right - bound.left);
+			var height = Math.ceil(bound.bottom - bound.top);
+			
+			// Prepare the highlight box element
+			pageCommand.box = document.createElement('div');
+			pageCommand.box.style.top = Math.floor(bound.top-1+document.body.scrollTop)+'px';
+			pageCommand.box.style.left = Math.floor(bound.left-1)+'px';
+			pageCommand.box.style.width = width+1+'px';
+			pageCommand.box.style.height = height+1+'px';
+			pageCommand.box.style.position = 'absolute';
+			pageCommand.box.style.border = '1px solid blue';
+			pageCommand.box.style.webkitFilter = 'drop-shadow(0 0 3px blue)';
+			document.body.appendChild(pageCommand.box);
+		}
   }
   
   // Go to the link if a link is selected
