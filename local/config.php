@@ -356,9 +356,9 @@ if($action=="browse" || $_REQUEST['preview']) {
 include_once("$FarmD/cookbook/flipbox.php");
 
 # For wpap mp3 player
-#$wpap_initialvolume = "1";
-#$wpap_width = "500";
-#include_once("$FarmD/cookbook/wpap/wpap.php");
+// $wpap_initialvolume = "1";
+// $wpap_width = "500";
+// include_once("$FarmD/cookbook/wpap/wpap.php");
 
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");

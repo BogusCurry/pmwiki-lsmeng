@@ -4,13 +4,14 @@
  * toggle play/pause; double click to toggle fullscreen. Press space to toggle
  * play/pause. Press left/right keys to go backward/forward 5 seconds. Press 
  * up/dn to change volume. Press the number keys for a quick jump. Pressing f to toggle
- * fullscreen. Press v to scroll to the video currently under control.
- *
- * In chrome, loading too many videos results in browser hanging; it appears to be a bug.
- * This recipe fixes this by a quick play then pause all videos.
+ * fullscreen. Press j to scroll to the video currently under control.
  *
  * This recipe also dynamically creates an image element serving as the play icon for each
  * video.
+ * 
+ * In Chrome Version 55.0.2883.95 (64-bit) on MAC, video sometimes gets unresponsive
+ * by preloading metadata. This is solved by continuous polling using an interval timer
+ * timer. The polling timer runs until the video actually start playing.
  *
  * This program is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General
@@ -19,8 +20,8 @@
  * option) any later version. Available at
  * https://www.gnu.org/licenses/gpl.txt
  *
- * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161223
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170112
  */
 
 // Arrange all the play icons so that they situate at the center of associated video 
@@ -64,8 +65,33 @@ function Html5AVCtrlTogglePlay(element) {
     element.pause();
   }
 }
+// A routine for playing the video element for the very 1st time; removing its play icon
+// and then keep polling until the video actually starts 
+function Html5AVCtrlRemoveIconAndPlay(element)
+{
+	Html5AVCtrlElement = element;
+	element.play();
+	element.controls = true;
+	var playIcon = element.playIconElement;
+	playIcon.style.height = 1.2*playIcon.clientHeight + 'px';
+	playIcon.style.opacity = 0;
+	playIcon.addEventListener('webkitTransitionEnd', function()
+	{ playIcon.remove(); }, false );
 
-window.addEventListener('load', function() {
+	// Keep polling until the video actually starts 
+	var playPollTimerID = setInterval(function()
+	{
+		if (element.currentTime == 0)
+		{
+			element.currentTime = 0.01;
+			element.play();
+		}
+		else { clearInterval(playPollTimerID); }
+	}, 100);
+}
+
+window.addEventListener('load', function()
+{
   // Capture the audio/video element by changing the controls
   var videoElement = document.getElementsByTagName('video');
   var videoElementLen = videoElement.length;
@@ -77,22 +103,28 @@ window.addEventListener('load', function() {
   for (var i = 0; i < videoElementLen; i++)
   {  
     videoElement[i].preload = 'metadata';
+//     videoElement[i].preload = 'auto';
     
     videoElement[i].onloadedmetadata = function()
     {
+			// Use the existence of the playIconElement to prevent running this twice
+			// This is needed for a workaround of failing to play video occasionally in Chrome
+			// with metadata preloaded
+      if (this.playIconElement) { return; }
+      
       this.poster = '';
 
       this.style.width = Math.round(this.clientHeight*this.videoWidth/this.videoHeight) + 'px';
         
-			this.play();
-			this.pause();
-      setTimeout("delete(Html5AVCtrlElement);", 0);
+// 			this.play();
+// 			this.pause();
+//       setTimeout("delete(Html5AVCtrlElement);", 0);
       
       // On load remove the control bar
       this.controls = false;
             
 			// Overlay the play icon
-			var playIcon = document.createElement('img');	
+			var playIcon = document.createElement('img');
 			playIcon.src = 'http://localhost/pmwiki/pub/html5avctrl/playIcon.png';
       playIcon.style.transform = 'translate(-50%, -50%)';
       playIcon.style.position = 'absolute';
@@ -109,15 +141,7 @@ window.addEventListener('load', function() {
       // Click on the play icon, fade out
 			playIcon.videoElement = this;
       playIcon.onclick = function()
-      {
-        Html5AVCtrlTogglePlay(playIcon.videoElement);
-        playIcon.videoElement.controls = true;
-        Html5AVCtrlElement = playIcon.videoElement;
-				playIcon.style.height = 1.2*playIcon.clientHeight + 'px';
-				playIcon.style.opacity = 0;
-				playIcon.addEventListener('webkitTransitionEnd', function()
-				{ playIcon.remove(); }, false );
-      }
+      { Html5AVCtrlRemoveIconAndPlay(playIcon.videoElement); }
 
       // Set visual effects for the play icons
       this.onmouseover = function()
@@ -186,16 +210,9 @@ window.addEventListener('load', function() {
     element.onclick = function() {
       Html5AVCtrlElement = this;
 
-      // Click on the other part of the video, remove the play icon
-			if (this.playIconElement != null)
-			{
-				this.playIconElement.style.height = 1.2* this.playIconElement.clientHeight + 'px';
-				this.playIconElement.style.opacity = 0;
-				this.playIconElement.addEventListener('webkitTransitionEnd', function()
-				{ this.remove(); }, false );
-			}
-
-      Html5AVCtrlTogglePlay(this);
+      // Click on the other part of the video, remove the play icon & play
+			if (this.playIconElement != null)	{ Html5AVCtrlRemoveIconAndPlay(this); }
+			else { Html5AVCtrlTogglePlay(this); }
     }
     if (i < videoElementLen) {
 			element.ondblclick = function() {
