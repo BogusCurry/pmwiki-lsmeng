@@ -76,14 +76,17 @@ window.addEventListener('load', function()
 		{
 			if (event.shiftKey)
 			{
-				event.preventDefault();
-				
 				var link = this.href;
-				link = pageCommand.getEditLink(link);
-				link = pageCommand.mapSpecialEditLink(link);
-				var option = '_self';
-				if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
-				window.open(link, option);
+				
+				if (link.toLowerCase().indexOf('pmwiki.php') != -1)
+				{
+					event.preventDefault();
+					link = pageCommand.getEditLink(link);
+					link = pageCommand.mapSpecialEditLink(link);
+					var option = '_self';
+					if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
+					window.open(link, option);				  
+				}
 			}
 		}, false);
 	}
@@ -254,12 +257,17 @@ window.addEventListener('keydown', function()
   // Go to the link if a link is selected
   else if (pageCommand.action != 'edit' && event.keyCode == 13 && !event.altKey && pageCommand.selectLink)
   {
-		event.preventDefault();
+		
 		var link = pageCommand.selectLink.href;
-		if (event.shiftKey) { link = pageCommand.getEditLink(link); }
-		var option = '_self';
-		if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
-		window.open(link, option);
+		
+		if (link.toLowerCase().indexOf('pmwiki.php') != -1)
+		{
+		  event.preventDefault();
+		  if (event.shiftKey) { link = pageCommand.getEditLink(link); }
+			var option = '_self';
+			if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
+			window.open(link, option);
+		}
   }
 }, false);
 
