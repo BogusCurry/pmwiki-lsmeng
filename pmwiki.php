@@ -2412,6 +2412,10 @@ function HandleEdit($pagename, $auth = 'edit') {
 		
 		$FmtV['$EditText'] = $dateStr;
 	}
+
+  // Meng. Add an additional field "lastmodtime" to work with autosave's default on/off
+  // The field has to be added in form.php
+	$FmtV['$PageLastModTime'] = $page["time"];
 /****************************************************************************************/
 
   $FmtV['$EditBaseTime'] = $Now;

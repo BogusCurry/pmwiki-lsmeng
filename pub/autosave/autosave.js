@@ -48,7 +48,7 @@ var AS =
   // Set a local storage item "name" with key/value pair "key" and "value".
   // If "key" is null then the item is treated as a simple variable; otherwise it is an 
   // array. If "value" is null then the local storage is deleted in the former case; the 
-  // entry is deleted in the later case.
+  // entry is deleted in the latter case.
   setStorageByKey: function(name, key, value)
 	{ 
 	  if (key == null)
@@ -377,7 +377,7 @@ var AS =
 	},
   
 	init: function()
-	{   
+	{
 		if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
 
 		// Check for out-dated text. The built-in navigation mechanism "last page" of browsers
@@ -430,13 +430,20 @@ var AS =
     AS.status = 'Init';
     AS.txt.innerHTML = AS.initStatusHtml;
     
+    // Set the default on/off of autosaving
+    var pageLastModTime = document.getElementsByName("lastmodtime")[0].value;
 		var autosaveSwitch = AS.getStorageByKey('Autosave', AS.pagenameU);
-		if (autosaveSwitch === 'off')
+		var noWriteLongTime = (AS.basetime - pageLastModTime)/86400 > AS.saveOffDay ? true : false;
+		if (noWriteLongTime || autosaveSwitch === 'off')
 		{
+			// If the page hasn't been updated for a long time, delete the local storage entry
+			// if it's present 
+			if (noWriteLongTime && autosaveSwitch)
+			{ AS.setStorageByKey('Autosave', AS.pagenameU, null); }
 			AS.status = 'Disabled';
 			AS.txt.innerHTML = AS.disableStatusHtml;
 		}
-		
+    
     // Implement drag and move of the autosaving status
     if (AS.enableDrag)
     {  

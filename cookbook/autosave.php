@@ -54,6 +54,7 @@ if($action == "edit")
 		<script type='text/javascript'>
 		AS.enableDrag = $AutoSaveDrag;
 		AS.delay = $AutoSaveDelay;
+		AS.saveOffDay = $autoSaveOffDay;
 		AS.url = '$url';
 		</script>"
 	));

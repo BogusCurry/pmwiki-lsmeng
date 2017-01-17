@@ -322,11 +322,13 @@ Markup('e_guibuttons', 'directives', '/\\(:e_guibuttons:\\)/', '');
 # participating in text rendering step.
 SDV($SaveAttrPatterns['/\\(:e_(preview|guibuttons):\\)/'], ' ');
 
+// Meng. Add an additional field "lastmodtime" to work with autosave's default on/off
 SDVA($InputTags['e_form'], array(
   ':html' => "<form action='{\$PageUrl}?action=edit' method='post'
     \$InputFormArgs><input type='hidden' name='action' value='edit' 
     /><input type='hidden' name='n' value='{\$FullName}' 
     /><input type='hidden' name='basetime' value='\$EditBaseTime' 
+    /><input type='hidden' name='lastmodtime' value='\$PageLastModTime' 
     />"));
 // Meng. Remove the onkeydown for esc button. Its purpose is unclear. Also disable the 
 // spellchecker to speed up text typing responsiveness.

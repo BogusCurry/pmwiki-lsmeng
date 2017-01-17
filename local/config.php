@@ -262,6 +262,9 @@ include_once("$FarmD/cookbook/imgfocus.php");
 # For autosave. Delay is in milliseconds.
 $autoSaveDelayHttp = 5000;
 $autoSaveDelayHttps = 1000;
+// Autosave defaults to off if the last modification time of the page is older than 
+// $autoSaveOffDay days
+$autoSaveOffDay = 30;
 include_once("$FarmD/cookbook/autosave.php");
 
 if ($action == 'edit' || $action == 'browse')
