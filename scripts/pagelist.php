@@ -976,7 +976,8 @@ Abort("PageIndex Decrytion Error!");
       
       $add = true;
       foreach($terms as $t) 
-      {  if (strpos($line, $t) === false) { $add = false; break; }
+      // Meng. Change strpos to stripos to fix the bug for searching links
+      { if (stripos($line, $t) === false) { $add = false; break; }
             
       }
       if ($add xor $invert) $pagelist[] = substr($line, 0, $i);

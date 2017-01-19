@@ -928,8 +928,8 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   // No valid extension found.
   if ($EXT_LEN == 0)
   {
-    if ($img != "" && $img != "..")
-    { echo "Unexpected extension for \"$img\" in getDiaryImgUrl()!<br>"; }
+//     if ($img != "" && $img != "..")
+//     { echo "Unexpected extension for \"$img\" in getDiaryImgUrl()!<br>"; }
     return "";
   }
   
@@ -939,7 +939,7 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   {
     if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN) {}
     else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1) {}
-    else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
+//     else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
   }
   // For downloaded images that cannot be automatically renamed, D_X.jpg DD_X.jpg are valid
   // image name format. The length and type of "X" is not limited, i.e., can be non-numeric.
