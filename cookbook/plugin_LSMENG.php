@@ -862,7 +862,15 @@ function getImgFileContent($file, $mime='image/png')
   $contents = @file_get_contents(str_replace('%20',' ',$file));
   if ($contents === false) { return ''; }
   $base64   = base64_encode($contents);
-  return ('data:' . $mime . ';base64,' . $base64);
+  
+  // Parse the filename from the complete file path
+  global $PhotoPub, $pagename;
+  $groupname = substr($pagename,0,strpos($pagename,'.'));
+  $filename = str_replace($PhotoPub.$groupname.'/','',$file);
+  
+  // Also insert the filename into the image data content. This serves a way to signify 
+  // the file name to the client side JS. Although it works, this is not a legal field. 
+  return ('data:' . $mime . ';filename='.$filename.';base64,' . $base64);
 }
 
 // Search for all image elements in the given HTML and add a default size property to 

@@ -330,11 +330,10 @@ SDVA($InputTags['e_form'], array(
     /><input type='hidden' name='basetime' value='\$EditBaseTime' 
     /><input type='hidden' name='lastmodtime' value='\$PageLastModTime' 
     />"));
-// Meng. Remove the onkeydown for esc button. Its purpose is unclear. Also disable the 
-// spellchecker to speed up text typing responsiveness.
+// Meng. Remove the onkeydown for esc button. Its purpose is unclear. 
 // Meng. Add a default font to serve as a crazy fix for Chrome's font problem.
 SDVA($InputTags['e_textarea'], array(
-  ':html' => "<textarea style='height:1234px; font-family:Heiti TC;' spellcheck='false' \$InputFormArgs >\$EditText</textarea>",
+  ':html' => "<textarea style='height:1234px; font-family:Heiti TC;' \$InputFormArgs >\$EditText</textarea>",
   'name' => 'text', 'id' => 'text', 'accesskey' => XL('ak_textedit'),
   'rows' => XL('e_rows'), 'cols' => XL('e_cols')));
 /*

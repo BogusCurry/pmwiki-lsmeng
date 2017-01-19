@@ -204,7 +204,8 @@ window.addEventListener('keydown', function()
 			{
         // Only capture those hyperlinks that's a children of wikitext
 				if (document.getElementById('wikitext').contains(pageCommand.hyperLinkElement[i]) &&
-				pageCommand.hyperLinkElement[i].className != 'createlink')
+				pageCommand.hyperLinkElement[i].className != 'createlink' &&
+				pageCommand.hyperLinkElement[i].href != "")
 				{ pageCommand.hyperLinkElementWikiText.push(pageCommand.hyperLinkElement[i]); }
 			}
 		}

@@ -33,6 +33,14 @@ imgfocus.clickHandle = function(element)
     imgfocus.imgEnlarge.onerror = function() { this.imgEnlarge.remove(); }
     imgfocus.imgEnlarge.onload = function()
     {
+			// A fix for hiding the glowing effect immediately after showing the pop-up 
+			// image, and recover it afterwards
+			element.style.webkitFilter = 'drop-shadow(0 0 0 gray)';
+			element.onmouseout = function()
+			{ element.style.webkitFilter = 'drop-shadow(0 0 0 gray)'; };
+			element.onmouseover = function()
+			{ element.style.webkitFilter = 'drop-shadow(0 0 3px gray)'; };
+
       // Blur all the direct children of the document body.
       var bodyElementLen = imgfocus.documentBodyElement.length;
       for (var i=0;i<bodyElementLen;i++)
@@ -140,9 +148,17 @@ imgfocus.popupImgOnClick = function()
   var imgElementLen = imgElement.length;
   for (var i=0;i<imgElementLen;i++)
   {
-    // Get the image filename
-    var pos = imgElement[i].src.lastIndexOf('/');
-    var filename = imgElement[i].src.slice(pos+1);
+    // Get the image filename. If the image is directly presented with its contents, 
+    // get the filename from the corresponding secretly inserted field. Otherwise parse
+    // it from the src URL.
+    var src = imgElement[i].src;
+    if (src.slice(0,10) == "data:image")
+    { var filename = src.slice(src.indexOf(';filename=')+10,src.indexOf(";base64")); }
+    else
+    {
+			var pos = src.lastIndexOf('/');
+			var filename = src.slice(pos+1);  
+    }
     
     // Skip the images specified in the exception list
     var isException = false
