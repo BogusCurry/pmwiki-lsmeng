@@ -93,7 +93,7 @@ window.addEventListener('load', function()
 }, false);
 
 window.addEventListener('keydown', function()
-{
+{ 
 	// On esc, if there are text/link selected, deselect them
 	if (event.keyCode == 27 && pageCommand.action == 'browse')
 	{
@@ -105,7 +105,7 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+f or +z to open search in a new tab
-	else if ((event.keyCode == 70 || event.keyCode == 90) && event.ctrlKey && event.metaKey)
+	else if ((event.keyCode == 70||event.code=="KeyF") && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
 		var url = window.location.href;
@@ -115,7 +115,7 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+r to open all recent changes
-	else if (event.keyCode == 82 && event.ctrlKey && event.metaKey)
+	else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
 		var url = window.location.href;
@@ -125,7 +125,7 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+u to open the upload page
-	else if (event.keyCode == 85 && event.ctrlKey && event.metaKey)
+	else if ((event.keyCode == 85||event.code=='KeyU') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
 		var url = window.location.href;
@@ -139,7 +139,7 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+h to open the history
-	else if (event.keyCode == 72 && event.ctrlKey && event.metaKey)
+	else if ((event.keyCode == 72||event.code=='KeyH') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
 		var url = window.location.href;
@@ -153,7 +153,7 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+b to open the backlink
-	else if (event.keyCode == 66 && event.ctrlKey && event.metaKey)
+	else if ((event.keyCode == 66||event.code=='KeyB') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
 		var url = window.location.href;
@@ -163,7 +163,7 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+a to open the attribute
-	else if (event.keyCode == 65 && event.ctrlKey && event.metaKey)
+	else if ((event.keyCode == 65||event.code=='KeyA') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
 		var url = window.location.href;
@@ -177,6 +177,7 @@ window.addEventListener('keydown', function()
 	}
 
 	// Ctrl+alt+g for goto page
+	// Kind of abandonded
 	else if (event.keyCode == 71 && event.metaKey && event.altKey)
 	{
 	  var pagename = prompt("Go to page...");

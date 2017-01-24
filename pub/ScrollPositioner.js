@@ -410,7 +410,7 @@ var scrollPositioner =
           
           if (selString == '')
           {
-            if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || event.altKey)
+            if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || ((event.altKey||event.metaKey) && scrollPositioner.OS == 'Windows'))
             { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
             else
             { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
@@ -436,7 +436,7 @@ var scrollPositioner =
           
           scrollPositioner.setStorageByKey('EDIT-ScrollY', scrollPositioner.pagename, 'n'+numBullet)
           
-					if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || event.altKey)
+					if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || ((event.altKey||event.metaKey) && scrollPositioner.OS == 'Windows'))
           { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
           else
           { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }

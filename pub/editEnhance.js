@@ -631,7 +631,7 @@ window.addEventListener('keydown', function()
   else if ((event.keyCode == 191 || event.code == 'Slash') && (event.ctrlKey || event.metaKey))
   {
     event.preventDefault();
-    if ((event.ctrlKey && EditEnhanceOS == 'Mac') || event.altKey)
+    if ((event.ctrlKey && EditEnhanceOS == 'Mac') || ((event.altKey||event.metaKey)) && EditEnhanceOS == 'Windows')
     { 
     	// Declare a global property to keep track of whether the associated view page has
 			// been opened. This is to work with autosave.js to auto refresh the view page.
