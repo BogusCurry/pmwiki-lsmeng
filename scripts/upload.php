@@ -17,8 +17,7 @@
     Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
-// Meng. Append the JS file for downloading the image using AJAX.
-// Reply the client with the requested image file.
+// Meng. Reply the client (using AJAX) with the requested image file. 
 if ($action =='upload')
 {	
   if (isset($_GET["show"]))
@@ -301,7 +300,7 @@ function hasAlphaColour($r)
 }
 
 
-// Return true if the extension is of the image type
+// Meng. Return true if the extension is of the image type
 // false otherwise
 function isImgExt($ext)
 {
@@ -317,74 +316,72 @@ function isImgExt($ext)
 //
 // $ext: the extention of the image
 // $imgFile: the full path of the image, including its filename
-// $MAXWHPX: the dimension in pixel of either width/height after resizing depending on 
-//           its aspect ratio
+// $MAXWHPX: the maximum number of pixels of either width/height after resizing
+//           depending on its aspect ratio
 // $option: if set, the transparency processsing will be completely skipped
 function resizeImg($ext, $imgFile, $MAXWHPX, $option)
 {
-  if (function_exists(imagecreatetruecolor))
+  // If the related functions are supported and this is an image
+  if (function_exists(imagecreatetruecolor) && isImgExt($ext))
   {
-    // If this is an image
-		if (isImgExt($ext))
+		// For png/gif, check for transparency first
+		if ($option && ($ext == 'png' || $ext == 'gif'))
 		{
-  		// For png/gif, check for transparency first
-  		if ($ext == 'png' || $ext == 'gif')
-			{
-        // See if alpha info is stored
-        $colorType = ord(file_get_contents($imgFile, NULL, NULL, 25, 1));
-        if ($colorType == 4 || $colorType == 6)
-        { $isAlphaStored = true; }
+			// See if alpha info is stored
+			$colorType = ord(file_get_contents($imgFile, NULL, NULL, 25, 1));
+			if ($colorType == 4 || $colorType == 6)
+			{ $isAlphaStored = true; }
 
-			  // See if the file actually has transparency
-        if ($ext == 'png') { $src = @imagecreatefrompng($imgFile); }
-				else               { $src = imagecreatefromgif($imgFile); }
-				if ($option) { $hasTransparency = hasAlphaColour($src); }
-			}
-
-      // If the image is oversized
-			// Turns out resizing gif will remove its animation. Skip gif as mostly it's for
-			// animation
-			list($width,$height)=getimagesize($imgFile);
-			$maxWH = max($width,$height);
-			if ($maxWH > $MAXWHPX && $ext != 'gif')
-			{
-				$scale = $MAXWHPX/$maxWH;	
-				$newwidth=round($width*$scale);
-				$newheight=round($height*$scale);
-				$tmp=imagecreatetruecolor($newwidth,$newheight);
-
-				if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
-
-        // Preserve transparency
-        if ($option && ($ext == 'png' || $ext == 'gif') && $hasTransparency)
-        { imagealphablending( $tmp, false ); imagesavealpha( $tmp, true ); }
-				
-        // Resize
-				@imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
-
-        // Sharpen
-        imageconvolution($tmp, array(array(-1, -1, -1), array(-1, 16, -1), array(-1, -1, -1)), 8, 0);
-
-				if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
-				else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
-				else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
-				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
-				@imagedestroy($src);
-				@imagedestroy($tmp);
-			}
-			
-			// Else if the image is png/gif without transparency, but alpha info is stored
-			// remove the alpha info
-			else if ($option && ($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
-			{
-   			imagesavealpha($src, false);	
-				if ($ext == 'png') { $result = imagepng($src,$imgFile); }
-				else               { $result = imagegif($src,$imgFile); }
-				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
-				imagedestroy($src);
-			}
+			// See if the file actually has transparency
+			if ($ext == 'png') { $src = @imagecreatefrompng($imgFile); }
+			else               { $src = imagecreatefromgif($imgFile); }
+			$hasTransparency = hasAlphaColour($src);
 		}
-  }  
+		else { $hasTransparency = false; }
+
+		// If the image is oversized
+		// Turns out resizing gif will remove its animation. Skip gif as mostly it's for
+		// animation
+		list($width,$height)=getimagesize($imgFile);
+		$maxWH = max($width,$height);
+		if ($maxWH > $MAXWHPX && ($ext != 'gif' || $option))
+		{
+			$scale = $MAXWHPX/$maxWH;	
+			$newwidth=round($width*$scale);
+			$newheight=round($height*$scale);
+			$tmp=imagecreatetruecolor($newwidth,$newheight);
+
+			if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
+
+			// Preserve transparency
+			if ($option && ($ext == 'png' || $ext == 'gif') && $hasTransparency)
+			{ imagealphablending( $tmp, false ); imagesavealpha( $tmp, true ); }
+			
+			// Resize
+			@imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
+
+			// Sharpen
+			imageconvolution($tmp, array(array(-1, -1, -1), array(-1, 16, -1), array(-1, -1, -1)), 8, 0);
+
+			if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
+			else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
+			else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
+			if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
+			@imagedestroy($src);
+			@imagedestroy($tmp);
+		}
+		
+		// Else if the image is png/gif without transparency, but alpha info is stored
+		// remove the alpha info
+		else if ($option && ($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
+		{
+			imagesavealpha($src, false);	
+			if ($ext == 'png') { $result = imagepng($src,$imgFile); }
+			else               { $result = imagegif($src,$imgFile); }
+			if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
+			imagedestroy($src);
+		}
+	}
 }
 
 function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload') {
@@ -532,6 +529,11 @@ function FmtUploadList($pagename, $args) {
 	if (isset($_GET["delete"]) && file_exists($uploaddir.'/'.$_GET["delete"]))
 	{
 	  $delResult = @unlink($uploaddir.'/'.$_GET["delete"]);
+
+		// Delete its thumbnail too if existent
+		$ext = strtolower(substr($_GET["delete"], strrpos($_GET["delete"], '.')+1));
+	  @unlink($uploaddir.'/'.str_replace('.'.$ext,'_thumb.'.$ext,$_GET["delete"]));
+	  
 	  // Redirect to the current page again to check the deletion result to prevent the
 	  // current link from deleting the same file again upon refreshing
 	  Redirect("$pagename?action=upload&delResult=$delResult");
@@ -543,38 +545,40 @@ function FmtUploadList($pagename, $args) {
 	  else 
  	  { echo "<span style='color: green;'>Image deleted successfully!</span>"; }
  	}
-	
+
+/*	
 	// Meng. Show the selected uploaded image, and the delete link.
 	// Replaced by client side AJAX solution.
   else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
 	{	
-// 	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
-// 	  if (isImgExt($ext))
-//     {
-//       $fileName = $_GET['show'];
-//       $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
-//       global $PubDirUrl;
-//       $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
-//       $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
-// 
-//       // Meng. The trash can open/close images downloaded from the Internet.
-//    		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
-//    		<script>
-//    		function showTrashClose()
-//    		{
-//      		document.getElementById('trashCanImg').src='$trashCloseImgUrl';
-//    		}
-//    		function showTrashOpen()
-//    		{
-//      		document.getElementById('trashCanImg').src='$trashOpenImgUrl';
-//    		}
-//    		</script>
-//    		", $pagename);
-//    		
-// 			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
-//     }
-//     else { echo 'Not an image!'; }
+	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
+	  if (isImgExt($ext))
+    {
+      $fileName = $_GET['show'];
+      $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
+      global $PubDirUrl;
+      $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
+      $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
+
+      // Meng. The trash can open/close images downloaded from the Internet.
+   		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
+   		<script>
+   		function showTrashClose()
+   		{
+     		document.getElementById('trashCanImg').src='$trashCloseImgUrl';
+   		}
+   		function showTrashOpen()
+   		{
+     		document.getElementById('trashCanImg').src='$trashOpenImgUrl';
+   		}
+   		</script>
+   		", $pagename);
+   		
+			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
+    }
+    else { echo 'Not an image!'; }
 	}
+*/
 
   $dirp = @opendir($uploaddir);
   if (!$dirp) return '';
@@ -657,7 +661,7 @@ function FmtUploadList($pagename, $args) {
 		$out[$outIdx] = "<li>".
 
   	// Meng. Clicking on the filename is equivalent to clicking the thumbnail image
-		"<span id=\"'$outIdx'_filename\" style=\"cursor: pointer;\"
+		"<span class='uploadFilelist' style=\"color:blue; cursor: pointer;\"
 		onclick=\"document.getElementById('$outIdx').click();\">".$file."</span>" .
 		
 		"$lnk$overwrite$del$delMarkup ... ". 

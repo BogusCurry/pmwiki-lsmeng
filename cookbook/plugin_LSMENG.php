@@ -1049,6 +1049,10 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
   {
     // Check if this is a valid image file with correct filename format.
     $imgName = $file[$iFile];
+    
+    // Skip thumbnail images
+    if (strpos($imgName,'_thumb.') !== false) { continue; }
+    
     $imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);
     
     if ($imgUrl == "") { continue; }

@@ -8,6 +8,10 @@
 **  (at your option) any later version.  See pmwiki.php for full details.
 ***********************************************************************/
 
+/* For the uploaded file list */
+span.uploadFilelist:hover
+{ text-decoration:underline; }
+
 /* For the video play image. No visual effects are applied. */
 img[src$='playIcon.png']:hover { -webkit-filter: none; }
 img[src$='playIcon.png']:active { -webkit-transform: none; }
@@ -116,7 +120,7 @@ h6 { font-size:1.0em; }
 #wikicmds li { display:inline; margin:0px 5px; }
 #wikicmds li a { text-decoration:none; color:rgb(88,173,227); border:none; }
 #wikicmds li a.createlink { display:none; }
-#wikicmds li a:hover { text-decoration:underline;  }
+#wikicmds li a:hover { text-decoration:underline; }
 
 #pagegroup
 {
