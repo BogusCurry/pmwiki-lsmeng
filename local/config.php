@@ -250,7 +250,7 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   // be a way not to repeat the look behind part (?<=\.\d{4}0)
   preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
   preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
-  $UploadDir = "$Photo/$year/$mon";
+  $UploadDir = "$Photo$year/$mon";
 }
 
 $ImgfocusFadeInTime = 0;
