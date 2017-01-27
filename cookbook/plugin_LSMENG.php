@@ -861,13 +861,15 @@ function getImgFileContent($file, $mime='image/png')
 {
   $contents = @file_get_contents(str_replace('%20',' ',$file));
   if ($contents === false) { return ''; }
-  $base64   = base64_encode($contents);
+  $base64 = base64_encode($contents);
   
   // Parse the filename from the complete file path
   global $PhotoPub, $pagename;
   $groupname = substr($pagename,0,strpos($pagename,'.'));
-  $filename = str_replace($PhotoPub.$groupname.'/','',$file);
-  
+  $pos = strrpos($file,'/');
+  if ($pos !== false) { $filename = substr($file, $pos+1); }
+  else { $filename = $file; }
+
   // Also insert the filename into the image data content. This serves a way to signify 
   // the file name to the client side JS. Although it works, this is not a legal field. 
   return ('data:' . $mime . ';filename='.$filename.';base64,' . $base64);
@@ -1751,7 +1753,12 @@ function isPasswdCorrect($passwd)
   if (stripos($decryptText, "version=pmwiki") !== false || $text === false)
   {
     @session_start();
-    $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
+//     $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
+   
+    $Now = time();
+    $TimeFmt = '%Y/%m/%d at %H:%M:%S';
+    $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd, strftime($TimeFmt, $Now)];
+    
     unset($_SESSION['authpw']);
     
     // Copy the master password to the password buffer used by pmwiki. This password
@@ -1770,6 +1777,10 @@ function isPasswdCorrect($passwd)
     return false;
   }
 }
+
+// Return the login date/time
+$FmtPV['$loginTime'] = 'getLoginTime()';
+function getLoginTime() { return $_SESSION['MASTER_KEY'][2]; }
 
 // Defunct. Attempt to clear and/or authenticate the Apache htaccess passwords.
 function httpAuth()

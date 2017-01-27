@@ -21,18 +21,16 @@
 // Reply the client with the requested image file.
 if ($action =='upload')
 {	
-	$HTMLHeaderFmt['getAndShowImgFile'] = "
-  <script src='$PubDirUrl/getAndShowImgFile.js'></script>";
-  
   if (isset($_GET["show"]))
   {
 		global $UploadDir, $UploadPrefixFmt;
 		$uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
-		
+
 		if (file_exists($uploaddir.'/'.$_GET["show"]))
 		{
 			$file = $_GET["show"];
-			$imgSrc = getImgFileContent($uploaddir.'/'.$file);
+			$filePath = $uploaddir.'/'.$file;
+			$imgSrc = getImgFileContent($filePath);
 			header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
 			header("Pragma: no-cache"); // HTTP 1.0.
 			header("Expires: 0"); // Proxies.
@@ -48,7 +46,6 @@ if ($action =='upload')
 		}    
   }
 }
-
 
 ## $EnableUploadOverwrite determines if we allow previously uploaded
 ## files to be overwritten.
@@ -277,16 +274,16 @@ function HandleDownload($pagename, $auth = 'read') {
 // Meng. Should be obvious. Borrowed from the Internet. 
 function png2jpg($originalFile, $outputFile, $quality)
 {
-    $image = imagecreatefrompng($originalFile);
-    imagejpeg($image, $outputFile, $quality);
-    imagedestroy($image);
+	$image = imagecreatefrompng($originalFile);
+	imagejpeg($image, $outputFile, $quality);
+	imagedestroy($image);
 }
 
 // Meng. Check if the given image has transparency information.
 function hasAlphaColour($r)
 {
-	$x = imagesx($r);
-	$y = imagesy($r);
+	$x = @imagesx($r);
+	$y = @imagesy($r);
 	
 	// We only check some of the pixels
 	for ($i = 0; $i < $x; $i += $x/10)
@@ -301,6 +298,93 @@ function hasAlphaColour($r)
 	}
 	
 	return false;
+}
+
+
+// Return true if the extension is of the image type
+// false otherwise
+function isImgExt($ext)
+{
+  if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png' || $ext == 'bmp' || $ext == 'gif')
+  { return true; }
+  else { return false; }
+}
+
+// Meng. Image processing. For png/gif, if the image is determined not to have 
+// transparency, the transparency information (alpha) will not be saved.
+// Next if either the height or the width exceeds a maximum value, the image is resized
+// to fit the size limit. 
+//
+// $ext: the extention of the image
+// $imgFile: the full path of the image, including its filename
+// $MAXWHPX: the dimension in pixel of either width/height after resizing depending on 
+//           its aspect ratio
+// $option: if set, the transparency processsing will be completely skipped
+function resizeImg($ext, $imgFile, $MAXWHPX, $option)
+{
+  if (function_exists(imagecreatetruecolor))
+  {
+    // If this is an image
+		if (isImgExt($ext))
+		{
+  		// For png/gif, check for transparency first
+  		if ($ext == 'png' || $ext == 'gif')
+			{
+        // See if alpha info is stored
+        $colorType = ord(file_get_contents($imgFile, NULL, NULL, 25, 1));
+        if ($colorType == 4 || $colorType == 6)
+        { $isAlphaStored = true; }
+
+			  // See if the file actually has transparency
+        if ($ext == 'png') { $src = @imagecreatefrompng($imgFile); }
+				else               { $src = imagecreatefromgif($imgFile); }
+				if ($option) { $hasTransparency = hasAlphaColour($src); }
+			}
+
+      // If the image is oversized
+			// Turns out resizing gif will remove its animation. Skip gif as mostly it's for
+			// animation
+			list($width,$height)=getimagesize($imgFile);
+			$maxWH = max($width,$height);
+			if ($maxWH > $MAXWHPX && $ext != 'gif')
+			{
+				$scale = $MAXWHPX/$maxWH;	
+				$newwidth=round($width*$scale);
+				$newheight=round($height*$scale);
+				$tmp=imagecreatetruecolor($newwidth,$newheight);
+
+				if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
+
+        // Preserve transparency
+        if ($option && ($ext == 'png' || $ext == 'gif') && $hasTransparency)
+        { imagealphablending( $tmp, false ); imagesavealpha( $tmp, true ); }
+				
+        // Resize
+				@imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
+
+        // Sharpen
+        imageconvolution($tmp, array(array(-1, -1, -1), array(-1, 16, -1), array(-1, -1, -1)), 8, 0);
+
+				if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
+				else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
+				else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
+				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
+				@imagedestroy($src);
+				@imagedestroy($tmp);
+			}
+			
+			// Else if the image is png/gif without transparency, but alpha info is stored
+			// remove the alpha info
+			else if ($option && ($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
+			{
+   			imagesavealpha($src, false);	
+				if ($ext == 'png') { $result = imagepng($src,$imgFile); }
+				else               { $result = imagegif($src,$imgFile); }
+				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
+				imagedestroy($src);
+			}
+		}
+  }  
 }
 
 function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload') {
@@ -319,92 +403,23 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
   if ($upname=='') $upname=$uploadfile['name'];
   $upname = MakeUploadName($pagename,$upname);
 
-  // Meng. Image processing. For png/gif, if the image is determined not to have 
-  // transparency, the transparency information (alpha) will not be saved.
-  // Next if either the height or the width exceeds a maximum value, the image is resized
-  // to fit the size limit. 
-  if (function_exists(imagecreatetruecolor))
-  {
-		$ext = strtolower(substr($upname, strrpos($upname, '.')+1));
-
-    // If this is an image
-		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png' || $ext == 'bmp' || $ext == 'gif')
+	// Meng. Check if the image type and its extension matches
+	$ext = strtolower(substr($upname, strrpos($upname, '.')+1));
+	if (function_exists(exif_imagetype))
+	{
+		$imgType = exif_imagetype($uploadfile['tmp_name']);
+		if ((($ext == 'jpg' || $ext == 'jpeg') && $imgType != 2) ||
+		($ext == 'png' && $imgType != 3) ||
+		($ext == 'bmp' && $imgType != 6) ||
+		($ext == 'gif' && $imgType != 1) 	)
 		{
-			$imgFile = $uploadfile['tmp_name'];
-      
-      // Check if the image type and its extension matches
-			if (function_exists(exif_imagetype))
-			{
-				$imgType = exif_imagetype($imgFile);
-				if ((($ext == 'jpg' || $ext == 'jpeg') && $imgType != 2) ||
-				($ext == 'png' && $imgType != 3) ||
-				($ext == 'bmp' && $imgType != 6) ||
-				($ext == 'gif' && $imgType != 1) 	)
-				{
-				  $UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&upresult=badname");
-				  return;
-				}
-			}
-			
-  		// For png/gif, check for transparency first
-  		if ($ext == 'png' || $ext == 'gif')
-			{
-        // See if alpha info is stored
-        $colorType = ord(file_get_contents($imgFile, NULL, NULL, 25, 1));
-        if ($colorType == 4 || $colorType == 6)
-        { $isAlphaStored = true; }
-
-			  // See if the file actually has transparency
-        if ($ext == 'png') { $src = imagecreatefrompng($imgFile); }
-				else               { $src = imagecreatefromgif($imgFile); }
-				$hasTransparency = hasAlphaColour($src);
-			}
-
-      // If the image is oversized
-			// Turns out resizing gif will remove its animation. Skip gif as mostly it's for
-			// animation
-			$MAXWHPX = 720;
-			list($width,$height)=getimagesize($imgFile);
-			$maxWH = max($width,$height);
-			if ($maxWH > $MAXWHPX && $ext != 'gif')
-			{
-				$scale = $MAXWHPX/$maxWH;	
-				$newwidth=round($width*$scale);
-				$newheight=round($height*$scale);
-				$tmp=imagecreatetruecolor($newwidth,$newheight);
-
-				if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
-
-        // Preserve transparency
-        if (($ext == 'png' || $ext == 'gif') && $hasTransparency)
-        { imagealphablending( $tmp, false ); imagesavealpha( $tmp, true ); }
-				
-        // Resize
-				imagecopyresampled($tmp,$src,0,0,0,0,$newwidth,$newheight,$width,$height);
-
-        // Sharpen
-        imageconvolution($tmp, array(array(-1, -1, -1), array(-1, 16, -1), array(-1, -1, -1)), 8, 0);
-
-				if ($ext == 'jpg' || $ext == 'jpeg') { $result = imagejpeg($tmp,$imgFile,75); }
-				else if ($ext == 'png') { $result = imagepng($tmp,$imgFile); }
-				else if ($ext == 'gif') { $result = imagegif($tmp,$imgFile); }
-				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
-				imagedestroy($src);
-				imagedestroy($tmp);
-			}
-			
-			// Else if the image is png/gif without transparency, but alpha info is stored
-			// remove the alpha info
-			else if (($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
-			{
-   			imagesavealpha($src, false);	
-				if ($ext == 'png') { $result = imagepng($src,$imgFile); }
-				else               { $result = imagegif($src,$imgFile); }
-				if ($result === true) { $uploadfile['tmp_name'] = $imgFile; }
-				imagedestroy($src);
-			}
+			$UploadRedirectFunction($pagename,"{\$PageUrl}?action=upload&uprname=$upname&upresult=badname");
+			return;
 		}
-  }
+	}
+	
+  // Meng. Resize the image if necessary
+  resizeImg($ext, $uploadfile['tmp_name'], 720);
 
   if (!function_exists($UploadVerifyFunction))
     Abort('?no UploadVerifyFunction available');
@@ -534,7 +549,7 @@ function FmtUploadList($pagename, $args) {
   else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
 	{	
 // 	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
-// 	  if ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp')
+// 	  if (isImgExt($ext))
 //     {
 //       $fileName = $_GET['show'];
 //       $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
@@ -579,6 +594,12 @@ function FmtUploadList($pagename, $args) {
   $fileCount = 0;
   foreach($filelist as $file=>$encfile)
   {  
+  	// Meng. Skip auto-created thumbnail images
+  	$filePath = $uploaddir.'/'.$file;
+ 	  $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+  	if (isImgExt($ext))
+		{	if (strpos($file, "_thumb.") !== false) { continue; }	}
+  
     // Meng. Change the link.
     $FmtV['$LinkUrl'] = 
       FmtPageName("\$PageUrl?action=upload&amp;show=$encfile", $pagename); //PUE("$uploadurl$encfile");
@@ -625,20 +646,20 @@ function FmtUploadList($pagename, $args) {
 
     // Meng. Get the image dimensions.
  	  $imgDimension = '';
- 	  $ext = strtolower(pathinfo($uploaddir.'/'.$file, PATHINFO_EXTENSION));
 	  if (function_exists(getimagesize) && 
-	  ($ext == 'jpg' || $ext == 'png' || $ext == 'gif' || $ext == 'jpeg' || $ext == 'bmp'))
+	  isImgExt($ext))
     {
-			list($width,$height) = getimagesize($uploaddir.'/'.$file);
+			list($width,$height) = getimagesize($filePath);
 			if (isset($width)) { $imgDimension = $width.'x'.$height.' ... '; }
     }
 
-  	// Meng. Download the image file on demand using getAndShowImgFile.js
-		$out[$stat['mtime'].$file] = "<li>".
+		$outIdx = $stat['mtime'].$file;
+		$out[$outIdx] = "<li>".
 
-		"<span style=\"cursor: pointer;\"
-		onclick=\"getAndShowImgFile('$file');\">".$file."</span>" .
-
+  	// Meng. Clicking on the filename is equivalent to clicking the thumbnail image
+		"<span id=\"'$outIdx'_filename\" style=\"cursor: pointer;\"
+		onclick=\"document.getElementById('$outIdx').click();\">".$file."</span>" .
+		
 		"$lnk$overwrite$del$delMarkup ... ". 
 		
 		$imgDimension.
@@ -646,6 +667,24 @@ function FmtUploadList($pagename, $args) {
 		number_format($stat['size']/1000) . " KB ... " . 
 		
 		strftime($TimeFmt, $stat['mtime'])  . '</li>';
+
+		// Meng. If this is an image, create & prepend a thumbnail image
+		if (isImgExt($ext))
+		{
+			// Create the thumbnail if non-existent
+			$thumbnailImgPath = str_replace('.'.$ext,'_thumb.'.$ext,$filePath);
+			if (!file_exists($thumbnailImgPath))
+			{
+				copy($filePath, $thumbnailImgPath);
+			  resizeImg($ext, $thumbnailImgPath, 100, true);
+			}
+			
+			// Prepend to the list
+			$imgSrc = getImgFileContent($thumbnailImgPath);
+			$thumbImgHTML = "<span style=\"color:red;display:inline-block;height:22px;width:50px;\">
+			<img id='$outIdx' style='max-height:100%;max-width:100%;' src='$imgSrc'/></span>";
+			$out[$outIdx] = "<li>".$thumbImgHTML.substr($out[$outIdx],4);
+		}
 		
 		$fileCount++;
   }
@@ -654,7 +693,9 @@ function FmtUploadList($pagename, $args) {
 	ksort($out);
 	$out = array_reverse($out);
 	
+/*
 	// Meng. Show thumbnail image for a few most recent image files
+	// Abandoned after fully implementing the thumbnail function
   $fileCount = 0;
 	foreach ($out as $key => $value)
   {
@@ -664,9 +705,9 @@ function FmtUploadList($pagename, $args) {
 			$ext = strtolower(substr($file, strrpos($file, '.')+1));
 
       // If this is an image
-  		if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png' || $ext == 'bmp' || $ext == 'gif')
+  		if (isImgExt($ext))
 	  	{
-				$imgSrc = getImgFileContent($uploaddir.'/'.$file);
+				$imgSrc = getImgFileContent($filePath);
 				
 				$thumbImgHTML = "<span style=\"color:red;display:inline-block;height:22px;width:50px;\">
 				<img style='max-height:100%;max-width:100%;' src='$imgSrc'/></span>";
@@ -678,7 +719,8 @@ function FmtUploadList($pagename, $args) {
   	}
     else { break; }
   }
-	
+*/
+
   return implode("\n",$out);
 }
 

@@ -11,8 +11,8 @@
  * option) any later version. Available at
  * https://www.gnu.org/licenses/gpl.txt
  *
- * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160725
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170127
  */
 
 var pageTimer = 
@@ -39,10 +39,31 @@ var pageTimer =
     var diff = pageTimer.timer - clock.getTime()/1000;
     
     // Check computer standby and logout
-		if (pageTimer.lastDiff - diff >= pageTimer.STANDBY_LOGOUT_DURATION)
+		var timeDiff = pageTimer.lastDiff - diff;
+		if (timeDiff >= pageTimer.STANDBY_LOGOUT_DURATION)
 		{	
+			// For debugging
+			var clock = new Date();
+			var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
+	    hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
+      var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
+	       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
+	    var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
+      localStorage.setItem('StandbyLogout', msg);
+      
       window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action;
 	    return;
+		}
+		// For debugging purpose
+		else if (timeDiff > 5)
+		{
+		  var clock = new Date();
+			var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
+	    hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
+      var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
+	       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
+		  var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
+		  console.log(msg);
 		}
 
 		pageTimer.lastDiff = diff;
@@ -71,7 +92,8 @@ var pageTimer =
   // Reset the timer.
   resetTimer: function()
   {
-		document.querySelector('#ID_LOGOUTTIMER').textContent = pageTimer.hourInit + ":" + pageTimer.minutesInit + ":" + pageTimer.secondsInit;
+		if (document.querySelector('#ID_LOGOUTTIMER'))
+		{ document.querySelector('#ID_LOGOUTTIMER').textContent = pageTimer.hourInit + ":" + pageTimer.minutesInit + ":" + pageTimer.secondsInit; }
 
 		var clock = new Date();    
 		pageTimer.timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
