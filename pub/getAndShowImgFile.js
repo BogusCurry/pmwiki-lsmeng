@@ -1,3 +1,5 @@
+// Defunct after integrating the whole mechanism into imgfocus.js
+
 // Request an image file from server using Ajax in the background. Dynamically create
 // an image element for it after receiving the image
 function getAndShowImgFile(fileName)

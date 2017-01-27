@@ -23,11 +23,11 @@ var imgfocus = {};
 imgfocus.clickHandle = function(element)
 {
 	// Create the popup image
-	if (!imgfocus.imgEnlarge) { imgfocus.imgEnlarge = document.createElement('img'); }
-	imgfocus.imgEnlarge.element = element;
+	if (!imgfocus.popupImgElement) { imgfocus.popupImgElement = document.createElement('img'); }
+	imgfocus.popupImgElement.element = element;
 	
-	// if the filename indicates it's a thumbnail, load its original content
-	// Replace the image element by creating another one
+	// If the filename indicates it's a thumbnail, load its original content by using AJAX
+	// Dynamically request the original image file from the server
 	if (element.name.indexOf("_thumb.") != -1)
 	{
 		var req = new XMLHttpRequest();
@@ -38,14 +38,15 @@ imgfocus.clickHandle = function(element)
 		req.onreadystatechange = function()
 		{
 			if (this.readyState == 4)
-			{ if (this.status == 200)	{ imgfocus.imgEnlarge.src = this.responseText; } }
+			{ if (this.status == 200)	{ imgfocus.popupImgElement.src = this.responseText; } }
 		}
 	}
-	else { imgfocus.imgEnlarge.src = element.src; }
+	// Else the source of the popup image is the same as the original image element
+	else { imgfocus.popupImgElement.src = element.src; }
 	
 	// Blur and dim the background and then show the popup image on image load.
-	imgfocus.imgEnlarge.onerror = function() { console.log('on load error'); }
-	imgfocus.imgEnlarge.onload = function()
+	imgfocus.popupImgElement.onerror = function() { console.log('on load error'); }
+	imgfocus.popupImgElement.onload = function()
 	{
 		// A fix for hiding the glowing effect immediately after showing the pop-up 
 		// image, and recover it afterwards
@@ -101,8 +102,8 @@ imgfocus.clickHandle = function(element)
 		// On mouse down, record the time to determine its dragging or clicking
 		window.addEventListener('mousedown', function()
 		{
-			if (imgfocus.imgEnlarge)
-			{ imgfocus.imgEnlarge.mousedownTimeStamp = event.timeStamp; }
+			if (imgfocus.popupImgElement)
+			{ imgfocus.popupImgElement.mousedownTimeStamp = event.timeStamp; }
 		}
 		, false);
 		
@@ -172,14 +173,13 @@ imgfocus.popupImgOnClick = function()
 			var pos = src.lastIndexOf('/');
 			var filename = src.slice(pos+1);  
     }
+    // Add a new property "name" to store the image's filename for later use
     imgElement[i].name = filename;
     
     // Skip the images specified in the exception list
     var isException = false
     for (var j=0;j<ImgfocusExceptionListLen;j++)
-    {
-      if (filename == imgfocus.exceptionList[j]) { isException = true; break; }
-    }
+    { if (filename == imgfocus.exceptionList[j]) { isException = true; break; } }
     if (isException) { continue; }
     
     // Skip images that are hyperlinks
@@ -188,12 +188,15 @@ imgfocus.popupImgOnClick = function()
     _imgElement.push(imgElement[i]);
   }
   
+  
   imgElementLen = _imgElement.length;
   for (var i=0;i<imgElementLen;i++)
   {
     // Apply the popup function on clicking the image
     _imgElement[i].onclick = function() { imgfocus.clickHandle(this); }
-
+		
+		// Add two new properties to store the next and the previous image elements
+		// Used for switching/navigating images using direction keys
 		if (i == 0)
 		{
 			_imgElement[i].nextElement = _imgElement[i+1];
@@ -315,7 +318,7 @@ imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, cal
 // fitting the screen
 imgfocus.isZoomOverFit = function()
 {
-  var element = imgfocus.imgEnlarge;
+  var element = imgfocus.popupImgElement;
   
   if (!element) { return false; }
   
@@ -327,7 +330,7 @@ imgfocus.isZoomOverFit = function()
 // An aux function that returns true is the img element is zoomed and centered
 imgfocus.isZoomToFit = function()
 {
-  var element = imgfocus.imgEnlarge;
+  var element = imgfocus.popupImgElement;
   
   if (!element) { return false; }
   
@@ -342,7 +345,7 @@ imgfocus.isZoomToFit = function()
 // execute at the end of zooming
 imgfocus.zoomToFit = function(callback)
 {
-  var element = imgfocus.imgEnlarge;
+  var element = imgfocus.popupImgElement;
   element.style.cursor = 'default';
   
   // Center the image first
@@ -373,20 +376,20 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
   // The detail property of event gives the number of consecutive clicks in a short amount
   // of time. For some reason, a mouse up event can occur immediately following a key
   // press. Simply ignore it.
-  if (e.detail==0 || (e.detail==1 && imgfocus.imgEnlarge.keydownTimeStamp && e.timeStamp-imgfocus.imgEnlarge.keydownTimeStamp<700))
+  if (e.detail==0 || (e.detail==1 && imgfocus.popupImgElement.keydownTimeStamp && e.timeStamp-imgfocus.popupImgElement.keydownTimeStamp<700))
   { return; }
   
   // It is dragging if the consecutive mouse dn up is shorter than a certain duration.
   // Do nothing in this case
-  if (e.timeStamp - imgfocus.imgEnlarge.mousedownTimeStamp > 150)	{ return; }
+  if (e.timeStamp - imgfocus.popupImgElement.mousedownTimeStamp > 150)	{ return; }
   // If the image is zoomed
-  if (imgfocus.imgEnlarge.height>=window.innerHeight || imgfocus.imgEnlarge.width>=window.innerWidth)
+  if (imgfocus.popupImgElement.height>=window.innerHeight || imgfocus.popupImgElement.width>=window.innerWidth)
   { imgfocus.removeImgRecoverBackground(); return; }
   // Else the image is not zoomed
   else
   {
     // if the click is not on the image, remove it
-    if (e.target != imgfocus.imgEnlarge) { imgfocus.removeImgRecoverBackground(); }
+    if (e.target != imgfocus.popupImgElement) { imgfocus.removeImgRecoverBackground(); }
     // else zoom the image
     else { imgfocus.zoomToFit();  }
   }
@@ -402,7 +405,7 @@ imgfocus.wheelZoom = function(e)
 {
   e.preventDefault();
   
-  var element = imgfocus.imgEnlarge;
+  var element = imgfocus.popupImgElement;
   
   var currentWidth = element.width;
   var currentHeight = element.height;
@@ -443,7 +446,7 @@ imgfocus.wheelZoom = function(e)
   var newW = currentWidth + stepPx;
   var minWidth = 50;
   if (newW > minWidth)
-// 	{ imgfocus.zoomElement(imgfocus.imgEnlarge, 'width', newW, 20, 0, 'none'); }
+// 	{ imgfocus.zoomElement(imgfocus.popupImgElement, 'width', newW, 20, 0, 'none'); }
   { element.style.width = newW+'px'; element.style.height = 'auto'; }
   else
   { element.style.width = minWidth + 'px'; element.style.height = 'auto'; }
@@ -466,7 +469,7 @@ imgfocus.wheelZoom = function(e)
 // the reverse of the adding process.
 imgfocus.removeImgRecoverBackground = function(style)
 {
-  var element = imgfocus.imgEnlarge;
+  var element = imgfocus.popupImgElement;
   if (element)
   {
     // Cancel the timers on removing popup image
@@ -486,7 +489,7 @@ imgfocus.removeImgRecoverBackground = function(style)
     else { imgfocus.fadeElement(element, 1, 0, imgfocus.fadeOutTime, removeImg);	}
     
     function removeImg()
-    { element.remove();	delete imgfocus.imgEnlarge; }
+    { element.remove();	delete imgfocus.popupImgElement; }
   }
 }
 
@@ -597,7 +600,7 @@ window.addEventListener('mousemove', function()
 
 window.addEventListener('keydown', function()
 {
-  if (imgfocus.imgEnlarge)
+  if (imgfocus.popupImgElement)
   {
     // On pressing ESC, remove the pop up image immediately without any special effects.
     if (event.keyCode == 27) { imgfocus.removeImgRecoverBackground('immediately'); }
@@ -612,7 +615,7 @@ window.addEventListener('keydown', function()
         
         // For some reason, a mouse up event can occur immediately following a key
         // press. Record the key press time to identify this case.
-        imgfocus.imgEnlarge.keydownTimeStamp = event.timeStamp;
+        imgfocus.popupImgElement.keydownTimeStamp = event.timeStamp;
       }
     }
     
@@ -625,7 +628,7 @@ window.addEventListener('keydown', function()
       var mouseY = imgfocus.mouseY;
       // if on img
       {
-        var element = imgfocus.imgEnlarge;
+        var element = imgfocus.popupImgElement;
         var currentWidth = element.width;
         var currentHeight = element.height;
         
@@ -670,7 +673,8 @@ window.addEventListener('keydown', function()
       event.preventDefault();
       if (imgfocus.isZoomOverFit())
       {
-        imgfocus.imgEnlarge.style.top = parseInt(imgfocus.imgEnlarge.style.top)+(event.keyCode-39)*10+'px';
+        imgfocus.popupImgElement.style.top = 
+        parseInt(imgfocus.popupImgElement.style.top)+(event.keyCode-39)*10+'px';
       }
     }
     
@@ -682,23 +686,26 @@ window.addEventListener('keydown', function()
       // If isZoomOverFit, move the image
       if (imgfocus.isZoomOverFit())
       {
-        imgfocus.imgEnlarge.style.left = 
-        parseInt(imgfocus.imgEnlarge.style.left)+(event.keyCode-38)*10+'px';
+        imgfocus.popupImgElement.style.left = 
+        parseInt(imgfocus.popupImgElement.style.left)+(event.keyCode-38)*10+'px';
       }
       // Else, switch between images
       else
       {
         try
         {
+					// Pressing left/right is equivalent to clicking on the previous/next image
+					// No need to remove the current popup image first, since changing its src
+					// property is equivalent to loading a new image for the image element
 					if (event.keyCode == 37)
 					{
-						var preElement = imgfocus.imgEnlarge.element.preElement;
+						var preElement = imgfocus.popupImgElement.element.preElement;
 						preElement.scrollIntoView(true);
 						preElement.click();
 					}
 					else
 					{
-						var nextElement = imgfocus.imgEnlarge.element.nextElement;
+						var nextElement = imgfocus.popupImgElement.element.nextElement;
 						nextElement.scrollIntoView(true);
 						nextElement.click();
 					}
@@ -706,16 +713,19 @@ window.addEventListener('keydown', function()
 					// If the fitting dimension changes, the image has to be removed first and added
 					// back later for better visual experience
 					var dimension = window.innerWidth/window.innerHeight > 
-					imgfocus.imgEnlarge.width/imgfocus.imgEnlarge.height ? 'height' : 'width';
-					if (dimension != imgfocus.imgEnlarge.dimension)
+					imgfocus.popupImgElement.width/imgfocus.popupImgElement.height ? 'height' : 'width';
+					if (dimension != imgfocus.popupImgElement.dimension)
 					{
-					  imgfocus.imgEnlarge.remove();
-					  var callback = function() { document.body.appendChild(imgfocus.imgEnlarge); };
+					  imgfocus.popupImgElement.remove();
+					  var callback = function() { document.body.appendChild(imgfocus.popupImgElement); };
 					}
         }
         catch(error) {  }
         
-        imgfocus.imgEnlarge.onload = function() { imgfocus.zoomToFit(callback); }
+        // Overwrite the popup image's onload function here to position it properly on
+        // screen, and to prevent the procedures for adding the dimmer to be called again
+        // at the same time.
+        imgfocus.popupImgElement.onload = function() { imgfocus.zoomToFit(callback); }
       }
     }
   }
