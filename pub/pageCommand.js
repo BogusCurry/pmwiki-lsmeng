@@ -256,23 +256,34 @@ window.addEventListener('keydown', function()
 			pageCommand.box.style.border = '1px solid blue';
 			pageCommand.box.style.webkitFilter = 'drop-shadow(0 0 3px blue)';
 			document.body.appendChild(pageCommand.box);
+			
+			// Since the box element shadows the original hyperlink, the clicking behavior
+			// has to be defined again. Somehow "onclick" cannot detect a click when ctrl is
+			// pressed; while "onmouseup" works fine.
+			pageCommand.box.onmouseover = function()	{ this.style.cursor = 'pointer'; };
+			pageCommand.box.onmouseup = function()
+			{
+				if (pageCommand.selectLink)
+				{
+					var link = pageCommand.selectLink.href;
+					
+					if (link.toLowerCase().indexOf('pmwiki.php') != -1)
+					{
+						event.preventDefault();
+						if (event.shiftKey) { link = pageCommand.getEditLink(link); }
+						var option = '_self';
+						if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
+						
+						window.open(link, option);
+					}
+				}
+			};
 		}
   }
   
-  // Go to the link if a link is selected
+  // Handle the enter key press when a link is selected; simply call the onmouseup routine
+  // since the procedure is completely the same
   else if (pageCommand.action != 'edit' && event.keyCode == 13 && !event.altKey && pageCommand.selectLink)
-  {
-		
-		var link = pageCommand.selectLink.href;
-		
-		if (link.toLowerCase().indexOf('pmwiki.php') != -1)
-		{
-		  event.preventDefault();
-		  if (event.shiftKey) { link = pageCommand.getEditLink(link); }
-			var option = '_self';
-			if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
-			window.open(link, option);
-		}
-  }
+  { pageCommand.box.onmouseup(); }
 }, false);
 
