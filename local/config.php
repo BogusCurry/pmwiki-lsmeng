@@ -256,6 +256,8 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 $ImgfocusFadeInTime = 0;
 $ImgFocusFadeOutTime = 0;
 $ImgfocusZoomToFitTime = 0;
+$ImgfocusZoomScreenRatio = 0.95;
+$ImgfocusAlwaysZoom = true;
 $ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg');
 include_once("$FarmD/cookbook/imgfocus.php"); 
 
