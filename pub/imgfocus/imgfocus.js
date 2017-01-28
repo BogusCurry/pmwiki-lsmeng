@@ -15,16 +15,28 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170127
+* Version 20170129
 */
 
 var imgfocus = {};
 
 imgfocus.clickHandle = function(element)
 {
-	// Create the popup image
-	if (!imgfocus.popupImgElement) { imgfocus.popupImgElement = document.createElement('img'); }
-	imgfocus.popupImgElement.element = element;
+	// If the popup image element is still absent, i.e., manually clicking on an image,
+	// create the element
+	// First time, init
+	if (!imgfocus.popupImgElement)
+	{
+		imgfocus.popupImgElement = document.createElement('img');
+		imgfocus.popupImgElement.element = element;
+	}
+	// Else, the click is triggered by program for switching image. Create another temp
+	// element to load the image temporarily for smoothing the transition
+	else
+	{
+	  imgfocus.popupImgElementTemp = document.createElement('img');
+	  imgfocus.popupImgElementTemp.element = element;
+	}
 	
 	// If the filename indicates it's a thumbnail, load its original content by using AJAX
 	// Dynamically request the original image file from the server
@@ -38,11 +50,25 @@ imgfocus.clickHandle = function(element)
 		req.onreadystatechange = function()
 		{
 			if (this.readyState == 4)
-			{ if (this.status == 200)	{ imgfocus.popupImgElement.src = this.responseText; } }
+			{
+				if (this.status == 200)
+				{
+					// Load the image src to the temp element if present
+					if (imgfocus.popupImgElementTemp)
+					{ imgfocus.popupImgElementTemp.src = this.responseText; }
+					else { imgfocus.popupImgElement.src = this.responseText; }
+				}
+			}
 		}
 	}
 	// Else the source of the popup image is the same as the original image element
-	else { imgfocus.popupImgElement.src = element.src; }
+	else
+	{
+		// Load the image src to the temp element if present
+		if (imgfocus.popupImgElementTemp)
+		{ imgfocus.popupImgElementTemp.src = element.src;	}
+		else { imgfocus.popupImgElement.src = element.src; }
+	}
 	
 	// Blur and dim the background and then show the popup image on image load.
 	imgfocus.popupImgElement.onerror = function() { console.log('on load error'); }
@@ -56,34 +82,15 @@ imgfocus.clickHandle = function(element)
 		element.onmouseover = function()
 		{ element.style.webkitFilter = 'drop-shadow(0 0 3px gray)'; };
 
-		// Blur all the direct children of the document body.
+		// Blur all the direct children of the document body. Then overlay the dimmer
 		var bodyElementLen = imgfocus.documentBodyElement.length;
 		for (var i=0;i<bodyElementLen;i++)
 		{ imgfocus.blurElement(imgfocus.documentBodyElement[i]); }
-		
-		// Overlay the dimmer
 		document.body.appendChild(imgfocus.dimmer);
 		
-		this.style.zIndex = imgfocus.dimmer.style.zIndex+1;
-		this.style.position = 'fixed';
-		
-		// Place the image right at the center of the browser.
-		this.style.left = Math.floor(window.innerWidth/2) + 'px';
-		this.style.top  = Math.floor(window.innerHeight/2) + 'px';
-		this.style.transform = 'translate(-50%, -50%)';
-		
-		// Cache the translation. This is used for zooming
-		this.translateX = -50;
-		this.translateY = -50;
-
-		// Shrink the image if it's bigger than the browser screen. Skip this step if its
-		// dimension fits into the current screen size
-//  			if (this.naturalWidth > window.innerWidth || this.naturalHeight > window.innerHeight)
-		{	imgfocus.zoomToFit();	}
+		// Zoom and position the image properly on screen, along with some basic configurations
+		imgfocus.zoomToFit(imgfocus.alwaysZoom);
 					
-		// Apply shadow effect & fade in the popup image
-		this.style.webkitFilter = 'drop-shadow(20px 20px 10px black)';
-		
 		// Hide it first for later fading in
 		this.style.visibility = 'hidden';
 		
@@ -104,9 +111,9 @@ imgfocus.clickHandle = function(element)
 		{
 			if (imgfocus.popupImgElement)
 			{ imgfocus.popupImgElement.mousedownTimeStamp = event.timeStamp; }
-		}
-		, false);
+		}, false);
 		
+		// For image dragging
 		this.onmousedown = function(e)
 		{
 			if (!this.fadeTimerID && (this.height>window.innerHeight || this.width>window.innerWidth))
@@ -133,6 +140,7 @@ imgfocus.clickHandle = function(element)
 	}
 }
 
+// The main function
 imgfocus.popupImgOnClick = function()
 {
   // Get the exception list length
@@ -187,7 +195,6 @@ imgfocus.popupImgOnClick = function()
     
     _imgElement.push(imgElement[i]);
   }
-  
   
   imgElementLen = _imgElement.length;
   for (var i=0;i<imgElementLen;i++)
@@ -314,38 +321,53 @@ imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, cal
   }, stepDuration);
 }
 
-// An aux function that returns true is the img element is zoomed beyond and including
-// fitting the screen
+// An aux function that returns true if the img element is zoomed beyond and including
+// the default zooming size
 imgfocus.isZoomOverFit = function()
 {
   var element = imgfocus.popupImgElement;
   
   if (!element) { return false; }
   
-  if (element.width>window.innerWidth || element.height>window.innerHeight)
+  if (element.width > Math.round(imgfocus.zoomScreenRatio*window.innerWidth) ||
+     element.height > Math.round(imgfocus.zoomScreenRatio*window.innerHeight))
   { return true; }
   else { return false; }
 };
 
-// An aux function that returns true is the img element is zoomed and centered
+// An aux function that returns true if the img element is zoomed and centered
 imgfocus.isZoomToFit = function()
 {
   var element = imgfocus.popupImgElement;
   
   if (!element) { return false; }
   
-  if ((element.height==window.innerHeight || element.width==window.innerWidth) &&
+  if ((element.height==Math.round(imgfocus.zoomScreenRatio*window.innerHeight) || 
+       element.width==Math.round(imgfocus.zoomScreenRatio*window.innerWidth)) &&
   element.style.left == Math.floor(window.innerWidth/2) + 'px' &&
   element.style.top == Math.floor(window.innerHeight/2) + 'px') { return true; }
   else { return false; }
 }
 
-// Zoom the image to fit the browser visible area
-// An optional callback function can be provided to pass to the zooming procedure to be 
-// execute at the end of zooming
-imgfocus.zoomToFit = function(callback)
+// Zoom and position the image properly on screen, along with some basic configurations
+// 
+// alwaysZoom: if set to true, the image will always be zoomed to the specified size
+//             otherwise, the image will be zoomed only if it's oversized
+// callback: callback function to invoke at the end of zooming
+// element: the image element to process. If not provided, default to the global popup
+//          image element
+// ratio: the target zoom size in terms of the proportion of the screen size measured in 
+//        ratio of the width/height dimension depending on the aspect ratio. If not
+//        provided, a default value is set
+imgfocus.zoomToFit = function(alwaysZoom, element, callback, ratio)
 {
-  var element = imgfocus.popupImgElement;
+  if (!alwaysZoom) { alwaysZoom = false; }
+  if (!element) { element = imgfocus.popupImgElement; }
+  if (!ratio) { ratio = imgfocus.zoomScreenRatio; }
+  
+	// Some necessary settings
+	if (imgfocus.dimmer) { element.style.zIndex = imgfocus.dimmer.style.zIndex+1; }
+	element.style.position = 'fixed';
   element.style.cursor = 'default';
   
   // Center the image first
@@ -357,15 +379,22 @@ imgfocus.zoomToFit = function(callback)
   // Cache the translation. This is used for zooming
   element.translateX = -50;
   element.translateY = -50;
+
+  var targetWidth = Math.round(ratio*window.innerWidth);
+  var targetHeight = Math.round(ratio*window.innerHeight);
   
-  // Which direction to zoom (width or height) is determined based on comparing the
-  // aspect ratio of the image and the browser.
-  var dimension = window.innerWidth/window.innerHeight > element.width/element.height ? 'height' : 'width';
-  var size = dimension == 'width' ? window.innerWidth : window.innerHeight;
-  // Cache the fitting dimension; when switching images, the image will be removed first 
-  // if there is a dimension change for better experience
-  element.dimension = dimension;
-  imgfocus.zoomElement(element, dimension, size, imgfocus.zoomToFitTime, 2, 'none', callback);
+  if (alwaysZoom || element.naturalWidth > targetWidth || element.naturalHeight > targetHeight)
+  {
+		// Which direction to zoom (width or height) is determined based on comparing the
+		// aspect ratio of the image and the browser.
+		var dimension = window.innerWidth/window.innerHeight > element.naturalWidth/element.naturalHeight ? 'height' : 'width';
+		var size = dimension == 'width' ? targetWidth : targetHeight;
+		
+		// Cache the fitting dimension; when switching images, the image will be removed first 
+		// if there is a dimension change for better experience
+		imgfocus.zoomElement(element, dimension, size, imgfocus.zoomToFitTime, 2, 'none', callback);
+	}
+	else if (callback) { callback(); }
 }
 
 // The function to call when the popup image exists and mouse up.
@@ -383,7 +412,7 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
   // Do nothing in this case
   if (e.timeStamp - imgfocus.popupImgElement.mousedownTimeStamp > 150)	{ return; }
   // If the image is zoomed
-  if (imgfocus.popupImgElement.height>=window.innerHeight || imgfocus.popupImgElement.width>=window.innerWidth)
+  if (imgfocus.isZoomToFit())
   { imgfocus.removeImgRecoverBackground(); return; }
   // Else the image is not zoomed
   else
@@ -391,7 +420,7 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
     // if the click is not on the image, remove it
     if (e.target != imgfocus.popupImgElement) { imgfocus.removeImgRecoverBackground(); }
     // else zoom the image
-    else { imgfocus.zoomToFit();  }
+    else { imgfocus.zoomToFit(true);  }
   }
 }
 
@@ -507,13 +536,34 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
   
   if (element.fadeTimerID != null) { return; }
   
-  // If the element is already zooming, cancel the zoom then continue.
+  // If the element is already zooming, cancel the zooming then continue.
   if (element.zoomTimerID != null)
   {
     clearInterval(element.zoomTimerID);
     delete element.zoomTimerID;
     element.style.opacity = element.originalOpacity;
   }
+
+	// An aux function for defining the procedure at the end of zooming
+	var _zoomAndCallback = function()
+	{
+		if (zoom == 'width')
+		{
+			element.style.width = targetSize+'px';
+			element.style.height = 'auto';
+		}
+		else
+		{
+			element.style.width = 'auto';
+			element.style.height = targetSize+'px';
+		}
+		
+		// Run the callback function if given
+		if (callback) { callback(); }  
+	};
+
+	// Special case for zooming immediately
+  if (duration == 0) { _zoomAndCallback(); return; }
   
   // It turns out that the zooming effect doesn't look so good. Part of the reason is due
   // to the browser (it worked ok before). A simple solution adopted here is to abandon
@@ -539,7 +589,7 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
   else { var originalSize = element.height; }
   var stepPx = (targetSize-originalSize)*stepDuration/duration;
   
-  element.zoomTimerID = setInterval(function ()
+  element.zoomTimerID = setInterval(function()
   {
     originalSize += stepPx;
     if (zoom == 'width')
@@ -560,16 +610,7 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
     // End of zooming. Retore the element's style.
     else if (stepPx<=0 && originalSize<=targetSize)
     {
-      if (zoom == 'width')
-      {
-        element.style.width = targetSize+'px';
-        element.style.height = 'auto';
-      }
-      else
-      {
-        element.style.width = 'auto';
-        element.style.height = targetSize+'px';
-      }
+      _zoomAndCallback();
       
       if (filterEffect != 'none')
       { element.style.opacity = element.originalOpacity; }
@@ -578,25 +619,12 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
       delete element.zoomTimerID;
       delete element.originalOpacity;
       
-      // Run the callback function if given
-      if (callback) { callback(); }
-      
       return;
     }
-  }
-  , stepDuration);
+  }, stepDuration);
 }
 
 window.addEventListener('load', function() { imgfocus.popupImgOnClick(); }, false);
-
-/*
-window.addEventListener('mousemove', function()
-{
-  imgfocus.mouseX = event.clientX;
-  imgfocus.mouseY = event.clientY;
-}
-, false);
-*/
 
 window.addEventListener('keydown', function()
 {
@@ -611,11 +639,11 @@ window.addEventListener('keydown', function()
       if (imgfocus.isZoomToFit()) { imgfocus.removeImgRecoverBackground(); }
       else
       {
-        imgfocus.zoomToFit();
-        
         // For some reason, a mouse up event can occur immediately following a key
         // press. Record the key press time to identify this case.
         imgfocus.popupImgElement.keydownTimeStamp = event.timeStamp;
+        
+        imgfocus.zoomToFit(true);
       }
     }
     
@@ -692,40 +720,33 @@ window.addEventListener('keydown', function()
       // Else, switch between images
       else
       {
-        try
-        {
-					// Pressing left/right is equivalent to clicking on the previous/next image
-					// No need to remove the current popup image first, since changing its src
-					// property is equivalent to loading a new image for the image element
-					if (event.keyCode == 37)
+				// If the temp element is still there, the last image switching has not 
+				// been completed yet
+				if (imgfocus.popupImgElementTemp) { return }
+				
+				// Pressing left/right is equivalent to clicking on the previous/next image
+				// No need to remove the current popup image first, since changing its src
+				// property is equivalent to loading a new image for the image element
+				if (event.keyCode == 37)
+				{	var followingElement = imgfocus.popupImgElement.element.preElement;	}
+				else { var followingElement = imgfocus.popupImgElement.element.nextElement; }
+				followingElement.scrollIntoView(true);
+				followingElement.click();
+				
+				// When the temp element for holding the next image is loaded, zoom to fit the
+				// temp element, append the temp element, remove the original element, set the
+				// original element to the temp element, finally, remove the temp element
+				imgfocus.popupImgElementTemp.onload = function()
+				{
+					imgfocus.zoomToFit(imgfocus.alwaysZoom, this, function()
 					{
-						var preElement = imgfocus.popupImgElement.element.preElement;
-						preElement.scrollIntoView(true);
-						preElement.click();
-					}
-					else
-					{
-						var nextElement = imgfocus.popupImgElement.element.nextElement;
-						nextElement.scrollIntoView(true);
-						nextElement.click();
-					}
-					
-					// If the fitting dimension changes, the image has to be removed first and added
-					// back later for better visual experience
-					var dimension = window.innerWidth/window.innerHeight > 
-					imgfocus.popupImgElement.width/imgfocus.popupImgElement.height ? 'height' : 'width';
-					if (dimension != imgfocus.popupImgElement.dimension)
-					{
-					  imgfocus.popupImgElement.remove();
-					  var callback = function() { document.body.appendChild(imgfocus.popupImgElement); };
-					}
-        }
-        catch(error) {  }
-        
-        // Overwrite the popup image's onload function here to position it properly on
-        // screen, and to prevent the procedures for adding the dimmer to be called again
-        // at the same time.
-        imgfocus.popupImgElement.onload = function() { imgfocus.zoomToFit(callback); }
+						document.body.appendChild(imgfocus.popupImgElementTemp);
+						imgfocus.popupImgElement.remove();
+						imgfocus.popupImgElementTemp.onmousedown = imgfocus.popupImgElement.onmousedown;
+						imgfocus.popupImgElement = imgfocus.popupImgElementTemp;
+						delete imgfocus.popupImgElementTemp;
+					});
+				}
       }
     }
   }

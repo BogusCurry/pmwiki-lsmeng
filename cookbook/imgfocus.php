@@ -16,11 +16,11 @@
  * option) any later version. Available at
  * https://www.gnu.org/licenses/gpl.txt
  *
- * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161214
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170129
  */
 
-$RecipeInfo['Imgfocus']['Version'] = '20160728';
+$RecipeInfo['Imgfocus']['Version'] = '20170129';
 
 // The popup image fadein time in milliseconds.
 SDV($ImgfocusFadeInTime, 125);
@@ -30,6 +30,14 @@ SDV($ImgFocusFadeOutTime, 200);
 
 // The popup image zoom to fit browser time in milliseconds.
 SDV($ImgfocusZoomToFitTime, 100);
+
+// The target zoom size in terms of the proportion of the screen size measured in ratio of
+// the width/height dimension depending on the aspect ratio.
+SDV($ImgfocusZoomScreenRatio, 0.9);
+
+// If set to true, the image will always be zoomed to the specified size
+// otherwise, the image will be zoomed only if it's oversized
+SDV($ImgfocusAlwaysZoom, false);
 
 SDVA($ImgfocusExceptionList, array(''));
 $ImgfocusExceptionList = json_encode($ImgfocusExceptionList);
@@ -42,6 +50,8 @@ if($action == "browse" || $action == "upload" || $_REQUEST['preview'])
 		 imgfocus.fadeInTime = $ImgfocusFadeInTime; 
 		 imgfocus.fadeOutTime = $ImgFocusFadeOutTime;
 		 imgfocus.zoomToFitTime = $ImgfocusZoomToFitTime;
+		 imgfocus.zoomScreenRatio = $ImgfocusZoomScreenRatio;
+		 imgfocus.alwaysZoom = '$ImgfocusAlwaysZoom';
 		 imgfocus.exceptionList = '$ImgfocusExceptionList';
 	 </script>
    <link rel='stylesheet' href='$PubDirUrl/imgfocus/imgfocus.css' type='text/css'>";

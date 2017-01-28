@@ -318,14 +318,13 @@ function isImgExt($ext)
 // $imgFile: the full path of the image, including its filename
 // $MAXWHPX: the maximum number of pixels of either width/height after resizing
 //           depending on its aspect ratio
-// $option: if set, the transparency processsing will be completely skipped
-function resizeImg($ext, $imgFile, $MAXWHPX, $option)
+function resizeImg($ext, $imgFile, $MAXWHPX)
 {
   // If the related functions are supported and this is an image
   if (function_exists(imagecreatetruecolor) && isImgExt($ext))
   {
 		// For png/gif, check for transparency first
-		if ($option && ($ext == 'png' || $ext == 'gif'))
+		if ($ext == 'png' || $ext == 'gif')
 		{
 			// See if alpha info is stored
 			$colorType = ord(file_get_contents($imgFile, NULL, NULL, 25, 1));
@@ -344,7 +343,7 @@ function resizeImg($ext, $imgFile, $MAXWHPX, $option)
 		// animation
 		list($width,$height)=getimagesize($imgFile);
 		$maxWH = max($width,$height);
-		if ($maxWH > $MAXWHPX && ($ext != 'gif' || $option))
+		if ($maxWH > $MAXWHPX && $ext != 'gif')
 		{
 			$scale = $MAXWHPX/$maxWH;	
 			$newwidth=round($width*$scale);
@@ -354,7 +353,7 @@ function resizeImg($ext, $imgFile, $MAXWHPX, $option)
 			if ($ext == 'jpg' || $ext == 'jpeg') { $src = imagecreatefromjpeg($imgFile); }
 
 			// Preserve transparency
-			if ($option && ($ext == 'png' || $ext == 'gif') && $hasTransparency)
+			if (($ext == 'png' || $ext == 'gif') && $hasTransparency)
 			{ imagealphablending( $tmp, false ); imagesavealpha( $tmp, true ); }
 			
 			// Resize
@@ -373,7 +372,7 @@ function resizeImg($ext, $imgFile, $MAXWHPX, $option)
 		
 		// Else if the image is png/gif without transparency, but alpha info is stored
 		// remove the alpha info
-		else if ($option && ($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
+		else if (($ext == 'png' || $ext == 'gif') && !$hasTransparency && $isAlphaStored)
 		{
 			imagesavealpha($src, false);	
 			if ($ext == 'png') { $result = imagepng($src,$imgFile); }
@@ -680,7 +679,7 @@ function FmtUploadList($pagename, $args) {
 			if (!file_exists($thumbnailImgPath))
 			{
 				copy($filePath, $thumbnailImgPath);
-			  resizeImg($ext, $thumbnailImgPath, 100, true);
+			  resizeImg($ext, $thumbnailImgPath, 100);
 			}
 			
 			// Prepend to the list
