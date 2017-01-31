@@ -213,7 +213,7 @@ $pwRetryLimit = 3;
 // Idle timer duration for logging out & shutting down the site.
 $siteLogoutIdleDuration = ($isAtHome) ? INF : 7200;
 // Idle timer duration for locking sensitive pages.
-$pageLockIdleDuration = 600;
+$pageLockIdleDuration = 1200;
 
 // The default image size and enlarged size on click.
 $imgHeightPx = 330;
@@ -439,3 +439,4 @@ $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
+$ROSPatterns ['/	/'] = " ";
