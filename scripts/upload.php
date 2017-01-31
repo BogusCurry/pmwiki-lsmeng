@@ -660,7 +660,7 @@ function FmtUploadList($pagename, $args) {
 		$out[$outIdx] = "<li>".
 
   	// Meng. Clicking on the filename is equivalent to clicking the thumbnail image
-		"<span class='uploadFilelist' style=\"color:blue; cursor: pointer;\"
+		"<span class='uploadFilelist' style=\"margin-left:40px; color:blue; cursor: pointer;\"
 		onclick=\"document.getElementById('$outIdx').click();\">".$file."</span>" .
 		
 		"$lnk$overwrite$del$delMarkup ... ". 
@@ -682,10 +682,22 @@ function FmtUploadList($pagename, $args) {
 			  resizeImg($ext, $thumbnailImgPath, 100);
 			}
 			
-			// Prepend to the list
+			// Prepend to the upload list. Thumbnail images are fitted to the square box based
+			// on their aspect ratio, then centered.
 			$imgSrc = getImgFileContent($thumbnailImgPath);
-			$thumbImgHTML = "<span style=\"color:red;display:inline-block;height:22px;width:50px;\">
-			<img id='$outIdx' style='max-height:100%;max-width:100%;' src='$imgSrc'/></span>";
+			$thumbImgHTML = "<span style=\"border:1px solid DarkGray;position:absolute;display:inline-block;height:30px;width:30px;overflow:hidden;\">
+			<img id='$outIdx' style='width:100%;' src='$imgSrc'/></span>
+			<script>
+			  var thumbImgElement = document.getElementById('$outIdx');
+			  if (thumbImgElement.width/thumbImgElement.height > 1.0) // horizontal pic
+			  {
+			    thumbImgElement.style.height = '100%';
+			    thumbImgElement.style.width = 'auto';
+			    thumbImgElement.style.marginLeft = -Math.round((thumbImgElement.width - 30)/2)+'px';
+			  }
+			  else // vertical pic
+			  { thumbImgElement.style.marginTop = -Math.round((thumbImgElement.height - 30)/2)+'px'; }
+			</script>";
 			$out[$outIdx] = "<li>".$thumbImgHTML.substr($out[$outIdx],4);
 		}
 		
