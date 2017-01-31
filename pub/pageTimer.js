@@ -116,4 +116,6 @@ var pageTimer =
 
 window.addEventListener('load', pageTimer.init, false);
 //window.addEventListener('focus', pageTimer.updateClock, false);
-window.addEventListener('input', pageTimer.resetTimer, false);
+// window.addEventListener('input', pageTimer.resetTimer, false);
+window.addEventListener('keydown', pageTimer.resetTimer, false);
+window.addEventListener('scroll', pageTimer.resetTimer, false);

@@ -187,9 +187,9 @@ var scrollPositioner =
     else { value = value.slice(1); }
     
     // Get timestamp, if expired then return
-    var clock = new Date();
-    var timeDiff = Math.floor(clock.getTime()/1000) - scrollPositioner.getStorageByKey('LastMod', scrollPositioner.pagename);
-    if (timeDiff > 600) { return; }
+//     var clock = new Date();
+//     var timeDiff = Math.floor(clock.getTime()/1000) - scrollPositioner.getStorageByKey('LastMod', scrollPositioner.pagename);
+//     if (timeDiff > 600) { return; }
     
     var numBullet = value;
     var bulletObj = scrollPositioner.wikitext.getElementsByTagName("li")[numBullet-1];
@@ -441,10 +441,23 @@ var scrollPositioner =
           else
           { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
         }
-        
-        return true;
-      }
-      , false);
+
+				else
+				{
+					var pos = scrollPositioner.getScrollPos();
+					
+					// Fix for the page up/dn behavior on MAC
+					// 30 seems to be the line height
+					if (event.keyCode == 33 && event.altKey)
+					{ scrollPositioner.setScrollPos(pos - window.innerHeight + 30);	}
+					else if (event.keyCode == 34 && event.altKey)
+					{	scrollPositioner.setScrollPos(pos + window.innerHeight - 30); } 
+ 					
+					// Ctrl+Alt up/dn: scroll up/dn short
+					else if ((event.keyCode == 38 || event.keyCode == 40) && event.ctrlKey && event.altKey)
+					{ scrollPositioner.setScrollPos(pos + (event.keyCode - 39)*(30<<2)); }
+				}
+      }, false);
     }
     
     else if (scrollPositioner.action == 'edit')

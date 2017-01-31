@@ -383,6 +383,9 @@ window.addEventListener('textInput', function()
 	if (inputText.indexOf('、') != -1)
 	{ inputText = inputText.replace(/\u3001/g,'\''); }
 
+  if (inputText.indexOf('	') != -1)
+	{ inputText = inputText.replace(/	/g,' '); }
+	
   if (inputText != event.data)
   {
     document.execCommand("insertText", false, inputText);
