@@ -595,6 +595,10 @@ function FmtUploadList($pagename, $args) {
   $overwrite = '';
   $fmt = IsEnabled($IMapLinkFmt['Attach:'], $UrlLinkFmt);
   $fileCount = 0;
+  
+  // Meng. Flag for identifying thumbnail image creation error
+  $thumbnailError = false;
+  
   foreach($filelist as $file=>$encfile)
   {  
   	// Meng. Skip auto-created thumbnail images
@@ -672,13 +676,19 @@ function FmtUploadList($pagename, $args) {
 		strftime($TimeFmt, $stat['mtime'])  . '</li>';
 
 		// Meng. If this is an image, create & prepend a thumbnail image
+		if ($thumbnailError) { continue; }
 		if (isImgExt($ext))
 		{
 			// Create the thumbnail if non-existent
 			$thumbnailImgPath = str_replace('.'.$ext,'_thumb.'.$ext,$filePath);
 			if (!file_exists($thumbnailImgPath))
 			{
-				copy($filePath, $thumbnailImgPath);
+				if (!@copy($filePath, $thumbnailImgPath))
+				{
+					echo "<span style='color: red;'>Creating thumbnail image failed. Check folder permission!</span><br>";
+					$thumbnailError = true;
+					continue;
+				}
 			  resizeImg($ext, $thumbnailImgPath, 100);
 			}
 			
