@@ -189,6 +189,8 @@ function DiffRenderSource($in, $out, $which) {
       $b1 = $b2 = $m[5];
       if ($m[7]) $b2=$m[7];
 
+// Meng. This is not compatible with UTF-8
+/*
       if (!$which && ($m[4]=='c'||$m[4]=='d')) {
         $z2[$a1] = '<del>'. $z2[$a1];
         $z2[$a2] .= '</del>';
@@ -197,6 +199,7 @@ function DiffRenderSource($in, $out, $which) {
         $z2[$b1] = '<ins>'.$z2[$b1];
         $z2[$b2] .= '</ins>';
       }
+*/
     }
   }
   $line = array_shift($z2);
