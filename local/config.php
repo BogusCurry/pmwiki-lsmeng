@@ -258,7 +258,7 @@ $ImgFocusFadeOutTime = 0;
 $ImgfocusZoomToFitTime = 0;
 $ImgfocusZoomScreenRatio = 0.95;
 $ImgfocusAlwaysZoom = true;
-$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg');
+$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', 'trashCanOpen.png', 'trashCanClose.png');
 include_once("$FarmD/cookbook/imgfocus.php"); 
 
 # For autosave. Delay is in milliseconds.
@@ -330,6 +330,20 @@ $HTMLHeaderFmt['pageCommand'] = "
 	pageCommand.pagename = '$pagename';
   pageCommand.action = '$action';
 </script>";
+
+// Some aux functions for the upload page
+if ($action == 'upload')
+{
+  $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
+  $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
+  $HTMLHeaderFmt['uploadAux'] = "
+  <script>
+  var uploadAux = {};
+	uploadAux.trashCloseImgUrl = '$trashCloseImgUrl';
+	uploadAux.trashOpenImgUrl = '$trashOpenImgUrl';
+  </script>
+  <script src='$PubDirUrl/uploadAux.js'></script>";
+}
 
 /*
 // For debugging

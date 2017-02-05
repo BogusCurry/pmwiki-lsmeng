@@ -17,6 +17,35 @@
     Script maintained by Petko YOTOV www.pmwiki.org/petko
 */
 
+// Meng. Delete an uploaded file.
+if ($action =='upload')
+{
+	if (isset($_GET["delete"]))
+	{
+		global $UploadDir, $UploadPrefixFmt;
+		$uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
+	  $file = $_GET["delete"];
+	  $filePath = $uploaddir.'/'.$file;
+	  if (file_exists($filePath))
+	  {
+			$delResult = @unlink($filePath);
+		
+			// Delete its thumbnail too if existent
+			$ext = strtolower(substr($file, strrpos($file, '.')+1));
+			@unlink($uploaddir.'/'.str_replace('.'.$ext,'_thumb.'.$ext,$file));
+			
+			if ($delResult) { echo "success"; }
+			else { echo "fail"; }
+			exit;
+		}
+		else
+		{
+		  echo "nonexistent";
+		  exit;
+		}
+	}
+}
+
 // Meng. Reply the client (using AJAX) with the requested image file. 
 if ($action =='upload')
 {	
@@ -24,11 +53,10 @@ if ($action =='upload')
   {
 		global $UploadDir, $UploadPrefixFmt;
 		$uploaddir = FmtPageName("$UploadDir$UploadPrefixFmt", $pagename);
-
-		if (file_exists($uploaddir.'/'.$_GET["show"]))
+    $file = $_GET["show"];
+		$filePath = $uploaddir.'/'.$file;
+		if (file_exists($filePath))
 		{
-			$file = $_GET["show"];
-			$filePath = $uploaddir.'/'.$file;
 			$imgSrc = getImgFileContent($filePath);
 			header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1.
 			header("Pragma: no-cache"); // HTTP 1.0.
@@ -299,7 +327,6 @@ function hasAlphaColour($r)
 	return false;
 }
 
-
 // Meng. Return true if the extension is of the image type
 // false otherwise
 function isImgExt($ext)
@@ -524,61 +551,6 @@ function FmtUploadList($pagename, $args) {
                           : "\$PageUrl?action=download&amp;upname=",
                       $pagename);
   
-  // Meng. Delete an uploaded file.
-	if (isset($_GET["delete"]) && file_exists($uploaddir.'/'.$_GET["delete"]))
-	{
-	  $delResult = @unlink($uploaddir.'/'.$_GET["delete"]);
-
-		// Delete its thumbnail too if existent
-		$ext = strtolower(substr($_GET["delete"], strrpos($_GET["delete"], '.')+1));
-	  @unlink($uploaddir.'/'.str_replace('.'.$ext,'_thumb.'.$ext,$_GET["delete"]));
-	  
-	  // Redirect to the current page again to check the deletion result to prevent the
-	  // current link from deleting the same file again upon refreshing
-	  Redirect("$pagename?action=upload&delResult=$delResult");
-	}
-	else if (isset($_GET["delResult"]))
-	{
-	  if ($_GET["delResult"] === false)
-	  { echo "<span style='color: red;'>Deletion failed. Probably no write access!</span>"; }
-	  else 
- 	  { echo "<span style='color: green;'>Image deleted successfully!</span>"; }
- 	}
-
-/*	
-	// Meng. Show the selected uploaded image, and the delete link.
-	// Replaced by client side AJAX solution.
-  else if (isset($_GET["show"]) && file_exists($uploaddir.'/'.$_GET["show"]))
-	{	
-	  $ext = strtolower(pathinfo($uploaddir.'/'.$_GET["show"], PATHINFO_EXTENSION));
-	  if (isImgExt($ext))
-    {
-      $fileName = $_GET['show'];
-      $deleteLink = FmtPageName("\$PageUrl?action=upload&amp;delete=".rawurlencode($fileName), $pagename);
-      global $PubDirUrl;
-      $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
-      $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
-
-      // Meng. The trash can open/close images downloaded from the Internet.
-   		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
-   		<script>
-   		function showTrashClose()
-   		{
-     		document.getElementById('trashCanImg').src='$trashCloseImgUrl';
-   		}
-   		function showTrashOpen()
-   		{
-     		document.getElementById('trashCanImg').src='$trashOpenImgUrl';
-   		}
-   		</script>
-   		", $pagename);
-   		
-			echo "Path: $uploaddir/$fileName $delMarkup<br><img style='position:fixed; right:0; max-height:500px; max-width:500px;' src=".getImgFileContent($uploaddir.'/'.$_GET["show"])." />";
-    }
-    else { echo 'Not an image!'; }
-	}
-*/
-
   $dirp = @opendir($uploaddir);
   if (!$dirp) return '';
 
@@ -619,36 +591,17 @@ function FmtUploadList($pagename, $args) {
 
     $stat = stat("$uploaddir/$file");
     if ($EnableUploadOverwrite) 
-      $overwrite = FmtPageName("<a rel='nofollow' class='createlink'
+      $overwrite = FmtPageName("<a id='up_$file' rel='nofollow' class='createlink'
         href='\$LinkUpload'>&nbsp;&Delta;</a>",
         $pagename);
         
-/*********************/
-//       global $PubDirUrl;
-//       $trashOpenImgUrl = "$PubDirUrl/skins/trashCanOpen.png";
-//       $trashCloseImgUrl = "$PubDirUrl/skins/trashCanClose.png";
-// 
-//       // Meng. The trash can open/close images downloaded from the Internet.
-//    		$delMarkup = FmtPageName("<a rel='nofollow' class='createlink' href='$deleteLink'>&nbsp;<img id='trashCanImg$file' class='noImgEffect' height='28px' style=\"position: absolute; margin-top:6px; \" src='$trashCloseImgUrl' cursor='pointer' onmouseover='showTrashOpen()'; onmouseout='showTrashClose()'; }' /></a>
-//    		<script>
-//    		function showTrashClose()
-//    		{
-//      		document.getElementById('trashCanImg$file').src='$trashCloseImgUrl';
-//    		}
-//    		function showTrashOpen()
-//    		{
-//      		document.getElementById('trashCanImg$file').src='$trashOpenImgUrl';
-//    		}
-//    		</script>
-//    		", $pagename);
-/*********************/
-
-		$del = FmtPageName(
-		"<span style=\"cursor: pointer; color:red; \"onclick=\"
-		if (confirm('Delete the file?')) { window.location = '\$LinkDel'; }
-		\">&nbsp;&Chi;</span>
-		",$pagename);
-			
+    global $trashCloseImgUrl;
+ 		$del = "<img id='del_$file' class='noImgEffect' height='22px'
+ 		src='$trashCloseImgUrl' style=\"cursor:pointer;\"
+ 		onmouseover=\"uploadAux.showTrashOpen('$file');\"
+ 		onmouseout=\"uploadAux.showTrashClose('$file');\" 
+ 		onclick=\"if (confirm('Delete the file?')) { uploadAux.deleteFile('$file'); }\" />";
+ 		
 // 		$lnk = FmtPageName($fmt, $pagename);
 
     // Meng. Get the image dimensions.
@@ -664,10 +617,10 @@ function FmtUploadList($pagename, $args) {
 		$out[$outIdx] = "<li>".
 
   	// Meng. Clicking on the filename is equivalent to clicking the thumbnail image
-		"<span class='uploadFilelist' style=\"margin-left:40px; color:blue; cursor: pointer;\"
-		onclick=\"document.getElementById('$outIdx').click();\">".$file."</span>" .
+		"<span id='file_$file' class='uploadFilelist' style=\"margin-left:40px; color:blue; cursor: pointer;\"
+		onclick=\"document.getElementById('img_$file').click();\">".$file."</span>" .
 		
-		"$lnk$overwrite$del$delMarkup ... ". 
+		"$lnk$overwrite$del ... ". 
 		
 		$imgDimension.
 		
@@ -696,9 +649,9 @@ function FmtUploadList($pagename, $args) {
 			// on their aspect ratio, then centered.
 			$imgSrc = getImgFileContent($thumbnailImgPath);
 			$thumbImgHTML = "<span style=\"border:1px solid DarkGray;position:absolute;display:inline-block;height:30px;width:30px;overflow:hidden;\">
-			<img id='$outIdx' style='width:100%;' src='$imgSrc'/></span>
+			<img id='img_$file' style='width:100%; cursor:pointer' src='$imgSrc'/></span>
 			<script>
-			  var thumbImgElement = document.getElementById('$outIdx');
+			  var thumbImgElement = document.getElementById('img_$file');
 			  if (thumbImgElement.width/thumbImgElement.height > 1.0) // horizontal pic
 			  {
 			    thumbImgElement.style.height = '100%';
