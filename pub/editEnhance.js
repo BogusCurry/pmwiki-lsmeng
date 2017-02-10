@@ -385,6 +385,12 @@ window.addEventListener('textInput', function()
 
   if (inputText.indexOf('	') != -1)
 	{ inputText = inputText.replace(/	/g,' '); }
+
+	if (inputText.indexOf('；；') != -1)
+	{
+		inputText = inputText.replace('；；','""');
+		setTimeout("EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = (EditEnhanceElement.selectionStart - 1);", 0);
+	}
 	
   if (inputText != event.data)
   {
@@ -438,6 +444,7 @@ window.addEventListener('keydown', function()
     event.preventDefault();
     return;
   }
+
   /************** End of full-width character fix **************/
 
   // Up/Dn
