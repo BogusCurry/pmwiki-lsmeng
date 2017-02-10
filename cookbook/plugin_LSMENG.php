@@ -291,7 +291,6 @@ function copyWait($oldFile, $newFile, $N_TRY=3)
   }
 }
 
-/*
 // Return true on success.
 // Abort on error.
 function renameWait($oldFile, $newFile, $N_TRY=3)
@@ -309,7 +308,6 @@ function renameWait($oldFile, $newFile, $N_TRY=3)
     usleep(rand($minWaitMicroSec,$maxWaitMicroSec));
   }
 }
-*/
 
 // Similar to file_get_contents(). Wait a random time duration if the file doesn't exist.
 // A maximum number of retry limit can be set.
@@ -476,7 +474,10 @@ function getFormatTime()
 // both "_www". For ease of file operations (read/copy/paste) by the account user, 
 // add your account to the Group "_www".
 function chmodForPageFile($file)
-{ if (getOS() == 'Mac') { @chmod($file, 0440); } }
+{
+	if (getOS() == 'Mac') { return chmod($file, 0440); }
+	else { return true; }
+}
 
 // Handle a timeStamp for different users (uniquely identified by SESSION).
 // Builtin authentication check is performed each time pmwiki is executed. The major 
