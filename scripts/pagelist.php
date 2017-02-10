@@ -908,7 +908,7 @@ Abort("PageIndex Decrytion Error!");
 
 //  fixperms($PageIndexFile);  
 
-  // Set appropriate permission.
+  // Set appropriate permission. This fails sometimes. No clue.
   chmodForPageFile($PageIndexFile);
 
   StopWatch("PageIndexUpdate end ($updatecount updated)");

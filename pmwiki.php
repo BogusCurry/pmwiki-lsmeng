@@ -1215,15 +1215,20 @@ class PageStore {
 			else { $s = $s && rename("wiki.d/$pagename,new", "wiki.d/$pagename"); }
 			
       // Set appropriate permission.
-      chmodForPageFile($file);
+      $s = $s && chmodForPageFile($pagefile);
+      if (!$s) { Abort("Permission change failed for $pagename ($pagefile)"); }
     }
     $s && fixperms($pagefile);
     if (!$s)
       Abort("Cannot write page to $pagename ($pagefile)...changes not saved");
     
     // If everything is successful, finally remove the temp new file
-    // Warning is not needed if this step fails
-    if (file_exists("wiki.d/$pagename,new")) { @unlink("wiki.d/$pagename,new"); }
+    // This step sometimes fails on Windows. Try renaming it first a few times then delete
+    if (file_exists("wiki.d/$pagename,new")) //{ @unlink("wiki.d/$pagename,new"); }
+    {
+      renameWait("wiki.d/$pagename,new", "wiki.d/deleteMe"); 
+      unlink("wiki.d/deleteMe");
+    }
     
     PCache($pagename, $page);
   }
