@@ -1976,11 +1976,12 @@ function HandleBrowse($pagename, $auth = 'read') {
 
 // Speed test
 /*
-$start = microtime(true);
-    
-$time_elapsed_secs = microtime(true) - $start;
-echo 'Execution time: '.$time_elapsed_secs."<br>";
+$startMicroTime = microtime(true);
+$elapsedTime = (microtime(true) - $startMicroTime);
+echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
+
+// echo testDeleteGC();
 
 		// Update the pageindex if the pageindex does not reflect the newest changes in this 
 		// page based on some timestamps. The field and hence the page itself will also be

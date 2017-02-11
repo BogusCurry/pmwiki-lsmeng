@@ -37,7 +37,7 @@ imgfocus.clickHandle = function(element)
 	  imgfocus.popupImgElementTemp = document.createElement('img');
 	  imgfocus.popupImgElementTemp.element = element;
 	}
-	
+
 	// If the filename indicates it's a thumbnail, load its original content by using AJAX
 	// Dynamically request the original image file from the server
 	if (element.name.indexOf("_thumb.") != -1)
@@ -694,28 +694,25 @@ window.addEventListener('keydown', function()
       }
     }
 */
-    
-    // Up or Down
-    else if (event.keyCode == 38 || event.keyCode == 40)
-    {
-      event.preventDefault();
-      if (imgfocus.isZoomOverFit())
-      {
-        imgfocus.popupImgElement.style.top = 
-        parseInt(imgfocus.popupImgElement.style.top)+(event.keyCode-39)*10+'px';
-      }
-    }
-    
-    // Left or Right
-    else if (event.keyCode == 37 || event.keyCode == 39)
+
+    // Direction keys
+    else if (event.keyCode == 38 || event.keyCode == 40 || event.keyCode == 37 || event.keyCode == 39)
     {
       event.preventDefault();
       
       // If isZoomOverFit, move the image
       if (imgfocus.isZoomOverFit())
       {
-        imgfocus.popupImgElement.style.left = 
-        parseInt(imgfocus.popupImgElement.style.left)+(event.keyCode-38)*10+'px';
+      	if (event.keyCode == 38 || event.keyCode == 40)
+      	{
+      	  imgfocus.popupImgElement.style.top = 
+        	parseInt(imgfocus.popupImgElement.style.top)+(event.keyCode-39)*10+'px';
+      	}
+      	else
+      	{
+					imgfocus.popupImgElement.style.left = 
+					parseInt(imgfocus.popupImgElement.style.left)+(event.keyCode-38)*10+'px';      	  
+      	}
       }
       // Else, switch between images
       else
@@ -727,7 +724,7 @@ window.addEventListener('keydown', function()
 				// Pressing left/right is equivalent to clicking on the previous/next image
 				// No need to remove the current popup image first, since changing its src
 				// property is equivalent to loading a new image for the image element
-				if (event.keyCode == 37)
+				if (event.keyCode == 37 || event.keyCode == 38)
 				{	var followingElement = imgfocus.popupImgElement.element.preElement;	}
 				else { var followingElement = imgfocus.popupImgElement.element.nextElement; }
 				followingElement.scrollIntoView(true);

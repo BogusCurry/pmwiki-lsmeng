@@ -113,7 +113,7 @@ var AS =
 						if (pageURL)
 						{
 							var pagename = pageURL.substr(pageURL.indexOf('=')+1).toUpperCase();
-							if (pagename == AS.pagenameU) { EditEnhanceViewWindow.location.reload(); }  
+							if (pagename == AS.pagenameU) { EditEnhanceViewWindow.location.reload(); }
 						}
 					}
 					catch(e) {}

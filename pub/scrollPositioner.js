@@ -411,9 +411,9 @@ var scrollPositioner =
           if (selString == '')
           {
             if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || ((event.altKey||event.metaKey) && scrollPositioner.OS == 'Windows'))
-            { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
+            { window.open(window.location.href + '?action=edit', '_blank'); }
             else
-            { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
+            { window.location = window.location.href + '?action=edit'; }
             return;
           }
           
@@ -435,11 +435,14 @@ var scrollPositioner =
           var numBullet = (HTML.match(/<li/g) || []).length;
           
           scrollPositioner.setStorageByKey('EDIT-ScrollY', scrollPositioner.pagename, 'n'+numBullet)
-          
+
 					if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || ((event.altKey||event.metaKey) && scrollPositioner.OS == 'Windows'))
-          { window.open(window.location.href.replace('#lastEdit','')+'?action=edit', '_blank'); }
-          else
-          { window.location = window.location.href.replace('#lastEdit','')+'?action=edit'; }
+          {
+// 						if (window.opener) { window.opener.location.reload(); }
+// 						else { window.open(window.location.href +'?action=edit', '_blank'); }
+						window.open(window.location.href +'?action=edit', '_blank');
+          }
+          else { window.location = window.location.href + '?action=edit'; }
         }
 
 				else
