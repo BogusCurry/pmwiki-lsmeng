@@ -192,7 +192,7 @@ window.addEventListener('keydown', function()
 
 	// Tab/~ to traverse the hyperlinks in the wikitext element
   else if (pageCommand.action != 'edit' && ((event.keyCode == 9 || event.keyCode == 192) &&
-   !(event.ctrlKey || event.metaKey || event.altKey)))
+   !(event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)))
   {
 		event.preventDefault();
 

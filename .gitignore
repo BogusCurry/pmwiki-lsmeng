@@ -1,8 +1,9 @@
 .DS_Store
-_uploads
 favicon.ico
 uploads
 wiki.d
+.credentials
 readme.txt
 pub/runCode/a.out
 pub/runCode/output.txt
+cookbook/google-api-php-client-2.1.1/client_secret.json

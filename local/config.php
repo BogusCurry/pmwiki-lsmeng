@@ -303,14 +303,6 @@ if ($action == 'browse' || $_REQUEST['preview'])
 	include_once("$FarmD/cookbook/HTML5Video.php");
 }
 
-if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
-{
-  $HTMLHeaderFmt['map'] = "
-  <script src='$PubDirUrl/map/OSC.js'></script>
-  <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
-  <script src='$PubDirUrl/map/map.js'></script>";
-}
-
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, and prevent the memory from being paged.
 if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
@@ -343,6 +335,24 @@ if ($action == 'upload')
 	uploadAux.trashOpenImgUrl = '$trashOpenImgUrl';
   </script>
   <script src='$PubDirUrl/uploadAux.js'></script>";
+}
+
+// Google map integration
+if ($action == 'browse' && strcasecmp($pagename,"Main.Map") == 0)
+{
+  $HTMLHeaderFmt['map'] = "
+  <script src='$PubDirUrl/map/OSC.js'></script>
+  <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
+  <script src='$PubDirUrl/map/map.js'></script>";
+}
+
+// Google calendar integration
+if ($action =='browse' && isDiaryPage() == 2)
+{
+	include_once("$FarmD/cookbook/googleCalendar.php");
+	$GCImgUrl = "$PubDirUrl/googleCalendar.png";
+  $HTMLHeaderFmt['googleCalendar'] = "<script>window.GCImgUrl = '$GCImgUrl';</script>
+  <script src='$PubDirUrl/googleCalendar.js'></script>";
 }
 
 /*
