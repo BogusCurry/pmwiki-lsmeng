@@ -15,129 +15,138 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170129
+* Version 20170220
 */
 
 var imgfocus = {};
 
 imgfocus.clickHandle = function(element)
 {
-	// If the popup image element is still absent, i.e., manually clicking on an image,
-	// create the element
-	// First time, init
-	if (!imgfocus.popupImgElement)
-	{
-		imgfocus.popupImgElement = document.createElement('img');
-		imgfocus.popupImgElement.element = element;
-	}
-	// Else, the click is triggered by program for switching image. Create another temp
-	// element to load the image temporarily for smoothing the transition
-	else
-	{
-	  imgfocus.popupImgElementTemp = document.createElement('img');
-	  imgfocus.popupImgElementTemp.element = element;
-	}
-
-	// If the filename indicates it's a thumbnail, load its original content by using AJAX
-	// Dynamically request the original image file from the server
-	if (element.name.indexOf("_thumb.") != -1)
-	{
-		var req = new XMLHttpRequest();
-		var uploadUrl = window.location.href+'&show='+element.name.replace("_thumb","");
-		req.open('GET',uploadUrl,true);
-		req.send();
-		
-		req.onreadystatechange = function()
-		{
-			if (this.readyState == 4)
-			{
-				if (this.status == 200)
-				{
-					// Load the image src to the temp element if present
-					if (imgfocus.popupImgElementTemp)
-					{ imgfocus.popupImgElementTemp.src = this.responseText; }
-					else { imgfocus.popupImgElement.src = this.responseText; }
-				}
-			}
-		}
-	}
-	// Else the source of the popup image is the same as the original image element
-	else
-	{
-		// Load the image src to the temp element if present
-		if (imgfocus.popupImgElementTemp)
-		{ imgfocus.popupImgElementTemp.src = element.src;	}
-		else { imgfocus.popupImgElement.src = element.src; }
-	}
-	
-	// Blur and dim the background and then show the popup image on image load.
-	imgfocus.popupImgElement.onerror = function() { console.log('on load error'); }
-	imgfocus.popupImgElement.onload = function()
-	{
-		// A fix for hiding the glowing effect immediately after showing the pop-up 
-		// image, and recover it afterwards
-		element.style.webkitFilter = 'drop-shadow(0 0 0 gray)';
-		element.onmouseout = function()
-		{ element.style.webkitFilter = 'drop-shadow(0 0 0 gray)'; };
-		element.onmouseover = function()
-		{ element.style.webkitFilter = 'drop-shadow(0 0 3px gray)'; };
-
-		// Blur all the direct children of the document body. Then overlay the dimmer
-		var bodyElementLen = imgfocus.documentBodyElement.length;
-		for (var i=0;i<bodyElementLen;i++)
-		{ imgfocus.blurElement(imgfocus.documentBodyElement[i]); }
-		document.body.appendChild(imgfocus.dimmer);
-		
-		// Zoom and position the image properly on screen, along with some basic configurations
-		imgfocus.zoomToFit(imgfocus.alwaysZoom);
-					
-		// Hide it first for later fading in
-		this.style.visibility = 'hidden';
-		
-		document.body.appendChild(this);
-		
-		// Smooth transition for width
+  // If the popup image element is still absent, i.e., manually clicking on an image,
+  // create the element
+  // First time, init
+  if (!imgfocus.popupImgElement)
+  {
+    imgfocus.popupImgElement = document.createElement('img');
+    imgfocus.popupImgElement.element = element;
+  }
+  // Else, the click is triggered by program for switching image. Create another temp
+  // element to load the image temporarily for smoothing the transition
+  else
+  {
+    imgfocus.popupImgElementTemp = document.createElement('img');
+    imgfocus.popupImgElementTemp.element = element;
+  }
+  
+  // If the filename indicates it's a thumbnail, load its original content by using AJAX
+  // Dynamically request the original image file from the server
+  if (element.name.indexOf("_thumb.") != -1)
+  {
+    var req = new XMLHttpRequest();
+    var uploadUrl = window.location.href+'&show='+element.name.replace("_thumb","");
+    req.open('GET',uploadUrl,true);
+    req.send();
+    
+    req.onreadystatechange = function()
+    {
+      if (this.readyState == 4)
+      {
+        if (this.status == 200)
+        {
+          // Load the image src to the temp element if present
+          if (imgfocus.popupImgElementTemp)
+          { imgfocus.popupImgElementTemp.src = this.responseText; }
+          else { imgfocus.popupImgElement.src = this.responseText; }
+        }
+      }
+    }
+  }
+  // Else the source of the popup image is the same as the original image element
+  else
+  {
+    // Load the image src to the temp element if present
+    if (imgfocus.popupImgElementTemp)
+    { imgfocus.popupImgElementTemp.src = element.src; }
+    else { imgfocus.popupImgElement.src = element.src; }
+  }
+  
+  // Blur and dim the background and then show the popup image on image load.
+  imgfocus.popupImgElement.onerror = function() { console.log('on load error'); }
+  imgfocus.popupImgElement.onload = function()
+  {
+    // A fix for hiding the glowing effect immediately after showing the pop-up
+    // image, and recover it afterwards
+    element.style.webkitFilter = 'drop-shadow(0 0 0 gray)';
+    element.onmouseout = function()
+    { element.style.webkitFilter = 'drop-shadow(0 0 0 gray)'; };
+    element.onmouseover = function()
+    { element.style.webkitFilter = 'drop-shadow(0 0 3px gray)'; };
+    
+    // Get the list of the direct children of the document body.
+    // Blur all the direct children of the document body. Then overlay the dimmer
+    var bodyElementLen = document.body.children.length;
+    imgfocus.documentBodyElement = [];
+    for (var i=0;i<bodyElementLen;i++)
+    {
+      var _element = imgfocus.documentBodyElement[i] = document.body.children[i];
+      imgfocus.blurElement(_element);
+    }
+    document.body.appendChild(imgfocus.dimmer);
+    
+    // Hide the scroll bar
+		document.body.style.overflow = 'hidden';
+    
+    // Zoom and position the image properly on screen, along with some basic configurations
+    imgfocus.zoomToFit(imgfocus.alwaysZoom);
+    
+    // Hide it first for later fading in
+    this.style.visibility = 'hidden';
+    
+    document.body.appendChild(this);
+    
+    // Smooth transition for width
 // 			this.style.width = this.width + 'px';
 // 			this.style.webkitTransition = "width 0.015s linear";
-		
-		imgfocus.fadeElement(this, 0, 1, imgfocus.fadeInTime, null);
-		
-		// On mouse down, if the popup image is not oversized, implement drag and move
-		// Otherwise, the image is removed by a click.
-		window.addEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
-		
-		// On mouse down, record the time to determine its dragging or clicking
-		window.addEventListener('mousedown', function()
-		{
-			if (imgfocus.popupImgElement)
-			{ imgfocus.popupImgElement.mousedownTimeStamp = event.timeStamp; }
-		}, false);
-		
-		// For image dragging
-		this.onmousedown = function(e)
-		{
-			if (!this.fadeTimerID && (this.height>window.innerHeight || this.width>window.innerWidth))
-			{
-				var mouseCoordX = event.clientX;
-				var mouseCoordY = event.clientY;
-				var imgCoordX = parseInt(this.style.left);
-				var imgCoordY = parseInt(this.style.top);
-				this.onmousemove = function(event)
-				{
-					// Sometimes the image still tracks the mouse even no button is pressed.
-					// Remove itself and stop in this case
-					if (event.buttons == 0) { this.onmousemove = ''; return; }
-					
-					this.style.left = imgCoordX+event.clientX-mouseCoordX+'px';
-					this.style.top  = imgCoordY+event.clientY-mouseCoordY+'px';
-				}
-				return false;
-			}
-		}
-		
-		// On wheel, zoom the pop up image
-		window.addEventListener('wheel', imgfocus.wheelZoom, false);
-	}
+    
+    imgfocus.fadeElement(this, 0, 1, imgfocus.fadeInTime, null);
+    
+    // On mouse down, if the popup image is not oversized, implement drag and move
+    // Otherwise, the image is removed by a click.
+    window.addEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
+    
+    // On mouse down, record the time to determine its dragging or clicking
+    window.addEventListener('mousedown', function()
+    {
+      if (imgfocus.popupImgElement)
+      { imgfocus.popupImgElement.mousedownTimeStamp = event.timeStamp; }
+    }
+    , false);
+    
+    // For image dragging
+    this.onmousedown = function(e)
+    {
+      if (!this.fadeTimerID && (this.height>window.innerHeight || this.width>window.innerWidth))
+      {
+        var mouseCoordX = event.clientX;
+        var mouseCoordY = event.clientY;
+        var imgCoordX = parseInt(this.style.left);
+        var imgCoordY = parseInt(this.style.top);
+        this.onmousemove = function(event)
+        {
+          // Sometimes the image still tracks the mouse even no button is pressed.
+          // Remove itself and stop in this case
+          if (event.buttons == 0) { this.onmousemove = ''; return; }
+          
+          this.style.left = imgCoordX+event.clientX-mouseCoordX+'px';
+          this.style.top  = imgCoordY+event.clientY-mouseCoordY+'px';
+        }
+        return false;
+      }
+    }
+    
+    // On wheel, zoom the pop up image
+    window.addEventListener('wheel', imgfocus.wheelZoom, false);
+  }
 }
 
 // The main function
@@ -146,12 +155,6 @@ imgfocus.popupImgOnClick = function()
   // Get the exception list length
   imgfocus.exceptionList = JSON.parse(imgfocus.exceptionList);
   var ImgfocusExceptionListLen = imgfocus.exceptionList.length;
-  
-  // Get the list of the direct children of the document body.
-  var bodyElementLen = document.body.children.length;
-  imgfocus.documentBodyElement = [];
-  for (var i=0;i<bodyElementLen;i++)
-  { imgfocus.documentBodyElement[i] = document.body.children[i]; }
   
   // Prepare a div element for overlaying the page as the dimmer.
   imgfocus.dimmer = document.createElement('div');
@@ -170,7 +173,7 @@ imgfocus.popupImgOnClick = function()
   var imgElementLen = imgElement.length;
   for (var i=0;i<imgElementLen;i++)
   {
-    // Get the image filename. If the image is directly presented with its contents, 
+    // Get the image filename. If the image is directly presented with its contents,
     // get the filename from the corresponding secretly inserted field. Otherwise parse
     // it from the src URL.
     var src = imgElement[i].src;
@@ -178,8 +181,8 @@ imgfocus.popupImgOnClick = function()
     { var filename = src.slice(src.indexOf(';filename=')+10,src.indexOf(";base64")); }
     else
     {
-			var pos = src.lastIndexOf('/');
-			var filename = src.slice(pos+1);  
+      var pos = src.lastIndexOf('/');
+      var filename = src.slice(pos+1);
     }
     // Add a new property "name" to store the image's filename for later use
     imgElement[i].name = filename;
@@ -201,24 +204,24 @@ imgfocus.popupImgOnClick = function()
   {
     // Apply the popup function on clicking the image
     _imgElement[i].onclick = function() { imgfocus.clickHandle(this); }
-		
-		// Add two new properties to store the next and the previous image elements
-		// Used for switching/navigating images using direction keys
-		if (i == 0)
-		{
-			_imgElement[i].nextElement = _imgElement[i+1];
-			_imgElement[i].preElement = _imgElement[imgElementLen-1];
-		}
-		else if (i == imgElementLen-1)
-		{
-			_imgElement[i].nextElement = _imgElement[0];
-			_imgElement[i].preElement = _imgElement[i-1];
-		}
-		else
-		{
-			_imgElement[i].nextElement = _imgElement[i+1];
-			_imgElement[i].preElement = _imgElement[i-1];
-		}
+    
+    // Add two new properties to store the next and the previous image elements
+    // Used for switching/navigating images using direction keys
+    if (i == 0)
+    {
+      _imgElement[i].nextElement = _imgElement[i+1];
+      _imgElement[i].preElement = _imgElement[imgElementLen-1];
+    }
+    else if (i == imgElementLen-1)
+    {
+      _imgElement[i].nextElement = _imgElement[0];
+      _imgElement[i].preElement = _imgElement[i-1];
+    }
+    else
+    {
+      _imgElement[i].nextElement = _imgElement[i+1];
+      _imgElement[i].preElement = _imgElement[i-1];
+    }
   }
 }
 
@@ -318,7 +321,8 @@ imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, cal
     
     op += stepOp;
     element.style.opacity = op;
-  }, stepDuration);
+  }
+  , stepDuration);
 }
 
 // An aux function that returns true if the img element is zoomed beyond and including
@@ -330,7 +334,7 @@ imgfocus.isZoomOverFit = function()
   if (!element) { return false; }
   
   if (element.width > Math.round(imgfocus.zoomScreenRatio*window.innerWidth) ||
-     element.height > Math.round(imgfocus.zoomScreenRatio*window.innerHeight))
+  element.height > Math.round(imgfocus.zoomScreenRatio*window.innerHeight))
   { return true; }
   else { return false; }
 };
@@ -342,8 +346,8 @@ imgfocus.isZoomToFit = function()
   
   if (!element) { return false; }
   
-  if ((element.height==Math.round(imgfocus.zoomScreenRatio*window.innerHeight) || 
-       element.width==Math.round(imgfocus.zoomScreenRatio*window.innerWidth)) &&
+  if ((element.height==Math.round(imgfocus.zoomScreenRatio*window.innerHeight) ||
+  element.width==Math.round(imgfocus.zoomScreenRatio*window.innerWidth)) &&
   element.style.left == Math.floor(window.innerWidth/2) + 'px' &&
   element.style.top == Math.floor(window.innerHeight/2) + 'px') { return true; }
   else { return false; }
@@ -365,9 +369,9 @@ imgfocus.zoomToFit = function(alwaysZoom, element, callback, ratio)
   if (!element) { element = imgfocus.popupImgElement; }
   if (!ratio) { ratio = imgfocus.zoomScreenRatio; }
   
-	// Some necessary settings
-	if (imgfocus.dimmer) { element.style.zIndex = imgfocus.dimmer.style.zIndex+1; }
-	element.style.position = 'fixed';
+  // Some necessary settings
+  if (imgfocus.dimmer) { element.style.zIndex = imgfocus.dimmer.style.zIndex+1; }
+  element.style.position = 'fixed';
   element.style.cursor = 'default';
   
   // Center the image first
@@ -379,22 +383,22 @@ imgfocus.zoomToFit = function(alwaysZoom, element, callback, ratio)
   // Cache the translation. This is used for zooming
   element.translateX = -50;
   element.translateY = -50;
-
+  
   var targetWidth = Math.round(ratio*window.innerWidth);
   var targetHeight = Math.round(ratio*window.innerHeight);
   
   if (alwaysZoom || element.naturalWidth > targetWidth || element.naturalHeight > targetHeight)
   {
-		// Which direction to zoom (width or height) is determined based on comparing the
-		// aspect ratio of the image and the browser.
-		var dimension = window.innerWidth/window.innerHeight > element.naturalWidth/element.naturalHeight ? 'height' : 'width';
-		var size = dimension == 'width' ? targetWidth : targetHeight;
-		
-		// Cache the fitting dimension; when switching images, the image will be removed first 
-		// if there is a dimension change for better experience
-		imgfocus.zoomElement(element, dimension, size, imgfocus.zoomToFitTime, 2, 'none', callback);
-	}
-	else if (callback) { callback(); }
+    // Which direction to zoom (width or height) is determined based on comparing the
+    // aspect ratio of the image and the browser.
+    var dimension = window.innerWidth/window.innerHeight > element.naturalWidth/element.naturalHeight ? 'height' : 'width';
+    var size = dimension == 'width' ? targetWidth : targetHeight;
+    
+    // Cache the fitting dimension; when switching images, the image will be removed first
+    // if there is a dimension change for better experience
+    imgfocus.zoomElement(element, dimension, size, imgfocus.zoomToFitTime, 2, 'none', callback);
+  }
+  else if (callback) { callback(); }
 }
 
 // The function to call when the popup image exists and mouse up.
@@ -405,22 +409,27 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
   // The detail property of event gives the number of consecutive clicks in a short amount
   // of time. For some reason, a mouse up event can occur immediately following a key
   // press. Simply ignore it.
-  if (e.detail==0 || (e.detail==1 && imgfocus.popupImgElement.keydownTimeStamp && e.timeStamp-imgfocus.popupImgElement.keydownTimeStamp<700))
+  if (e.detail==0 || (e.detail==1 && imgfocus.popupImgElement.keydownTimeStamp &&
+  e.timeStamp-imgfocus.popupImgElement.keydownTimeStamp<700))
   { return; }
   
-  // It is dragging if the consecutive mouse dn up is shorter than a certain duration.
-  // Do nothing in this case
-  if (e.timeStamp - imgfocus.popupImgElement.mousedownTimeStamp > 150)	{ return; }
-  // If the image is zoomed
-  if (imgfocus.isZoomToFit())
-  { imgfocus.removeImgRecoverBackground(); return; }
-  // Else the image is not zoomed
+  if (imgfocus.isZoomToFit()) { imgfocus.removeImgRecoverBackground(); return; }
+  
+  // A slow click
+  if (e.timeStamp - imgfocus.popupImgElement.mousedownTimeStamp > 150)
+  {
+    // If the img is shrunk, remove
+    if (!imgfocus.isZoomOverFit())
+    {
+      if (e.target != imgfocus.popupImgElement ) { imgfocus.removeImgRecoverBackground(); }
+      else { imgfocus.zoomToFit(true); }
+    }
+  }
+  // A quick click
   else
   {
-    // if the click is not on the image, remove it
     if (e.target != imgfocus.popupImgElement) { imgfocus.removeImgRecoverBackground(); }
-    // else zoom the image
-    else { imgfocus.zoomToFit(true);  }
+    else { imgfocus.zoomToFit(true); }
   }
 }
 
@@ -432,65 +441,139 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
 // it's best to avoid the use of "this"
 imgfocus.wheelZoom = function(e)
 {
+// console.log(event);
+  
   e.preventDefault();
   
   var element = imgfocus.popupImgElement;
   
-  var currentWidth = element.width;
-  var currentHeight = element.height;
-  
-  // The procedure for zooming right at the mouse point
-  var mouseX = event.clientX;
-  var mouseY = event.clientY;
-  if (element.mouseX != mouseX || element.mouseY != mouseY)
+  // For zooming
+  if (event.ctrlKey || event.metaKey)
   {
-    var imgBound = element.getBoundingClientRect();
-    var top = imgBound.top;
-    var left = imgBound.left;
-    var translateX = Math.round((left-mouseX)/currentWidth*100);
-    var translateY = Math.round((top-mouseY)/currentHeight*100);
-    element.style.transform = 'translate('+translateX+'%, '+translateY+'%)';
+    if (event.target != element) { return; }
     
-    element.style.left = parseInt(element.style.left) + (element.translateX - translateX)/100*currentWidth + 'px';
-    element.style.top = parseInt(element.style.top) + (element.translateY - translateY)/100*currentHeight + 'px';
+    var currentWidth = element.width;
+    var currentHeight = element.height;
     
-    // Cache the last translation
-    element.translateX = translateX;
-    element.translateY = translateY;
+    // The procedure for zooming right at the mouse point
+    var mouseX = event.clientX;
+    var mouseY = event.clientY;
+    if (element.mouseX != mouseX || element.mouseY != mouseY)
+    {
+      var imgBound = element.getBoundingClientRect();
+      var top = imgBound.top;
+      var left = imgBound.left;
+      var translateX = Math.round((left-mouseX)/currentWidth*100);
+      var translateY = Math.round((top-mouseY)/currentHeight*100);
+      element.style.transform = 'translate('+translateX+'%, '+translateY+'%)';
+      
+      element.style.left = parseInt(element.style.left) + (element.translateX - translateX)/100*currentWidth + 'px';
+      element.style.top = parseInt(element.style.top) + (element.translateY - translateY)/100*currentHeight + 'px';
+      
+      // Cache the last translation
+      element.translateX = translateX;
+      element.translateY = translateY;
+      
+      // Cache the last mouse point
+      element.mouseX = mouseX;
+      element.mouseY = mouseY;
+    }
     
-    // Cache the last mouse point
-    element.mouseX = mouseX;
-    element.mouseY = mouseY;
+    // 	var direction = e.wheelDelta>0? +1 : -1;
+    // 	var stepPx = Math.floor(direction*currentWidth/10);
+    
+    // It turns out for track pad, direct associating the pixel change with wheelDelta gives
+    // the best user experience
+    var stepPx = e.wheelDelta;
+    //   var stepPx = -e.deltaY;
+    
+    // Call zoomElement() to smooth the size transition. The minimum possible width is
+    // set to 50px.
+    var newW = currentWidth + stepPx;
+    var minWidth = 50;
+    if (newW > minWidth)
+    // 	{ imgfocus.zoomElement(imgfocus.popupImgElement, 'width', newW, 20, 0, 'none'); }
+    { element.style.width = newW+'px'; element.style.height = 'auto'; }
+    else
+    { element.style.width = minWidth + 'px'; element.style.height = 'auto'; }
+    
+    // Handle the cursor style change, and the shadow
+    if (element.height>=window.innerHeight || element.width>=window.innerWidth)
+    {
+      element.style.cursor = 'move';
+      if (element.style.webkitFilter != '') { element.style.webkitFilter = ''; }
+    }
+    else
+    {
+      element.style.cursor = 'default';
+      if (element.style.webkitFilter == '')
+      { element.style.webkitFilter = 'drop-shadow(20px 20px 10px black)'; }
+    }
   }
   
-// 	var direction = e.wheelDelta>0? +1 : -1;
-// 	var stepPx = Math.floor(direction*currentWidth/10);
-  
-  // It turns out for track pad, direct associating the pixel change with wheelDelta gives
-  // the best user experience
-  var stepPx = e.wheelDelta;
-  
-  // Call zoomElement() to smooth the size transition. The minimum possible width is
-  // set to 50px.
-  var newW = currentWidth + stepPx;
-  var minWidth = 50;
-  if (newW > minWidth)
-// 	{ imgfocus.zoomElement(imgfocus.popupImgElement, 'width', newW, 20, 0, 'none'); }
-  { element.style.width = newW+'px'; element.style.height = 'auto'; }
-  else
-  { element.style.width = minWidth + 'px'; element.style.height = 'auto'; }
-  
-  // Handle the cursor style change, and the shadow
-  if (element.height>=window.innerHeight || element.width>=window.innerWidth)
-  {
-    element.style.cursor = 'move';
-    if (element.style.webkitFilter != '') { element.style.webkitFilter = ''; }
-  }
+  // Moving
   else
   {
-    element.style.cursor = 'default';
-    if (element.style.webkitFilter == '')
-    { element.style.webkitFilter = 'drop-shadow(20px 20px 10px black)'; }
+    if (imgfocus.isZoomOverFit())
+    {
+      var height = element.height;
+      var width = element.width;
+      var top = parseInt(element.style.top);
+      var left = parseInt(element.style.left);
+      var vTranslate = Math.round(element.translateX/100*width);
+      var hTranslate = Math.round(element.translateY/100*height);
+
+			var margin = 8;
+
+      // For the vertical scroll
+      if (e.deltaY < 0)
+      {
+        hTranslate -= margin;
+        var _top = top+hTranslate;
+        if (_top < 0)
+        {
+					if (_top-e.deltaY > 0) { element.style.top = -hTranslate + "px"; }
+        	else { element.style.top = top - e.deltaY + "px"; }
+        }
+      }
+      else
+      {
+        hTranslate += margin;
+        var wHeight = window.innerHeight;
+        var bottom = top + height + hTranslate;
+				if (bottom > wHeight)
+			  {
+			  	if (bottom-e.deltaY < wHeight) 
+			  	{ element.style.top = wHeight-hTranslate-height + "px"; }
+			  	else { element.style.top = top - e.deltaY + "px"; }
+			  }
+      }
+
+			// For the horizontal scroll      
+      if (e.deltaX < 0)
+      {
+        vTranslate -= margin;
+        var _left = left+vTranslate;
+        if (_left < 0)
+        {
+					if (_left-e.deltaX > 0)
+					{	element.style.left = -vTranslate + "px";	}
+        	else { element.style.left = left - e.deltaX + "px"; }
+        }
+      }
+      else
+      {
+				vTranslate += margin;
+        var wWidth = window.innerWidth;
+        var right = left + width + vTranslate;
+				if (right > wWidth)
+			  {
+			  	if (right-e.deltaX < wWidth)
+			  	{ element.style.left = wWidth-vTranslate-width + "px"; }
+			  	else { element.style.left = left - e.deltaX + "px"; }
+			  }
+      }
+    }
   }
 }
 
@@ -509,6 +592,8 @@ imgfocus.removeImgRecoverBackground = function(style)
     var bodyElementLen = imgfocus.documentBodyElement.length;
     for (var i=0;i<bodyElementLen;i++)
     { imgfocus.unBlurElement(imgfocus.documentBodyElement[i]); }
+    
+		document.body.style.overflow = 'auto';
     
     window.removeEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
     window.removeEventListener('wheel', imgfocus.wheelZoom, false);
@@ -543,26 +628,26 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
     delete element.zoomTimerID;
     element.style.opacity = element.originalOpacity;
   }
-
-	// An aux function for defining the procedure at the end of zooming
-	var _zoomAndCallback = function()
-	{
-		if (zoom == 'width')
-		{
-			element.style.width = targetSize+'px';
-			element.style.height = 'auto';
-		}
-		else
-		{
-			element.style.width = 'auto';
-			element.style.height = targetSize+'px';
-		}
-		
-		// Run the callback function if given
-		if (callback) { callback(); }  
-	};
-
-	// Special case for zooming immediately
+  
+  // An aux function for defining the procedure at the end of zooming
+  var _zoomAndCallback = function()
+  {
+    if (zoom == 'width')
+    {
+      element.style.width = targetSize+'px';
+      element.style.height = 'auto';
+    }
+    else
+    {
+      element.style.width = 'auto';
+      element.style.height = targetSize+'px';
+    }
+    
+    // Run the callback function if given
+    if (callback) { callback(); }
+  };
+  
+  // Special case for zooming immediately
   if (duration == 0) { _zoomAndCallback(); return; }
   
   // It turns out that the zooming effect doesn't look so good. Part of the reason is due
@@ -621,7 +706,8 @@ imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTi
       
       return;
     }
-  }, stepDuration);
+  }
+  , stepDuration);
 }
 
 window.addEventListener('load', function() { imgfocus.popupImgOnClick(); }, false);
@@ -694,7 +780,7 @@ window.addEventListener('keydown', function()
       }
     }
 */
-
+    
     // Direction keys
     else if (event.keyCode == 38 || event.keyCode == 40 || event.keyCode == 37 || event.keyCode == 39)
     {
@@ -703,47 +789,48 @@ window.addEventListener('keydown', function()
       // If isZoomOverFit, move the image
       if (imgfocus.isZoomOverFit())
       {
-      	if (event.keyCode == 38 || event.keyCode == 40)
-      	{
-      	  imgfocus.popupImgElement.style.top = 
-        	parseInt(imgfocus.popupImgElement.style.top)+(event.keyCode-39)*10+'px';
-      	}
-      	else
-      	{
-					imgfocus.popupImgElement.style.left = 
-					parseInt(imgfocus.popupImgElement.style.left)+(event.keyCode-38)*10+'px';      	  
-      	}
+        if (event.keyCode == 38 || event.keyCode == 40)
+        {
+          imgfocus.popupImgElement.style.top =
+          parseInt(imgfocus.popupImgElement.style.top)+(event.keyCode-39)*10+'px';
+        }
+        else
+        {
+          imgfocus.popupImgElement.style.left =
+          parseInt(imgfocus.popupImgElement.style.left)+(event.keyCode-38)*10+'px';
+        }
       }
       // Else, switch between images
       else
       {
-				// If the temp element is still there, the last image switching has not 
-				// been completed yet
-				if (imgfocus.popupImgElementTemp) { return }
-				
-				// Pressing left/right is equivalent to clicking on the previous/next image
-				// No need to remove the current popup image first, since changing its src
-				// property is equivalent to loading a new image for the image element
-				if (event.keyCode == 37 || event.keyCode == 38)
-				{	var followingElement = imgfocus.popupImgElement.element.preElement;	}
-				else { var followingElement = imgfocus.popupImgElement.element.nextElement; }
-				followingElement.scrollIntoView(true);
-				followingElement.click();
-				
-				// When the temp element for holding the next image is loaded, zoom to fit the
-				// temp element, append the temp element, remove the original element, set the
-				// original element to the temp element, finally, remove the temp element
-				imgfocus.popupImgElementTemp.onload = function()
-				{
-					imgfocus.zoomToFit(imgfocus.alwaysZoom, this, function()
-					{
-						document.body.appendChild(imgfocus.popupImgElementTemp);
-						imgfocus.popupImgElement.remove();
-						imgfocus.popupImgElementTemp.onmousedown = imgfocus.popupImgElement.onmousedown;
-						imgfocus.popupImgElement = imgfocus.popupImgElementTemp;
-						delete imgfocus.popupImgElementTemp;
-					});
-				}
+        // If the temp element is still there, the last image switching has not
+        // been completed yet
+        if (imgfocus.popupImgElementTemp) { return }
+        
+        // Pressing left/right is equivalent to clicking on the previous/next image
+        // No need to remove the current popup image first, since changing its src
+        // property is equivalent to loading a new image for the image element
+        if (event.keyCode == 37 || event.keyCode == 38)
+        { var followingElement = imgfocus.popupImgElement.element.preElement; }
+        else { var followingElement = imgfocus.popupImgElement.element.nextElement; }
+        followingElement.scrollIntoView(true);
+        followingElement.click();
+        
+        // When the temp element for holding the next image is loaded, zoom to fit the
+        // temp element, append the temp element, remove the original element, set the
+        // original element to the temp element, finally, remove the temp element
+        imgfocus.popupImgElementTemp.onload = function()
+        {
+          imgfocus.zoomToFit(imgfocus.alwaysZoom, this, function()
+          {
+            document.body.appendChild(imgfocus.popupImgElementTemp);
+            imgfocus.popupImgElement.remove();
+            imgfocus.popupImgElementTemp.onmousedown = imgfocus.popupImgElement.onmousedown;
+            imgfocus.popupImgElement = imgfocus.popupImgElementTemp;
+            delete imgfocus.popupImgElementTemp;
+          }
+          );
+        }
       }
     }
   }

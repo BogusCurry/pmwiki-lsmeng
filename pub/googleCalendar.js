@@ -108,6 +108,10 @@ window.addEventListener('load', function()
         }
 				        
 				GCImg.style.opacity = 1.0;
+				
+				// A fix to work with Imgfocus...
+				if (GCImg.originalOpacity) { GCImg.originalOpacity = 1.0; }
+				
         console.log('Calendar ready');
 
         // Attach the calendar events to the associated daily bullet elements
@@ -378,6 +382,7 @@ window.addEventListener('load', function()
 		eventElement.style.opacity = 0;
 		document.body.appendChild(eventElement);
 		if (window.imgfocus) { imgfocus.fadeElement(eventElement, 0, 0.85, 100, null); }
+		else { eventElement.style.opacity = 0.85; }
 		
 		fixGCElementPos(dayElement[i]);
 		
