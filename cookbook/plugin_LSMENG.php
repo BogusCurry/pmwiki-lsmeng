@@ -1587,10 +1587,11 @@ function changePassword($PageStartFmt, $PageEndFmt)
     $pagelist = scandir($WorkDir);
     
     $N_FILE = count($pagelist);
-    for ($iFile=1; $iFile<=$N_FILE+1; $iFile++)
+    for ($iFile=1; $iFile<=$N_FILE+2; $iFile++)
     {
       // The pageindex file are appended to the end of the file list.
       if ($iFile == $N_FILE+1) { $pagelist[$iFile] = '.pageindex'; $file = 'wiki.d/'.$pagelist[$iFile]; }
+      else if ($iFile == $N_FILE+2) { $pagelist[$iFile] = 'myCalendarCredential.json'; $file = '.credentials/'.$pagelist[$iFile]; }
       else { $file = $WorkDir.'/'.$pagelist[$iFile]; }
       
       // Skip processing .htaccess. Somehow on MAC one of the file has an empty filename.
@@ -1626,15 +1627,14 @@ function changePassword($PageStartFmt, $PageEndFmt)
         $log .= "File \"$file\" decrypt succeeded\n";
         
         // Backup is allowed if the original pagefile is encrypted.
-        // Pageindex doesn't need to be backed up.
-        if(copy($file, $backFolder.'/'.$pagelist[$iFile]) === false)
+        if (copy($file, $backFolder.'/'.$pagelist[$iFile]) === false)
         {
           $log .= "File \"$file\" backup error!\n";
           filePutContentsWait($logFile, $log);
           Abort("Error backing up \"$file\" at changing password!");
         }
-        else if ($pagelist[$iFile] !== ".pageindex")
-        { $log .= "File \"$file\" back up succeeded\n"; }
+        
+        $log .= "File \"$file\" back up succeeded\n";
       }
       else
       { $log .= "File \"$file\" appears to be in plain text\n"; }
@@ -1659,13 +1659,16 @@ function changePassword($PageStartFmt, $PageEndFmt)
       if ($isEncrypt == true || $EnableEncryption == 1)
       {
         filePutContentsWait($file, $pageText);
-        chmodForPageFile($file);
+				
+				// Set a very restrictive permission except the credential, which has to be 
+				// read/wirtten by GC related procedures.
+				if ($pagelist[$iFile] == 'myCalendarCredential.json')
+        { if (getOS() == 'Mac') { chmod($file, 0660); } }
+        else { chmodForPageFile($file); }
         
         $log .= "File \"$file\" write succeeded\n";
       }
     }
-    
-    @unlink($backFolder.'/.pageindex');
     
     $changePWTime = (microtime(true) - $startTimeStamp);
     
