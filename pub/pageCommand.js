@@ -68,7 +68,9 @@ pageCommand.getEditLink = function(link)
 
 window.addEventListener('load', function()
 {
-  pageCommand.hyperLinkElement = document.getElementsByTagName("a"); 
+  pageCommand.inputElementLen = document.getElementsByTagName("input").length;
+  
+  pageCommand.hyperLinkElement = document.getElementsByTagName("a");
 	var hyperLinkElementLen = pageCommand.hyperLinkElement.length;
 	for (var i=0;i<hyperLinkElementLen;i++)
 	{
@@ -191,7 +193,8 @@ window.addEventListener('keydown', function()
 	}
 
 	// Tab/~ to traverse the hyperlinks in the wikitext element
-  else if (pageCommand.action != 'edit' && ((event.keyCode == 9 || event.keyCode == 192) &&
+  else if (pageCommand.action != 'edit' && pageCommand.inputElementLen == 0 &&
+   ((event.keyCode == 9 || event.keyCode == 192) &&
    !(event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)))
   {
 		event.preventDefault();
