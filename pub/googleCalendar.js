@@ -106,13 +106,19 @@ window.addEventListener('load', function()
           if (eventByDay[day] == null) { eventByDay[day] = []; }
           eventByDay[day].push(eventList[i]);
         }
+				
+				console.log('Calendar ready');
 				        
 				GCImg.style.opacity = 1.0;
 				
 				// A fix to work with Imgfocus...
 				if (GCImg.originalOpacity) { GCImg.originalOpacity = 1.0; }
 				
-        console.log('Calendar ready');
+				// Also a workaround for Imgfocus. If the overflow is set to hidden by Imgfocus
+				// while the event elements are being attached, the positions will be incorrect.
+				// Fix this by setting it to auto then revert it afterwards.
+				var originalScrollState = document.body.style.overflow;
+				if (originalScrollState == "hidden") { document.body.style.overflow = "auto"; }
 
         // Attach the calendar events to the associated daily bullet elements
   			for (var i=0;i<dayElementLen;i++)
@@ -126,7 +132,6 @@ window.addEventListener('load', function()
 					  { this.style.cursor = "initial"; }
 					  else
 					  { this.style.cursor = "pointer"; }
-						
 					}
 					dayElement[i].onclick = function(event)
 					{
@@ -199,6 +204,8 @@ window.addEventListener('load', function()
 						}
   			  }
   			}
+  			
+				if (originalScrollState == "hidden") { document.body.style.overflow = "hidden"; }
   			  			
   			// On window resize, fix the position of all calendar event elements
 				window.addEventListener('resize', function()
