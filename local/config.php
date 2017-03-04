@@ -455,12 +455,15 @@ $ROSPatterns ['/︿/'] = "^";
 $ROSPatterns ['/－/'] = "-";
 $ROSPatterns ['/？/'] = "? ";
 $ROSPatterns ['/～/'] = "~";
-$ROSPatterns ['/todo_/'] = "%bgcolor=lightgreen%";
+$ROSPatterns ['/todo_/'] = "%bgcolor=cyan%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
-$ROSPatterns ['/agree_/'] = "%bgcolor=springgreen%";
+$ROSPatterns ['/agree_/'] = "%bgcolor=rgb(106,235,19)%";
 $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
 $ROSPatterns ['/	/'] = " ";
+$ROSPatterns ["/ *\n/"] = "\n";
+
+
