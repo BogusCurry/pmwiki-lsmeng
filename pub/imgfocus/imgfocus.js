@@ -94,7 +94,7 @@ imgfocus.clickHandle = function(element)
     document.body.appendChild(imgfocus.dimmer);
     
     // Hide the scroll bar
-		document.body.style.overflow = 'hidden';
+// 		document.body.style.overflow = 'hidden';
     
     // Zoom and position the image properly on screen, along with some basic configurations
     imgfocus.zoomToFit(imgfocus.alwaysZoom);
@@ -593,7 +593,7 @@ imgfocus.removeImgRecoverBackground = function(style)
     for (var i=0;i<bodyElementLen;i++)
     { imgfocus.unBlurElement(imgfocus.documentBodyElement[i]); }
     
-		document.body.style.overflow = 'auto';
+// 		document.body.style.overflow = 'auto';
     
     window.removeEventListener('mouseup', imgfocus.mouseUpStopDragOrRemoveImg, false);
     window.removeEventListener('wheel', imgfocus.wheelZoom, false);
