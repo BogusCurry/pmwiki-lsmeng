@@ -30,7 +30,11 @@ window.addEventListener('load', function()
 	if (dayElementLen == 0) { console.log("No bullet elements found!"); return; }
 
   var req = new XMLHttpRequest();
-	var url = window.location.href+'?getGC=true';
+	var url = window.location.href;
+	// Remove the ending hash
+	var match = url.match(/#.*$/i);
+	if (match) { url = url.replace(match[0],""); }
+	url += '?getGC=true';
 	req.open('GET',url,true);
 	req.send();
 

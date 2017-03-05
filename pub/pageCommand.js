@@ -48,6 +48,10 @@ pageCommand.getEditLink = function(link)
 {
 	if (/\?action=edit/i.test(link)) { return link; }
 	
+	// Remove hash tag if present
+  var match = link.match(/#.*$/);
+  if (match) { link = link.replace(match[0],""); }
+	
 	// parse the pagename
 	var pagenamePos = link.toLowerCase().indexOf('?n=');
 	
@@ -68,6 +72,11 @@ pageCommand.getEditLink = function(link)
 
 window.addEventListener('load', function()
 {
+  // Record and remove hash tag if present
+	pageCommand.url = window.location.href;
+	var match = pageCommand.url.match(/#.*$/i);
+	if (match) { pageCommand.url = pageCommand.url.replace(match[0],""); }
+  
   pageCommand.inputElementLen = document.getElementsByTagName("input").length;
   
   pageCommand.hyperLinkElement = document.getElementsByTagName("a");
@@ -79,7 +88,7 @@ window.addEventListener('load', function()
 			if (event.shiftKey)
 			{
 				var link = this.href;
-				
+
 				if (link.toLowerCase().indexOf('pmwiki.php') != -1)
 				{
 					event.preventDefault();
@@ -110,33 +119,30 @@ window.addEventListener('keydown', function()
 	else if ((event.keyCode == 70||event.code=="KeyF") && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
-		var url = window.location.href;
-		var match = url.match(/\?.+/i);
-		var pos = match==null ? url.length : match['index'];
-		window.open(url.slice(0, pos)+'?n=Site.Search', '_blank');
+		var match = pageCommand.url.match(/\?.+/i);
+		var pos = match==null ? pageCommand.url.length : match['index'];
+		window.open(pageCommand.url.slice(0, pos)+'?n=Site.Search', '_blank');
 	}
 	
 	// Ctrl+cmd+r to open all recent changes
 	else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
-		var url = window.location.href;
-		var match = url.match(/\?.+/i);
-		var pos = match==null ? url.length : match['index'];
-		window.open(url.slice(0, pos)+'?n=Site.Allrecentchanges', '_blank');
+		var match = pageCommand.url.match(/\?.+/i);
+		var pos = match==null ? pageCommand.url.length : match['index'];
+		window.open(pageCommand.url.slice(0, pos)+'?n=Site.Allrecentchanges', '_blank');
 	}
 	
 	// Ctrl+cmd+u to open the upload page
 	else if ((event.keyCode == 85||event.code=='KeyU') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
-		var url = window.location.href;
-		if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=upload', '_blank'); }
+		if (pageCommand.url.indexOf('?n=') == -1) { window.open(pageCommand.url + '?n=Main.Homepage?action=upload', '_blank'); }
 		else
 		{
-			var pos = url.indexOf('?action=');
-			if (pos != -1) { window.open(url.slice(0,pos+8) + 'upload', '_blank'); }
-			else { window.open(url + '?action=upload', '_blank'); }
+			var pos = pageCommand.url.indexOf('?action=');
+			if (pos != -1) { window.open(pageCommand.url.slice(0,pos+8) + 'upload', '_blank'); }
+			else { window.open(pageCommand.url + '?action=upload', '_blank'); }
 		}
 	}
 	
@@ -144,13 +150,12 @@ window.addEventListener('keydown', function()
 	else if ((event.keyCode == 72||event.code=='KeyH') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
-		var url = window.location.href;
-		if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=diff', '_blank'); }
+		if (pageCommand.url.indexOf('?n=') == -1) { window.open(pageCommand.url + '?n=Main.Homepage?action=diff', '_blank'); }
 		else
 		{
-			var pos = url.indexOf('?action=');
-			if (pos != -1) { window.open(url.slice(0,pos+8) + 'diff', '_blank'); }
-			else { window.open(url + '?action=diff', '_blank'); }
+			var pos = pageCommand.url.indexOf('?action=');
+			if (pos != -1) { window.open(pageCommand.url.slice(0,pos+8) + 'diff', '_blank'); }
+			else { window.open(pageCommand.url + '?action=diff', '_blank'); }
 		}
 	}
 	
@@ -158,23 +163,21 @@ window.addEventListener('keydown', function()
 	else if ((event.keyCode == 66||event.code=='KeyB') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
-		var url = window.location.href;
-		var match = url.match(/\?.+/i);
-		var pos = match==null ? url.length : match['index'];
-		window.location = url.slice(0, pos)+'?n=Site.Search?action=search&q=link='+pageCommand.pagename;
+		var match = pageCommand.url.match(/\?.+/i);
+		var pos = match==null ? pageCommand.url.length : match['index'];
+		window.location = pageCommand.url.slice(0, pos)+'?n=Site.Search?action=search&q=link='+pageCommand.pagename;
 	}
 	
 	// Ctrl+cmd+a to open the attribute
 	else if ((event.keyCode == 65||event.code=='KeyA') && event.ctrlKey && (event.metaKey||event.altKey))
 	{
 		event.preventDefault();
-		var url = window.location.href;
-		if (url.indexOf('?n=') == -1) { window.open(url + '?n=Main.Homepage?action=attr', '_blank'); }
+		if (pageCommand.url.indexOf('?n=') == -1) { window.open(pageCommand.url + '?n=Main.Homepage?action=attr', '_blank'); }
 		else
 		{
-			var pos = url.indexOf('?action=');
-			if (pos != -1) { window.open(url.slice(0,pos+8) + 'attr', '_blank'); }
-			else { window.open(url + '?action=attr', '_blank'); }
+			var pos = pageCommand.url.indexOf('?action=');
+			if (pos != -1) { window.open(pageCommand.url.slice(0,pos+8) + 'attr', '_blank'); }
+			else { window.open(pageCommand.url + '?action=attr', '_blank'); }
 		}
 	}
 
@@ -185,10 +188,9 @@ window.addEventListener('keydown', function()
 	  var pagename = prompt("Go to page...");
 	  if (pagename)
 	  {
-	    var url = window.location.href;
-			var pagenamePos = url.indexOf('?n=');
+			var pagenamePos = pageCommand.url.indexOf('?n=');
 			if (pagenamePos == -1) {  }
-			else { window.open(url.slice(0,pagenamePos+3)+pagename, '_blank'); }
+			else { window.open(pageCommand.url.slice(0,pagenamePos+3)+pagename, '_blank'); }
 	  }
 	}
 
@@ -269,15 +271,23 @@ window.addEventListener('keydown', function()
 				if (pageCommand.selectLink)
 				{
 					var link = pageCommand.selectLink.href;
-					
+
 					if (link.toLowerCase().indexOf('pmwiki.php') != -1)
 					{
 						event.preventDefault();
-						if (event.shiftKey) { link = pageCommand.getEditLink(link); }
-						var option = '_self';
-						if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
 						
-						window.open(link, option);
+						if (event.shiftKey)
+						{
+							link = pageCommand.getEditLink(link);
+							var option = '_self';
+							if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
+							window.open(link, option);
+						}
+						else
+						{
+							if (event.ctrlKey || event.metaKey)	{	window.open(link, '_blank'); }
+							else { pageCommand.selectLink.click(); }
+						}
 					}
 				}
 			};
