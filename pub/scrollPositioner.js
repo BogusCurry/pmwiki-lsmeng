@@ -182,33 +182,51 @@ var scrollPositioner =
   // performed.
   setScrollFromEdit: function(value)
   {
-    if (value == null) { return; }
-    else if (String(value).substring(0,1) != 'n') { scrollPositioner.setScrollPos(value); return; }
-    else { value = value.slice(1); }
+		if (scrollPositioner.hash)
+		{
+			var idName = scrollPositioner.hash.slice(1);
+			var idElement = document.getElementById(idName);
+			if (!idElement) { return; }
+			// If the parent element of the hash tag is a bullet, scroll to the bullet and
+			// highlight it; otherwise simply scroll to the tag
+			var bulletObj = idElement.parentElement;
+			if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
+		}
+		else
+		{
+			if (value == null) { return; }
+			else if (String(value).substring(0,1) != 'n') { scrollPositioner.setScrollPos(value); return; }
+			else { value = value.slice(1); }
+			
+			// Get timestamp, if expired then return
+	//     var clock = new Date();
+	//     var timeDiff = Math.floor(clock.getTime()/1000) - scrollPositioner.getStorageByKey('LastMod', scrollPositioner.pagename);
+	//     if (timeDiff > 600) { return; }
+			
+			var numBullet = value;
+			var bulletObj = scrollPositioner.wikitext.getElementsByTagName("li")[numBullet-1];
+			
+			// Leave if undefined; no bullets at all
+			if (typeof bulletObj === 'undefined') { return; }
+		}
     
-    // Get timestamp, if expired then return
-//     var clock = new Date();
-//     var timeDiff = Math.floor(clock.getTime()/1000) - scrollPositioner.getStorageByKey('LastMod', scrollPositioner.pagename);
-//     if (timeDiff > 600) { return; }
+    scrollPositioner.highlightScroll(bulletObj);
+  },
+  
+	// Highlight the given obj for a short period of time and scroll into view that obj
+  highlightScroll: function(bulletObj)
+  {
+    if (!bulletObj) { return; }
     
-    var numBullet = value;
-    var bulletObj = scrollPositioner.wikitext.getElementsByTagName("li")[numBullet-1];
-    
-    // Leave if undefined; no bullets at all
-    if (typeof bulletObj === 'undefined') { return; }
-    
-    var idName = 'lastEdit';
-    bulletObj.id = idName;
-    bulletObj.style.backgroundColor = 'yellow';
-    
-    // Remove the highlight after 1 sec
-    setTimeout(function()
-    {
-      bulletObj.style.webkitTransition = 'background-color 1s ease';
-      bulletObj.style.backgroundColor = '';
-    }
-    ,1000);
-    
+		bulletObj.style.backgroundColor = 'yellow';
+		
+		// Remove the highlight after 1 sec
+		setTimeout(function()
+		{
+			bulletObj.style.webkitTransition = 'background-color 1s ease';
+			bulletObj.style.backgroundColor = '';
+		}, 1000);
+
     // A certain delay is needed when there are a lot of images waiting to be arranged on
     // the page, i.e., diary pages. A delay of around 1 second is needed for diary page
     // with a lot of images. Not satisfied with this solution; there should be a mechanism
@@ -221,19 +239,17 @@ var scrollPositioner =
     if (scrollPositioner.isDiaryPage == 2) { positionDelay = Math.max(positionDelay,1000); }
     
     var screenHeightAdj = Math.round(window.innerHeight/3);
-    
+
     setTimeout(function()
     {
       // First scroll the lastEdit id into view, then get the id's position relative to
       // the browser window. Adjust the scroll position so that the id is 1/3 of the
       // browser window height.
-      var idElement = document.getElementById(idName);
-      idElement.scrollIntoView(true);
-      var idPosRelBrowser = Math.floor(idElement.getBoundingClientRect().top);
+      bulletObj.scrollIntoView(true);
+      var idPosRelBrowser = Math.floor(bulletObj.getBoundingClientRect().top);
       screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
       scrollPositioner.setScrollPos(scrollPositioner.getScrollPos()-screenHeightAdj);
-    }
-    ,positionDelay);
+    },positionDelay);    
   },
   
   // Wait for the LATEX rendering to complete first since it also replaces the page HTML.
@@ -374,6 +390,16 @@ var scrollPositioner =
   
   init: function()
   {
+		// Record and remove hash tag if present
+		scrollPositioner.url = window.location.href;
+		var match = scrollPositioner.url.match(/#.+$/i);
+		if (match)
+		{
+			scrollPositioner.hash = match[0];
+			window.location.href = scrollPositioner.url.replace(scrollPositioner.hash,"#");
+			scrollPositioner.url = scrollPositioner.url.replace(scrollPositioner.hash,"");
+		}
+
     scrollPositioner.pagename = scrollPositioner.pagename.toUpperCase();
     scrollPositioner.text = document.getElementById('text');
     scrollPositioner.wikitext = document.getElementById('wikitext');
@@ -388,7 +414,7 @@ var scrollPositioner =
       // If the local storage content begins with 'n', the page has just been
       // modified. Delete it in such cases.
       var value = scrollPositioner.getScrollPosLS();
-      if (value != null)
+      if (value != null || scrollPositioner.hash)
       {
         scrollPositioner.waitLatexThenSetScroll(value);
         
@@ -407,13 +433,14 @@ var scrollPositioner =
           // Remove spaces and replace special characters.
           var sel = window.getSelection();
           var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;");
+					var url = scrollPositioner.url;
           
           if (selString == '')
           {
             if ((event.ctrlKey && scrollPositioner.OS == 'Mac') || ((event.altKey||event.metaKey) && scrollPositioner.OS == 'Windows'))
-            { window.open(window.location.href + '?action=edit', '_blank'); }
+            { window.open(url + '?action=edit', '_blank'); }
             else
-            { window.location = window.location.href + '?action=edit'; }
+            { window.location = url + '?action=edit'; }
             return;
           }
           
@@ -440,9 +467,9 @@ var scrollPositioner =
           {
 // 						if (window.opener) { window.opener.location.reload(); }
 // 						else { window.open(window.location.href +'?action=edit', '_blank'); }
-						window.open(window.location.href +'?action=edit', '_blank');
+						window.open(url +'?action=edit', '_blank');
           }
-          else { window.location = window.location.href + '?action=edit'; }
+          else { window.location = url + '?action=edit'; }
         }
 
 				else
@@ -556,6 +583,7 @@ scrollPositioner.setScrollAndCaretPosCookie = function()
     }
   }
 };
+
 // Record the scroll and caret position on focusout and page close.
 //window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie, false);
 window.addEventListener("beforeunload", scrollPositioner.setScrollAndCaretPosCookie, false);
@@ -587,3 +615,37 @@ scrollPositioner.nthIndex = function(str, pat1, pat2, n)
   
   return i;
 };
+
+// If the user clicks a hash jump link, handle it with my recipe.
+window.addEventListener("click", function()
+{
+	// Leave if the target is not a hyperlink or if shift key is pressed (for editing)
+	if (event.target.tagName != "A" || event.shiftKey) { return; }
+	
+	// If there is a hash tag && the target pagename is the same page
+	// then this is a hash jump within the same page
+	var url = event.target.href;
+  var match = url.match(/#.+$/i);
+	if (match && scrollPositioner.url == url.replace(match[0],""))
+	{
+// 		event.preventDefault();
+		var idElement = document.getElementById(match[0].slice(1));
+		var bulletObj = idElement.parentElement;
+		if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
+		scrollPositioner.highlightScroll(bulletObj);
+	}
+}, false);
+
+// If the user directly makes a hash change to the url, handle it with my recipe.
+window.addEventListener("hashchange", function()
+{
+	event.preventDefault();
+	var url = event.newURL;
+	var match = url.match(/#.+$/i);
+	if (!match) { return; }
+	var idElement = document.getElementById(match[0].slice(1));
+	if (!idElement) { return; }
+	var bulletObj = idElement.parentElement;
+	if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
+	scrollPositioner.highlightScroll(bulletObj);
+}, false);
