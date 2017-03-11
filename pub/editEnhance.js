@@ -16,7 +16,7 @@ function isStrEmpty(str)
 // Return the cursor position of the previous paragraph start.
 function getLastParaStart(pos)
 {
-  var text = EditEnhanceElement.form.text.value;
+  var text = editEnhanceElement.form.text.value;
   
   // If this is a non empty line and the given pos is not at the beginning of the line
   var lineStart = getLineStart(pos);
@@ -73,7 +73,7 @@ function getLastParaStart(pos)
 // Return the cursor position of the next paragraph start.
 function getNextParaStart(pos)
 {
-  var str = EditEnhanceElement.form.text.value.slice(pos);
+  var str = editEnhanceElement.form.text.value.slice(pos);
   
   // Handle the case where the next line is a new paragraph
   // If there is nothing between pos and next newline
@@ -85,20 +85,20 @@ function getNextParaStart(pos)
     if (!isStrEmpty(str.slice(firstNLIdx+1,secondNLIdx)))
     {
       // If there is nothing between last newline and pos
-      var lastNLIdx = EditEnhanceElement.form.text.value.slice(0,pos).lastIndexOf("\n");
-      if (isStrEmpty(EditEnhanceElement.form.text.value.slice(lastNLIdx+1,pos)))
+      var lastNLIdx = editEnhanceElement.form.text.value.slice(0,pos).lastIndexOf("\n");
+      if (isStrEmpty(editEnhanceElement.form.text.value.slice(lastNLIdx+1,pos)))
       { return pos + firstNLIdx + 1; }
     }
   }
   
   // Find an empty line
   var matchPos = str.search(/^[ 	]*$/m);
-  if (matchPos == -1) { return EditEnhanceElement.form.text.value.length; }
+  if (matchPos == -1) { return editEnhanceElement.form.text.value.length; }
   var start = pos + matchPos;
   
   // Find a non empty line
   matchPos = str.slice(matchPos).search(/^[ 	]*[^\s]/m);
-  if (matchPos == -1) { return EditEnhanceElement.form.text.value.length; }
+  if (matchPos == -1) { return editEnhanceElement.form.text.value.length; }
   
   return start + matchPos;
 }
@@ -106,20 +106,20 @@ function getNextParaStart(pos)
 // Return the cursor position of the paragraph end.
 function getParaEnd(pos)
 {
-  var str = EditEnhanceElement.form.text.value.slice(pos);
+  var str = editEnhanceElement.form.text.value.slice(pos);
   
   // If this is an empty line
-  if (isStrEmpty(EditEnhanceElement.form.text.value.slice(getLineStart(pos),pos)))
+  if (isStrEmpty(editEnhanceElement.form.text.value.slice(getLineStart(pos),pos)))
   {
     // Find the first nonempty char
     var matchPos = str.search(/[^\s]/);
-    if (matchPos == -1) { return EditEnhanceElement.form.text.value.length; }
+    if (matchPos == -1) { return editEnhanceElement.form.text.value.length; }
     str = str.slice(matchPos + 1);
     pos += matchPos + 1;
   }
   
   var match = str.match(/\n\s*?\n/);
-  if (match == null) { return EditEnhanceElement.form.text.value.length; }
+  if (match == null) { return editEnhanceElement.form.text.value.length; }
   return pos + match['index'] + match.slice(1,match.indexOf("\n")).length + 1;
 }
 
@@ -127,11 +127,11 @@ function getParaEnd(pos)
 function getBulletStart(pos)
 {
   // Find bullet start
-  var start1 = EditEnhanceElement.form.text.value.lastIndexOf("\n*",pos-1) +1;
-  var start2 = EditEnhanceElement.form.text.value.lastIndexOf("\n#",pos-1) +1;
+  var start1 = editEnhanceElement.form.text.value.lastIndexOf("\n*",pos-1) +1;
+  var start2 = editEnhanceElement.form.text.value.lastIndexOf("\n#",pos-1) +1;
   if (start1+start2 == 0)
   {
-    var firstChar = EditEnhanceElement.form.text.value.substr(0,1);
+    var firstChar = editEnhanceElement.form.text.value.substr(0,1);
     if (firstChar != '*' && firstChar != '#')  { return -1; }
   }
   return Math.max(start1,start2);
@@ -141,13 +141,13 @@ function getBulletStart(pos)
 function getBulletEnd(pos)
 {
   // Find bullet end
-  var end1 = EditEnhanceElement.form.text.value.indexOf("\n*",pos);
+  var end1 = editEnhanceElement.form.text.value.indexOf("\n*",pos);
   end1 = end1==-1 ? Infinity : end1+1;
-  var end2 = EditEnhanceElement.form.text.value.indexOf("\n#",pos);
+  var end2 = editEnhanceElement.form.text.value.indexOf("\n#",pos);
   end2 = end2==-1 ? Infinity : end2+1;
   var end3 = getParaEnd(pos);
   var end = Math.min(end1,end2,end3);
-  if (end == Infinity) { end = EditEnhanceElement.form.text.value.length; }
+  if (end == Infinity) { end = editEnhanceElement.form.text.value.length; }
   
   return end;
 }
@@ -155,43 +155,48 @@ function getBulletEnd(pos)
 // Return the char offset of the start of the line
 function getLineStart(pos)
 {
-  return pos==0 ? 0 : EditEnhanceElement.form.text.value.lastIndexOf("\n",pos-1)+1;
+  return pos==0 ? 0 : editEnhanceElement.form.text.value.lastIndexOf("\n",pos-1)+1;
 }
 
 // Return the char offset of the end of the line
 function getLineEnd(pos)
 {
-  var end = EditEnhanceElement.form.text.value.indexOf("\n",pos);
-  end = end==-1 ? EditEnhanceElement.form.text.value.length : end+1;
+  var end = editEnhanceElement.form.text.value.indexOf("\n",pos);
+  end = end==-1 ? editEnhanceElement.form.text.value.length : end+1;
   return end;
 }
 
 // Highlight the current line by text selection
 function selectLine(pos)
 {
-  EditEnhanceElement.blur();
-  EditEnhanceElement.selectionStart =
-  EditEnhanceElement.selectionEnd = pos;
-  EditEnhanceElement.focus();
+  editEnhanceElement.blur();
+  editEnhanceElement.selectionStart =
+  editEnhanceElement.selectionEnd = pos;
+  editEnhanceElement.focus();
   var lineEndPos = getLineEnd(pos);
-  if (EditEnhanceElement.form.text.value[lineEndPos-1] == "\n")
+  if (editEnhanceElement.form.text.value[lineEndPos-1] == "\n")
   { lineEndPos--; }
-  EditEnhanceElement.selectionStart = getLineStart(pos);
-  EditEnhanceElement.selectionEnd = lineEndPos;
+  editEnhanceElement.selectionStart = getLineStart(pos);
+  editEnhanceElement.selectionEnd = lineEndPos;
 }
 
 window.addEventListener('load',function()
 {
-  EditEnhanceElement = document.getElementById('text');
+  window.editEnhanceElement = document.getElementById('text');
   
-  EditEnhanceLineHeight = parseInt(window.getComputedStyle(EditEnhanceElement)['line-height']);
+  EditEnhanceLineHeight = parseInt(window.getComputedStyle(editEnhanceElement)['line-height']);
+  
+	// Determine the OS
+	if (window.navigator.platform === "Win32") { EditEnhanceOS = "Windows"; }
+	else if (window.navigator.platform === "MacIntel") { EditEnhanceOS = "Mac"; }
+	else { alert("Undefined OS!"); return; }
   
   // For keeping track of the horizontal offset when performing next/previous line
-  EditEnhanceElement.offset = 0;
+  editEnhanceElement.offset = 0;
   
   // For keeping track of the selection direction. 1 for forward selection,
   // 0 for backward selection
-  EditEnhanceElement.selectDirection = 0;
+  editEnhanceElement.selectDirection = 0;
   
   // Create a small div to show the char and line number
   var infoDiv = document.createElement('div');
@@ -204,7 +209,7 @@ window.addEventListener('load',function()
   infoDiv.style.padding = '2px';
   infoDiv.style.borderRadius = '3px';
   infoDiv.style.position = 'fixed';
-  infoDiv.style.top = EditEnhanceElement.getBoundingClientRect().top + 'px';
+  infoDiv.style.top = editEnhanceElement.getBoundingClientRect().top + 'px';
   infoDiv.style.right = '20px';
   infoDiv.style.webkitFilter = 'drop-shadow(0px 0px 2px gray)';
   
@@ -217,9 +222,9 @@ window.addEventListener('load',function()
 // Update the char offset and line number in the information div
 function updateInfoDiv()
 {
-// 	document.getElementById('infoDivID').innerHTML = 'Char: '+EditEnhanceElement.selectionStart+
+// 	document.getElementById('infoDivID').innerHTML = 'Char: '+editEnhanceElement.selectionStart+
 // 	"<br>Line: "+
-// 	(EditEnhanceElement.form.text.value.slice(0,EditEnhanceElement.selectionStart).match(/\n/g) || []).length;  	  
+// 	(editEnhanceElement.form.text.value.slice(0,editEnhanceElement.selectionStart).match(/\n/g) || []).length;  	  
 }
 
 window.addEventListener('click', function() { updateInfoDiv(); }, false);
@@ -227,6 +232,8 @@ window.addEventListener('click', function() { updateInfoDiv(); }, false);
 // When the meta key is down, other key presses can only be detected by key up on Windows.
 window.addEventListener('keyup', function()
 {
+  if (!EditEnhanceOS) { return; }
+  
   updateInfoDiv();
   
   if (EditEnhanceOS == 'Windows')
@@ -240,44 +247,44 @@ window.addEventListener('keyup', function()
         
         // Ctrl+Cmd+Alt: scroll up long
         if (event.ctrlKey && event.metaKey && event.altKey)
-        EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
+        editEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
         
         // Ctrl or Cmd+Alt: scroll up short
         else if (event.metaKey && event.altKey)
-        EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<2);
+        editEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<2);
         
         // Alt+Shift: continuous paragraph selection
         else if (event.shiftKey && event.keyCode == 38)
         {
-          EditEnhanceElement.blur();
-          var end = EditEnhanceElement.selectionEnd;
-          var pos = EditEnhanceElement.selectionStart;
-          var start = EditEnhanceElement.selectionEnd =
-          EditEnhanceElement.selectionStart = getLastParaStart(pos);
-          EditEnhanceElement.focus();
-          EditEnhanceElement.selectionEnd = end;
+          editEnhanceElement.blur();
+          var end = editEnhanceElement.selectionEnd;
+          var pos = editEnhanceElement.selectionStart;
+          var start = editEnhanceElement.selectionEnd =
+          editEnhanceElement.selectionStart = getLastParaStart(pos);
+          editEnhanceElement.focus();
+          editEnhanceElement.selectionEnd = end;
         }
         else if (event.shiftKey && event.keyCode == 40)
         {
-          EditEnhanceElement.blur();
-          var start = EditEnhanceElement.selectionStart;
-          var pos = EditEnhanceElement.selectionEnd;
+          editEnhanceElement.blur();
+          var start = editEnhanceElement.selectionStart;
+          var pos = editEnhanceElement.selectionEnd;
           var end = getParaEnd(pos+1)
           
-          EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = end;
-          EditEnhanceElement.focus();
-          EditEnhanceElement.selectionStart = start;
+          editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = end;
+          editEnhanceElement.focus();
+          editEnhanceElement.selectionStart = start;
         }
         
         // Move to the last/next paragraph.
         else
         {
-          var pos = EditEnhanceElement.selectionStart;
+          var pos = editEnhanceElement.selectionStart;
           if (event.keyCode == 38)      var start = getLastParaStart(pos);
           else if (event.keyCode == 40) var start = getNextParaStart(pos);
           selectLine(start);
-          if (EditEnhanceElement.selectionStart == 0 && EditEnhanceElement.selectionEnd == 1)
-          { EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 0; }
+          if (editEnhanceElement.selectionStart == 0 && editEnhanceElement.selectionEnd == 1)
+          { editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = 0; }
         }
       }
     }
@@ -287,23 +294,23 @@ window.addEventListener('keyup', function()
 
 function getNextWordPos(pos)
 {
-  if (EditEnhanceElement.form.text.value[pos] == " ") { pos++; }
+  if (editEnhanceElement.form.text.value[pos] == " ") { pos++; }
   
-  var end = EditEnhanceElement.form.text.value.length;
-//   var matchPos = EditEnhanceElement.form.text.value.slice(pos,end).search(/\uff0c/);
+  var end = editEnhanceElement.form.text.value.length;
+//   var matchPos = editEnhanceElement.form.text.value.slice(pos,end).search(/\uff0c/);
 //   \u3002
-  var matchPos = EditEnhanceElement.form.text.value.slice(pos,end).search(/\s\S|\S\s|\W[\uff0c\u3002\w]|[\uff0c\u3002\w]\W/);
+  var matchPos = editEnhanceElement.form.text.value.slice(pos,end).search(/\s\S|\S\s|\W[\uff0c\u3002\w]|[\uff0c\u3002\w]\W/);
   if (matchPos == -1) { return end; }
   else { return matchPos+pos+1; }
 }
 
 function getLastWordPos(pos)
 {
-  if (EditEnhanceElement.form.text.value[pos-1] == " ") { pos--; }
+  if (editEnhanceElement.form.text.value[pos-1] == " ") { pos--; }
   
   // get line start, and the content in between
   var lineStart = getLastParaStart(pos);
-  var lineStr = EditEnhanceElement.form.text.value.slice(lineStart,pos);
+  var lineStr = editEnhanceElement.form.text.value.slice(lineStart,pos);
   
   // String inversion to perform an inverse regex
   var o = '';
@@ -321,24 +328,24 @@ function getLastWordPos(pos)
 // posInwardSelect: the position to go to for inward selection
 function makeSelection(posOutwardSelect, posInwardSelect)
 {
-  var start = EditEnhanceElement.selectionStart;
-  var end = EditEnhanceElement.selectionEnd;
-  EditEnhanceElement.blur();
+  var start = editEnhanceElement.selectionStart;
+  var end = editEnhanceElement.selectionEnd;
+  editEnhanceElement.blur();
   
   // If something has been selected
   if (posOutwardSelect != null)
   {
-    EditEnhanceElement.selectionEnd = EditEnhanceElement.selectionStart = posOutwardSelect;
-    EditEnhanceElement.focus();
-    if (!EditEnhanceElement.selectDirection) { EditEnhanceElement.selectionEnd = end; }
-    else { EditEnhanceElement.selectionStart = start; }
+    editEnhanceElement.selectionEnd = editEnhanceElement.selectionStart = posOutwardSelect;
+    editEnhanceElement.focus();
+    if (!editEnhanceElement.selectDirection) { editEnhanceElement.selectionEnd = end; }
+    else { editEnhanceElement.selectionStart = start; }
   }
   else
   {
-    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = posInwardSelect;
-    EditEnhanceElement.focus();
-    if (EditEnhanceElement.selectDirection) { EditEnhanceElement.selectionStart = start; }
-    else { EditEnhanceElement.selectionEnd = end; }
+    editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = posInwardSelect;
+    editEnhanceElement.focus();
+    if (editEnhanceElement.selectDirection) { editEnhanceElement.selectionStart = start; }
+    else { editEnhanceElement.selectionEnd = end; }
   }
 }
 
@@ -347,18 +354,32 @@ function makeSelection(posOutwardSelect, posInwardSelect)
 // to true
 function moveCaretAndFocus(pos, shouldUpdateOffset)
 {
-  EditEnhanceElement.blur();
-  EditEnhanceElement.selectionEnd = EditEnhanceElement.selectionStart = pos;
-  EditEnhanceElement.focus();
+  editEnhanceElement.blur();
+  editEnhanceElement.selectionEnd = editEnhanceElement.selectionStart = pos;
+  editEnhanceElement.focus();
   
   if (shouldUpdateOffset) { updateOffset(); }
+}
+
+// As title
+function scrollToSelection()
+{
+	var start = editEnhanceElement.selectionStart;
+	var end = editEnhanceElement.selectionEnd;
+  editEnhanceElement.blur();
+	editEnhanceElement.selectionStart =	editEnhanceElement.selectionEnd = start;
+	var textLen = editEnhanceElement.form.text.value.length;
+	if (start > textLen>>1) { editEnhanceElement.scrollTop = 0; }
+	else { editEnhanceElement.scrollTop = editEnhanceElement.scrollHeight; }
+	editEnhanceElement.focus();
+	editEnhanceElement.selectionEnd = end;
 }
 
 // Get the position relative to the nearest newline, and record it as a global property
 function updateOffset()
 {
-  var end = EditEnhanceElement.selectionEnd;
-  EditEnhanceElement.offset = end - getLineStart(end);
+  var end = editEnhanceElement.selectionEnd;
+  editEnhanceElement.offset = end - getLineStart(end);
 }
 
 // When receiving input, update the char offset relative to line start
@@ -389,7 +410,9 @@ window.addEventListener('textInput', function()
 	if (inputText.indexOf('；；') != -1)
 	{
 		inputText = inputText.replace('；；','""');
-		setTimeout("EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = (EditEnhanceElement.selectionStart - 1);", 0);
+		setTimeout(function()
+		{ editEnhanceElement.selectionStart =
+		  editEnhanceElement.selectionEnd = (editEnhanceElement.selectionStart - 1); }, 0);
 	}
 	
   if (inputText != event.data)
@@ -401,7 +424,7 @@ window.addEventListener('textInput', function()
 
 window.addEventListener('keydown', function()
 {
-  if (!EditEnhanceElement) { return; }
+  if (!window.editEnhanceElement) { return; }
 
   // A fix for windows. Prevent alt key to turn the focus to browser's toolbar.
   if (event.keyCode == 18)
@@ -412,8 +435,8 @@ window.addEventListener('keydown', function()
   
   if (event.ctrlKey || event.metaKey || event.altKey)
   {
-    var start = EditEnhanceElement.selectionStart;
-    var end = EditEnhanceElement.selectionEnd;
+    var start = editEnhanceElement.selectionStart;
+    var end = editEnhanceElement.selectionEnd;
   }
 
   /************** Fix some annoying full-width characters **************/
@@ -423,24 +446,24 @@ window.addEventListener('keydown', function()
 	if (event.key == '9' && event.metaKey) 
   {
     document.execCommand("insertText", false, '()');
-   	EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 
-   	(EditEnhanceElement.selectionStart - 1);
+   	editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = 
+   	(editEnhanceElement.selectionStart - 1);
     event.preventDefault();
     return;
   }
   else if (event.key == ';' && event.metaKey) 
   {
     document.execCommand("insertText", false, '[]');
-   	EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 
-   	(EditEnhanceElement.selectionStart - 1);
+   	editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = 
+   	(editEnhanceElement.selectionStart - 1);
     event.preventDefault();
     return;
   }
   else if (event.key == ':' && event.shiftKey && event.metaKey) 
   {
 		document.execCommand("insertText", false, '{}');
-		EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 
-		(EditEnhanceElement.selectionStart - 1);
+		editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = 
+		(editEnhanceElement.selectionStart - 1);
     event.preventDefault();
     return;
   }
@@ -456,11 +479,11 @@ window.addEventListener('keydown', function()
       
       // Ctrl+Cmd+Alt: scroll up long
       if (event.ctrlKey && event.metaKey && event.altKey)
-      EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
+      editEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<3);
       
       // Ctrl or Cmd+Alt: scroll up short
       else if ((event.ctrlKey || event.metaKey) && event.altKey)
-      EditEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<2);
+      editEnhanceElement.scrollTop += (event.keyCode - 39)*(EditEnhanceLineHeight<<2);
       
       // Alt: paragraph traversal
       else if (event.keyCode == 38)
@@ -475,7 +498,7 @@ window.addEventListener('keydown', function()
         {
           var direction = 0;
           
-          if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          if (end != start && editEnhanceElement.selectDirection == (direction^1))
           {
             var posOutwardSelect = getLastParaStart(end);
             if (posOutwardSelect <= start) { posOutwardSelect = start; }
@@ -485,7 +508,7 @@ window.addEventListener('keydown', function()
           {
             var posOutwardSelect = null;
             var posInwardSelect = getLastParaStart(start);
-            EditEnhanceElement.selectDirection = direction;
+            editEnhanceElement.selectDirection = direction;
           }
           
           makeSelection(posOutwardSelect, posInwardSelect);
@@ -504,7 +527,7 @@ window.addEventListener('keydown', function()
         {
           var direction = 1;
           
-          if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+          if (end != start && editEnhanceElement.selectDirection == (direction^1))
           {
             var posOutwardSelect = getParaEnd(start);
             if (posOutwardSelect > end) { posOutwardSelect = end; }
@@ -514,7 +537,7 @@ window.addEventListener('keydown', function()
           {
             var posOutwardSelect = null;
             var posInwardSelect = getParaEnd(end+1);
-            EditEnhanceElement.selectDirection = direction;
+            editEnhanceElement.selectDirection = direction;
           }
           
           makeSelection(posOutwardSelect, posInwardSelect);
@@ -528,18 +551,18 @@ window.addEventListener('keydown', function()
       
       if (event.shiftKey)
       {
-        if (event.keyCode == 38)      EditEnhanceElement.selectionStart = 0;
-        else if (event.keyCode == 40) EditEnhanceElement.selectionEnd = EditEnhanceElement.form.text.value.length;
+        if (event.keyCode == 38)      editEnhanceElement.selectionStart = 0;
+        else if (event.keyCode == 40) editEnhanceElement.selectionEnd = editEnhanceElement.form.text.value.length;
       }
       else
       {
         if (event.keyCode == 38)
         {
           selectLine(0);
-          if (EditEnhanceElement.selectionStart == 0 && EditEnhanceElement.selectionEnd == 1)
-          { EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = 0; }
+          if (editEnhanceElement.selectionStart == 0 && editEnhanceElement.selectionEnd == 1)
+          { editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = 0; }
         }
-        else if (event.keyCode == 40) selectLine(EditEnhanceElement.form.text.value.length);
+        else if (event.keyCode == 40) selectLine(editEnhanceElement.form.text.value.length);
       }
     }
   }
@@ -566,22 +589,22 @@ window.addEventListener('keydown', function()
   else if ((event.keyCode == 33 || event.keyCode == 34) && EditEnhanceOS == 'Mac')
   {
     // Align the cursor at the start before the page changes
-    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = start;
+    editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = start;
     
     setTimeout(function()
     {
       // After the browser performs page up/dn, get the updated selection start
-      start = EditEnhanceElement.selectionStart;
+      start = editEnhanceElement.selectionStart;
       
       // Handle the special case of the last line
-      if (EditEnhanceElement.selectionEnd == EditEnhanceElement.form.text.value.length)
-      { EditEnhanceElement.selectionStart = EditEnhanceElement.form.text.value.lastIndexOf("\n", start-1)+1; }
+      if (editEnhanceElement.selectionEnd == editEnhanceElement.form.text.value.length)
+      { editEnhanceElement.selectionStart = editEnhanceElement.form.text.value.lastIndexOf("\n", start-1)+1; }
       
       // Don't touch the selection start; only put the selection end at the end of the
       // line.
-      var end = EditEnhanceElement.form.text.value.indexOf("\n", start);
-      end = end==-1 ? EditEnhanceElement.form.text.value.length : end;
-      EditEnhanceElement.selectionEnd = end;
+      var end = editEnhanceElement.form.text.value.indexOf("\n", start);
+      end = end==-1 ? editEnhanceElement.form.text.value.length : end;
+      editEnhanceElement.selectionEnd = end;
     }
     ,0);
   }
@@ -597,10 +620,10 @@ window.addEventListener('keydown', function()
         event.preventDefault();
         
         // Execute if the line is non-empty
-        if (EditEnhanceElement.form.text.value.slice(getLineStart(start), getLineEnd(start)).replace(/\s/g,'') != '')
+        if (editEnhanceElement.form.text.value.slice(getLineStart(start), getLineEnd(start)).replace(/\s/g,'') != '')
         {
-          EditEnhanceElement.selectionStart = getLastParaStart(start+1);
-          EditEnhanceElement.selectionEnd = getParaEnd(start);
+          editEnhanceElement.selectionStart = getLastParaStart(start+1);
+          editEnhanceElement.selectionEnd = getParaEnd(start);
         }
       }
 /*
@@ -622,15 +645,15 @@ window.addEventListener('keydown', function()
       event.preventDefault();
       
       // Execute if the line is non-empty
-      if (EditEnhanceElement.form.text.value.slice(getLineStart(start), getLineEnd(start)).replace(/\s/g,'') != '')
+      if (editEnhanceElement.form.text.value.slice(getLineStart(start), getLineEnd(start)).replace(/\s/g,'') != '')
       {
         var bulletStart = getBulletStart(start);
         
         if (bulletStart == -1 || bulletStart < getLastParaStart(start)) { return; }
         else
         {
-          EditEnhanceElement.selectionStart = bulletStart;
-          EditEnhanceElement.selectionEnd = getBulletEnd(start);
+          editEnhanceElement.selectionStart = bulletStart;
+          editEnhanceElement.selectionEnd = getBulletEnd(start);
         }
       }
     }
@@ -667,11 +690,11 @@ window.addEventListener('keydown', function()
     {
       if (event.ctrlKey || event.metaKey)
       {
-        EditEnhanceElement.selectionStart = start;
+        editEnhanceElement.selectionStart = start;
         var end = getLineEnd(start);
-        var textLen = EditEnhanceElement.form.text.value.length;
+        var textLen = editEnhanceElement.form.text.value.length;
         end = end==textLen ? textLen : end-1;
-        EditEnhanceElement.selectionEnd = end;
+        editEnhanceElement.selectionEnd = end;
         
         // A fix for Windows since the Backspace key does not function when * key is pressed
         if (EditEnhanceOS == 'Windows')
@@ -679,14 +702,14 @@ window.addEventListener('keydown', function()
       }
       else
       {
-        EditEnhanceElement.selectionStart = getLineStart(start);
-        EditEnhanceElement.selectionEnd = getLineEnd(start);
+        editEnhanceElement.selectionStart = getLineStart(start);
+        editEnhanceElement.selectionEnd = getLineEnd(start);
       }
     }
     else if (event.ctrlKey || event.metaKey)
     {
-      EditEnhanceElement.selectionStart = getLineStart(start);
-      EditEnhanceElement.selectionEnd = start;
+      editEnhanceElement.selectionStart = getLineStart(start);
+      editEnhanceElement.selectionEnd = start;
     }
   }
 */
@@ -696,7 +719,7 @@ window.addEventListener('keydown', function()
   {
     event.preventDefault();
     EditEnhanceCursorPos = start;
-    EditEnhanceScrollPos = EditEnhanceElement.scrollTop;
+    EditEnhanceScrollPos = editEnhanceElement.scrollTop;
   }
   else if (event.keyCode == 74 && (event.ctrlKey || event.metaKey) && !event.shiftKey)
   {
@@ -705,24 +728,15 @@ window.addEventListener('keydown', function()
     
     if (typeof EditEnhanceCursorPos != 'undefined')
     {
-      EditEnhanceElement.selectionStart =
-      EditEnhanceElement.selectionEnd = EditEnhanceCursorPos;
-      EditEnhanceElement.scrollTop = EditEnhanceScrollPos;
+      editEnhanceElement.selectionStart =
+      editEnhanceElement.selectionEnd = EditEnhanceCursorPos;
+      editEnhanceElement.scrollTop = EditEnhanceScrollPos;
     }
   }
   
   // Ctrl+i to put the line with cursor at the center of the screen
   else if (event.keyCode == 73 && (event.ctrlKey || event.metaKey))
-  {
-    EditEnhanceElement.blur();
-    EditEnhanceElement.selectionStart =
-    EditEnhanceElement.selectionEnd = start;
-    var textLen = EditEnhanceElement.form.text.value.length;
-    if (start > textLen>>1) { EditEnhanceElement.scrollTop = 0; }
-    else { EditEnhanceElement.scrollTop = EditEnhanceElement.scrollHeight; }
-    EditEnhanceElement.focus();
-    EditEnhanceElement.selectionEnd = end;
-  }
+  { scrollToSelection(); }
   
   // Ctrl+shift+D to duplicate a line
   else if (event.keyCode == 68 && (event.ctrlKey || event.metaKey) && event.shiftKey)
@@ -732,8 +746,8 @@ window.addEventListener('keydown', function()
     // Get the line text
     var lineStart = getLineStart(start);
     var lineEnd = getLineEnd(start);
-    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = lineEnd;
-    var lineText = EditEnhanceElement.form.text.value.slice(lineStart, lineEnd);
+    editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = lineEnd;
+    var lineText = editEnhanceElement.form.text.value.slice(lineStart, lineEnd);
     var lineTextLen = lineText.length;
     
     // Add a new line char if this is the last line
@@ -743,10 +757,10 @@ window.addEventListener('keydown', function()
     document.execCommand("insertText", false, lineText);
     
     // Position the cursor at the beginning of the duplicated line
-    EditEnhanceElement.blur();
-    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd =
-    EditEnhanceElement.selectionStart - lineTextLen;
-    EditEnhanceElement.focus();
+    editEnhanceElement.blur();
+    editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd =
+    editEnhanceElement.selectionStart - lineTextLen;
+    editEnhanceElement.focus();
   }
   
   // Ctrl+(shift)+enter to begin a new line below or above the current line
@@ -759,32 +773,32 @@ window.addEventListener('keydown', function()
       var lineStart = getLineStart(start);
       if (lineStart == 0)
       {
-        EditEnhanceElement.selectionStart =
-        EditEnhanceElement.selectionEnd = 0;
+        editEnhanceElement.selectionStart =
+        editEnhanceElement.selectionEnd = 0;
         document.execCommand("insertText", false, "\n");
-        EditEnhanceElement.selectionStart =
-        EditEnhanceElement.selectionEnd = 0;
+        editEnhanceElement.selectionStart =
+        editEnhanceElement.selectionEnd = 0;
       }
       else
       {
-        EditEnhanceElement.selectionStart =
-        EditEnhanceElement.selectionEnd = lineStart-1;
+        editEnhanceElement.selectionStart =
+        editEnhanceElement.selectionEnd = lineStart-1;
         document.execCommand("insertText", false, "\n");
       }
     }
     else
     {
       // Deal with the special case where the ending newline char is selected
-      if (start != end && EditEnhanceElement.form.text.value[end-1] == "\n")
+      if (start != end && editEnhanceElement.form.text.value[end-1] == "\n")
       { var lineEnd = end; }
       else { var lineEnd = getLineEnd(end); }
-      if (lineEnd == EditEnhanceElement.form.text.value.length) { lineEnd++; }
-      EditEnhanceElement.selectionStart =
-      EditEnhanceElement.selectionEnd = lineEnd-1;
+      if (lineEnd == editEnhanceElement.form.text.value.length) { lineEnd++; }
+      editEnhanceElement.selectionStart =
+      editEnhanceElement.selectionEnd = lineEnd-1;
       document.execCommand("insertText", false, "\n");
     }
-    EditEnhanceElement.blur();
-    EditEnhanceElement.focus();
+    editEnhanceElement.blur();
+    editEnhanceElement.focus();
   }
   
   // Ctrl ; to scroll to the next mis-spelled word
@@ -793,10 +807,10 @@ window.addEventListener('keydown', function()
     // A small delay is required to wait for the browser to perform the search
     setTimeout(function()
     {
-      EditEnhanceElement.blur();
-      EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = start;
-      EditEnhanceElement.focus();
-      EditEnhanceElement.selectionEnd = end;
+      editEnhanceElement.blur();
+      editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = start;
+      editEnhanceElement.focus();
+      editEnhanceElement.selectionEnd = end;
       
       updateOffset();
     }
@@ -815,7 +829,7 @@ window.addEventListener('keydown', function()
     // Work with BTT key mapping for selecting till line start or line end.
     // Update the selection direction here.
     if (event.metaKey && event.shiftKey)
-    { EditEnhanceElement.selectDirection = (event.keyCode - 37) >> 1; }
+    { editEnhanceElement.selectDirection = (event.keyCode - 37) >> 1; }
   }
   
   // Ctrl-o open line
@@ -823,7 +837,7 @@ window.addEventListener('keydown', function()
   {
     event.preventDefault();
     document.execCommand("insertText", false, "\n");
-    EditEnhanceElement.selectionStart = EditEnhanceElement.selectionEnd = start;
+    editEnhanceElement.selectionStart = editEnhanceElement.selectionEnd = start;
   }
   
   // Ctrl-d delete a char
@@ -836,8 +850,8 @@ window.addEventListener('keydown', function()
     
     else
     {
-      EditEnhanceElement.selectionStart = start;
-      EditEnhanceElement.selectionEnd = start+1;
+      editEnhanceElement.selectionStart = start;
+      editEnhanceElement.selectionEnd = start+1;
     }
     
     document.execCommand("insertText", false, "");
@@ -861,7 +875,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 1;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = start + 1;
           if (posOutwardSelect > end) { posOutwardSelect = end; }
@@ -871,7 +885,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = end + 1;
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -890,7 +904,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 1;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = getNextWordPos(start);
           if (posOutwardSelect > end) { posOutwardSelect = end; }
@@ -900,7 +914,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = posSimpleMove;
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -925,7 +939,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 0;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = end - 1;
           if (posOutwardSelect <= start) { posOutwardSelect = start; }
@@ -935,7 +949,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = start - 1;
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -954,7 +968,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 0;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect =  getLastWordPos(end);
           if (posOutwardSelect <= start) { posOutwardSelect = start; }
@@ -964,7 +978,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = posSimpleMove;
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -977,7 +991,7 @@ window.addEventListener('keydown', function()
   {
     event.preventDefault();
     var lineEnd = getLineEnd(end);
-    var lastCharPos = EditEnhanceElement.form.text.value.length;
+    var lastCharPos = editEnhanceElement.form.text.value.length;
     if (lineEnd == lastCharPos) { lineEnd++; }
     
     if (!event.shiftKey)
@@ -989,7 +1003,7 @@ window.addEventListener('keydown', function()
     {
       var direction = 1;
       
-      if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+      if (end != start && editEnhanceElement.selectDirection == (direction^1))
       {
         var posOutwardSelect = getLineEnd(start)-1;
         var posInwardSelect = null;
@@ -998,7 +1012,7 @@ window.addEventListener('keydown', function()
       {
         var posOutwardSelect = null;
         var posInwardSelect = lineEnd-1;
-        EditEnhanceElement.selectDirection = direction;
+        editEnhanceElement.selectDirection = direction;
       }
       
       makeSelection(posOutwardSelect, posInwardSelect);
@@ -1019,7 +1033,7 @@ window.addEventListener('keydown', function()
     {
       var direction = 0;
       
-      if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+      if (end != start && editEnhanceElement.selectDirection == (direction^1))
       {
         var posOutwardSelect = getLineStart(end);
         var posInwardSelect = null;
@@ -1028,7 +1042,7 @@ window.addEventListener('keydown', function()
       {
         var posOutwardSelect = null;
         var posInwardSelect = getLineStart(start);
-        EditEnhanceElement.selectDirection = direction;
+        editEnhanceElement.selectDirection = direction;
       }
       
       makeSelection(posOutwardSelect, posInwardSelect);
@@ -1050,7 +1064,7 @@ window.addEventListener('keydown', function()
         {
           posSimpleMove = getLineStart(posSimpleMove-1);
           end = getLineEnd(posSimpleMove);
-          if (posSimpleMove + EditEnhanceElement.offset < end) { posSimpleMove += EditEnhanceElement.offset; }
+          if (posSimpleMove + editEnhanceElement.offset < end) { posSimpleMove += editEnhanceElement.offset; }
           else { posSimpleMove = end-1; }
         }
         moveCaretAndFocus(posSimpleMove, false);
@@ -1059,7 +1073,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 0;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = getLineStart(end-1);
           if (posOutwardSelect <= start) { posOutwardSelect = start; }
@@ -1069,7 +1083,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = getLineStart(start-1);
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -1091,7 +1105,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 0;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = getLastParaStart(end);
           if (posOutwardSelect <= start) { posOutwardSelect = start; }
@@ -1101,7 +1115,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = posSimpleMove;
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -1119,18 +1133,18 @@ window.addEventListener('keydown', function()
       if (!event.shiftKey)
       {
         // Deal with the special case where the ending newline char is selected
-        if (start != end && EditEnhanceElement.form.text.value[end-1] == "\n")
+        if (start != end && editEnhanceElement.form.text.value[end-1] == "\n")
         { var posSimpleMove = end; }
         else
         {
           var posSimpleMove = getLineEnd(end);;
-          var lastCharPos = EditEnhanceElement.form.text.value.length;
+          var lastCharPos = editEnhanceElement.form.text.value.length;
           if (posSimpleMove == lastCharPos) { posSimpleMove = lastCharPos; }
-          else if (EditEnhanceElement.form.text.value[posSimpleMove] != "\n")
+          else if (editEnhanceElement.form.text.value[posSimpleMove] != "\n")
           {
             posSimpleMove++;
             end = getLineEnd(posSimpleMove)-1;
-            if (posSimpleMove + EditEnhanceElement.offset <= end) { posSimpleMove += EditEnhanceElement.offset-1; }
+            if (posSimpleMove + editEnhanceElement.offset <= end) { posSimpleMove += editEnhanceElement.offset-1; }
             else { posSimpleMove = end; }
           }
         }
@@ -1141,7 +1155,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 1;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = getLineEnd(start);
           if (posOutwardSelect > end) { posOutwardSelect = end; }
@@ -1151,7 +1165,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = getLineEnd(end);
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -1173,7 +1187,7 @@ window.addEventListener('keydown', function()
       {
         var direction = 1;
         
-        if (end != start && EditEnhanceElement.selectDirection == (direction^1))
+        if (end != start && editEnhanceElement.selectDirection == (direction^1))
         {
           var posOutwardSelect = getParaEnd(start);
           if (posOutwardSelect > end) { posOutwardSelect = end; }
@@ -1183,7 +1197,7 @@ window.addEventListener('keydown', function()
         {
           var posOutwardSelect = null;
           var posInwardSelect = getParaEnd(end+1);
-          EditEnhanceElement.selectDirection = direction;
+          editEnhanceElement.selectDirection = direction;
         }
         
         makeSelection(posOutwardSelect, posInwardSelect);
@@ -1200,21 +1214,21 @@ window.addEventListener('keydown', function()
     
     if (event.altKey)
     {
-      EditEnhanceElement.selectionStart = getLineStart(start);
-      EditEnhanceElement.selectionEnd = start;
+      editEnhanceElement.selectionStart = getLineStart(start);
+      editEnhanceElement.selectionEnd = start;
     }
     else if (event.ctrlKey)
     {
-      EditEnhanceElement.selectionStart = start;
+      editEnhanceElement.selectionStart = start;
       var lineEnd = getLineEnd(start);
-      if (lineEnd == EditEnhanceElement.form.text.value.length)
-      		 { EditEnhanceElement.selectionEnd = lineEnd; }
-      else { EditEnhanceElement.selectionEnd = lineEnd-1; }
+      if (lineEnd == editEnhanceElement.form.text.value.length)
+      		 { editEnhanceElement.selectionEnd = lineEnd; }
+      else { editEnhanceElement.selectionEnd = lineEnd-1; }
     }
     else
     {
-      EditEnhanceElement.selectionStart = getLineStart(start);
-      EditEnhanceElement.selectionEnd = getLineEnd(start);
+      editEnhanceElement.selectionStart = getLineStart(start);
+      editEnhanceElement.selectionEnd = getLineEnd(start);
     }
     document.execCommand("insertText", false, "");
   }
@@ -1222,10 +1236,18 @@ window.addEventListener('keydown', function()
 	// Tab inserts two white spaces
 	else if (event.keyCode == 9 && !(event.ctrlKey || event.metaKey || event.altKey))  
 	{
+		if (event.target != editEnhanceElement) { return; }
 	  event.preventDefault();
 	  document.execCommand("insertText", false, "  ");
 	}
 	
+	// Focus after undo/redo
+	else if (event.keyCode == 90 && (event.ctrlKey || event.metaKey))
+	{
+		if (document.activeElement === editEnhanceElement)
+		{ setTimeout(function()	{ scrollToSelection(); }, 25); }
+	}
+
 //   console.log(event.keyCode);
 }
 , false);

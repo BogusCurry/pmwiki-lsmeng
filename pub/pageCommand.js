@@ -32,7 +32,7 @@ pageCommand.mapSpecialEditLink = function(link)
     // Create a LS storing the wiki markup for editing today. E.g., "n* 11, Wed" for 11th
     // Wednesday. This is to work with scrollPositioner.js, which implements the mechanism
     // to scroll there when the edit page is opened.
-		if (scrollPositioner)
+		if (window.scrollPositioner)
 		{
 			var weekDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 		  scrollPositioner.setStorageByKey('EDIT-ScrollY', 'MAIN.'+year+mon, 'n* '+clock.getDate()+', '+weekDays[clock.getDay()]);
@@ -79,7 +79,7 @@ window.addEventListener('load', function()
   
   pageCommand.inputElementLen = document.getElementsByTagName("input").length;
   
-  pageCommand.hyperLinkElement = document.getElementsByTagName("a");
+  pageCommand.hyperLinkElement = document.links;
 	var hyperLinkElementLen = pageCommand.hyperLinkElement.length;
 	for (var i=0;i<hyperLinkElementLen;i++)
 	{
@@ -96,7 +96,7 @@ window.addEventListener('load', function()
 					link = pageCommand.mapSpecialEditLink(link);
 					var option = '_self';
 					if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
-					window.open(link, option);				  
+					window.open(link, option);
 				}
 			}
 		}, false);
@@ -125,7 +125,8 @@ window.addEventListener('keydown', function()
 	}
 	
 	// Ctrl+cmd+r to open all recent changes
-	else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && (event.metaKey||event.altKey))
+// 	else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && (event.metaKey||event.altKey))
+	else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && event.metaKey)
 	{
 		event.preventDefault();
 		var match = pageCommand.url.match(/\?.+/i);
@@ -270,24 +271,22 @@ window.addEventListener('keydown', function()
 			{
 				if (pageCommand.selectLink)
 				{
+					event.preventDefault();
 					var link = pageCommand.selectLink.href;
-
-					if (link.toLowerCase().indexOf('pmwiki.php') != -1)
+					
+					if (event.shiftKey)
 					{
-						event.preventDefault();
+						if (link.toLowerCase().indexOf('pmwiki.php') != -1)
+						{ link = pageCommand.getEditLink(link); }
 						
-						if (event.shiftKey)
-						{
-							link = pageCommand.getEditLink(link);
-							var option = '_self';
-							if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
-							window.open(link, option);
-						}
-						else
-						{
-							if (event.ctrlKey || event.metaKey)	{	window.open(link, '_blank'); }
-							else { pageCommand.selectLink.click(); }
-						}
+						var option = '_self';
+						if (event.ctrlKey || event.metaKey)	{	option = '_blank'; }
+						window.open(link, option);
+					}
+					else
+					{
+						if (event.ctrlKey || event.metaKey)	{	window.open(link, '_blank'); }
+						else { pageCommand.selectLink.click(); }
 					}
 				}
 			};

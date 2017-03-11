@@ -1,3 +1,17 @@
+/* 
+*
+* This program is free software; you can redistribute it
+* and/or modify it under the terms of the GNU General
+* Public License as published by the Free Software
+* Foundation; either version 3 of the License, or (at your
+* option) any later version. Available at
+* https://www.gnu.org/licenses/gpl.txt
+*
+* Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+* Version 20170402
+*/
+
+
 // Use AJAX to trigger the server to retrieve google calendar events, and then get the 
 // events as response.
 window.addEventListener('load', function()
@@ -118,105 +132,118 @@ window.addEventListener('load', function()
 				// A fix to work with Imgfocus...
 				if (GCImg.originalOpacity) { GCImg.originalOpacity = 1.0; }
 				
-				// Also a workaround for Imgfocus. If the overflow is set to hidden by Imgfocus
-				// while the event elements are being attached, the positions will be incorrect.
-				// Fix this by setting it to auto then revert it afterwards.
-				var originalScrollState = document.body.style.overflow;
-				if (originalScrollState == "hidden") { document.body.style.overflow = "auto"; }
-
-        // Attach the calendar events to the associated daily bullet elements
-  			for (var i=0;i<dayElementLen;i++)
-  			{  			  
-					dayElement[i].onmousemove = function(event)
-					{
- 						// Check if the click is right on the element not its children, and
-						// if the click is not too far to the right
-					  if (event.target != this || event.clientX > 250 ||
-					  (Math.abs(event.clientY-this.getBoundingClientRect().top) > 30))
-					  { this.style.cursor = "initial"; }
-					  else
-					  { this.style.cursor = "pointer"; }
-					}
-					dayElement[i].onclick = function(event)
-					{
-						if (event.target == this)
-						{
-							if (event.clientX > 250 || 
-							(Math.abs(event.clientY-this.getBoundingClientRect().top) > 30)) { return; }
-							
-							var date = window.location.href.match(/\?n=.+\.(\d{6})/)[1];
-							var year = date.slice(0,4);
-							var mon = date.slice(4);
-
-							// Create a new infodiv with contents "NEW EVENT"
-							var infoDiv = document.createElement('input');
-							infoDiv.value = "New event";
-							infoDiv.calendarType = "r";
-							infoDiv.dayElement = this;
-							infoDiv.day = this.day;
-							document.body.appendChild(infoDiv);
-							infoDiv.selectionStart = 0;
-							infoDiv.selectionEnd = infoDiv.value.length;
-							
-							// Insert the event element into the event list of this day bullet element
-  						if (!this.eventElementList) { this.nEvent = 0; this.eventElementList = []; }
-							this.nEvent++;
-							this.eventElementList.push(infoDiv);
-							
-							setupEventElement(infoDiv, year+mon);
-							
-							infoDiv.focus();
-						}
-					};
-  			  
-   			  // If calendar event exists for this day, create a div right next to the
-  			  // corresponding dayElement
-  			  if (eventByDay[dayElement[i].day])
-  			  {
-  			  	dayElement[i].nEvent = 0;
-  			  	dayElement[i].eventElementList = [];
-						for(var j=0;j<eventByDay[dayElement[i].day].length;j++)
-						{
-							var infoDiv = document.createElement('input');
-							infoDiv.dayElement = dayElement[i];
-							infoDiv.day = dayElement[i].day;
-							
-							// Parse the event array
-							var calendarEvent = JSON.parse(eventByDay[dayElement[i].day][j]);
-							infoDiv.eventID = calendarEvent["eventID"];
-							infoDiv.calendarID = calendarEvent["calendarID"];
-							infoDiv.calendarType = infoDiv.calendarID[0];
-							infoDiv.calendarID = infoDiv.calendarID.slice(1);
-							
-              // Handle the date time presentation
-              var timeRange = calendarEvent["timeRange"];
-							var startDate = timeRange.slice(0,10);
-							var startTime = timeRange.slice(11,16);
-							var endDate = timeRange.slice(26,36);
-							var endTime = timeRange.slice(37,42);
-							infoDiv.value = calendarEvent["eventSummary"];
-							if (startDate == endDate)
-							{ infoDiv.value += " "+startTime+"~"+endTime; }
-							// For cross-day events, list the complete end date/time
-							else if (endDate != "") 
-							{ infoDiv.value += " "+startTime+"~"+timeRange.slice(26,42); }
-							
-							dayElement[i].nEvent++;
-							dayElement[i].eventElementList.push(infoDiv);
-							
-							setupEventElement(infoDiv, startDate);
-						}
-  			  }
-  			}
-  			
-				if (originalScrollState == "hidden") { document.body.style.overflow = "hidden"; }
-  			  			
-  			// On window resize, fix the position of all calendar event elements
-				window.addEventListener('resize', function()
+				// The procedure for appending the calendar event elements to daily bullet
+				// elements. To work with the "imgfocus" recipe, the whole procedure is wrapped as
+				// a function.
+				var appendGCEventElement = function()
 				{
-					for (var i=0;i<31;i++) 
-					{ if (dayElement[i]) { fixGCElementPos(dayElement[i]); } }
-				}, false);
+					// Also a workaround for Imgfocus. If the overflow is set to hidden by Imgfocus
+					// while the event elements are being attached, the positions will be incorrect.
+					// Fix this by setting it to auto then revert it afterwards.
+					var originalScrollState = document.body.style.overflow;
+					if (originalScrollState == "hidden") { document.body.style.overflow = "auto"; }
+	
+					// Attach the calendar events to the associated daily bullet elements
+					for (var i=0;i<dayElementLen;i++)
+					{  			  
+						dayElement[i].onmousemove = function(event)
+						{
+							// Check if the click is right on the element not its children, and
+							// if the click is not too far to the right
+							if (event.target != this || event.clientX > 250 ||
+							(Math.abs(event.clientY-this.getBoundingClientRect().top) > 30))
+							{ this.style.cursor = "initial"; }
+							else
+							{ this.style.cursor = "pointer"; }
+						}
+						dayElement[i].onclick = function(event)
+						{
+							if (event.target == this)
+							{
+								if (event.clientX > 250 || 
+								(Math.abs(event.clientY-this.getBoundingClientRect().top) > 30)) { return; }
+								
+								var date = window.location.href.match(/\?n=.+\.(\d{6})/)[1];
+								var year = date.slice(0,4);
+								var mon = date.slice(4);
+	
+								// Create a new infodiv with contents "NEW EVENT"
+								var infoDiv = document.createElement('input');
+								infoDiv.value = "New event";
+								infoDiv.calendarType = "r";
+								infoDiv.dayElement = this;
+								infoDiv.day = this.day;
+								document.body.appendChild(infoDiv);
+								infoDiv.selectionStart = 0;
+								infoDiv.selectionEnd = infoDiv.value.length;
+								
+								// Insert the event element into the event list of this day bullet element
+								if (!this.eventElementList) { this.nEvent = 0; this.eventElementList = []; }
+								this.nEvent++;
+								this.eventElementList.push(infoDiv);
+								
+								setupEventElement(infoDiv, year+mon);
+								
+								infoDiv.focus();
+							}
+						};
+						
+						// If calendar event exists for this day, create a div right next to the
+						// corresponding dayElement
+						if (eventByDay[dayElement[i].day])
+						{
+							dayElement[i].nEvent = 0;
+							dayElement[i].eventElementList = [];
+							for(var j=0;j<eventByDay[dayElement[i].day].length;j++)
+							{
+								var infoDiv = document.createElement('input');
+								infoDiv.dayElement = dayElement[i];
+								infoDiv.day = dayElement[i].day;
+								
+								// Parse the event array
+								var calendarEvent = JSON.parse(eventByDay[dayElement[i].day][j]);
+								infoDiv.eventID = calendarEvent["eventID"];
+								infoDiv.calendarID = calendarEvent["calendarID"];
+								infoDiv.calendarType = infoDiv.calendarID[0];
+								infoDiv.calendarID = infoDiv.calendarID.slice(1);
+								
+								// Handle the date time presentation
+								var timeRange = calendarEvent["timeRange"];
+								var startDate = timeRange.slice(0,10);
+								var startTime = timeRange.slice(11,16);
+								var endDate = timeRange.slice(26,36);
+								var endTime = timeRange.slice(37,42);
+								infoDiv.value = calendarEvent["eventSummary"];
+								if (startDate == endDate)
+								{ infoDiv.value += " "+startTime+"~"+endTime; }
+								// For cross-day events, list the complete end date/time
+								else if (endDate != "") 
+								{ infoDiv.value += " "+startTime+"~"+timeRange.slice(26,42); }
+								
+								dayElement[i].nEvent++;
+								dayElement[i].eventElementList.push(infoDiv);
+								
+								setupEventElement(infoDiv, startDate);
+							}
+						}
+					}
+					
+					if (originalScrollState == "hidden") { document.body.style.overflow = "hidden"; }
+									
+					// On window resize, fix the position of all calendar event elements
+					window.addEventListener('resize', function()
+					{
+						for (var i=0;i<31;i++) 
+						{ if (dayElement[i]) { fixGCElementPos(dayElement[i]); } }
+					}, false);
+				};
+
+				// Working with the "imgfocus" recipe; if a popup image currently occupies the 
+				// screen, set the appending of the GC event list elements as a callback function
+				// to be called when the image is removed.
+				if (window.imgfocus && imgfocus.popupImgElement)
+				{ imgfocus.callback = appendGCEventElement; }
+				else { appendGCEventElement(); }
 			}
 		}
 	}
@@ -292,7 +319,6 @@ window.addEventListener('load', function()
 			{
 				if (this.readyState == 4 && this.status == 200)
 				{
-// 											console.log(this.response);
 					if (eventSummary == "") { removeEventElement(eventElement); }
 					else
 					{
@@ -369,7 +395,7 @@ window.addEventListener('load', function()
 		eventElement.style.borderRadius = '3px';
 		eventElement.style.border = '0';
 		eventElement.style.position = 'absolute';
-		eventElement.style.webkitFilter = 'drop-shadow(3px 3px 3px gray)';
+		eventElement.style.boxShadow = '3px 3px 9px gray';
 
 		// Input element by default does not fit its width to its content; this is
 		// solved by creating an identical div element and measure its width								
