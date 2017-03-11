@@ -333,7 +333,7 @@ SDVA($InputTags['e_form'], array(
 // Meng. Remove the onkeydown for esc button. Its purpose is unclear. 
 // Meng. Add a default font to serve as a crazy fix for Chrome's font problem.
 SDVA($InputTags['e_textarea'], array(
-  ':html' => "<textarea style='height:1234px; font-family:Heiti TC;' \$InputFormArgs >\$EditText</textarea>",
+  ':html' => "<textarea style='height:1234px; font-family:;' \$InputFormArgs >\$EditText</textarea>",
   'name' => 'text', 'id' => 'text', 'accesskey' => XL('ak_textedit'),
   'rows' => XL('e_rows'), 'cols' => XL('e_cols')));
 /*

@@ -274,13 +274,11 @@ if ($action == 'edit' || $action == 'browse')
   if (substr($pagename,0,4) != 'LOCK')
   {
     $isDiaryPage = isDiaryPage();
-    $OS = getOS();
 		// Memorize and set the scroll position.
 		$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/scrollPositioner.js'></script>
 		<script type='text/javascript'>
 			scrollPositioner.pagename = '$pagename';
-			scrollPositioner.isDiaryPage = '$isDiaryPage';		
-			scrollPositioner.OS = '$OS';
+			scrollPositioner.isDiaryPage = '$isDiaryPage';
 			scrollPositioner.action = '$action';
 		</script>";
 	}
@@ -305,14 +303,13 @@ if ($action == 'browse' || $_REQUEST['preview'])
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, and prevent the memory from being paged.
-if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
+// if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 
 // Rich edit commands
 if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
 {	
   $HTMLHeaderFmt['editEnhance'] = "
-  <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>
-	<script type='text/javascript'> EditEnhanceOS = '$OS'; </script>";
+  <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>";
 }
 
 // Rich universal page commands
@@ -354,6 +351,17 @@ if ($action =='browse' && isDiaryPage() == 2)
   $HTMLHeaderFmt['googleCalendar'] = "<script>window.GCImgUrl = '$GCImgUrl';</script>
   <script src='$PubDirUrl/googleCalendar.js'></script>";
 }
+
+
+/*
+// Enhanced search & replace
+$searchBoxImgUrl = "$PubDirUrl/searchReplace/searchBoxImg.png";
+$HTMLHeaderFmt['searchReplace'] = "
+<script src='$PubDirUrl/searchReplace/mark.js'></script>
+<script src='$PubDirUrl/searchReplace/searchReplace.js'></script>
+<script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
+*/
+
 
 /*
 // For debugging

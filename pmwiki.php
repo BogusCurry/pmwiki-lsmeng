@@ -2478,8 +2478,8 @@ if ($pos !== false)
 	$FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
 
 // Another crazy fix for Chrome's font problem.
-if (strcasecmp($pagename,'main.vocabulary2') != 0) 
-{ $FmtV['$EditForm'] = str_replace('font-family:Heiti TC;', '', $FmtV['$EditForm']); }
+if (strcasecmp($pagename,'main.vocabulary2') == 0) 
+{ $FmtV['$EditForm'] = str_replace('font-family:', 'font-family:Heiti TC', $FmtV['$EditForm']); }
 
 /****************************************************************************************/
 

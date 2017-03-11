@@ -11,8 +11,8 @@
  * option) any later version. Available at
  * https://www.gnu.org/licenses/gpl.txt
  *
- * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161004
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170401
  */
  
 // Show an animation of a predetermined image to signify the result of file upload. 
@@ -94,8 +94,10 @@ window.addEventListener('load', function ()
 	uploadImgDiv.style.display = 'none';
 	uploadImgDiv.style.left = Math.round(window.innerWidth/5) + 'px';
 	document.body.appendChild(uploadImgDiv);
-
-  document.getElementById('text').onpaste = function(e)
+	
+	var textElement = document.getElementById('text');
+  if (!textElement) { return; }
+  textElement.onpaste = function(e)
 	{
 		var items = e.clipboardData.items;
 
@@ -177,7 +179,7 @@ function PasteImgUploadSlideUpElement(element, startPx, endPx, duration)
 	try { clearInterval(fadeTimerID); }
 	catch(errorMsg2) {}
 	
-  var stepDuration = 20;
+  var stepDuration = 25;
 	element.style.display = 'initial';
 	var position = startPx;
 	var diff = endPx-startPx;
@@ -202,7 +204,7 @@ function PasteImgUploadSlideUpElement(element, startPx, endPx, duration)
 // "duration".
 function PasteImgUploadFadeElement(element, style, duration)
 {
-  var stepDuration = 20;
+  var stepDuration = 25;
 	var op = 0;
 	if (style == 'out') { op = 1; }
 	element.style.opacity = op;
