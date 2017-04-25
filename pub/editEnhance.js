@@ -232,7 +232,7 @@ window.addEventListener('click', function() { updateInfoDiv(); }, false);
 // When the meta key is down, other key presses can only be detected by key up on Windows.
 window.addEventListener('keyup', function()
 {
-  if (!EditEnhanceOS) { return; }
+  if (!window.EditEnhanceOS) { return; }
   
   updateInfoDiv();
   
@@ -762,7 +762,8 @@ window.addEventListener('keydown', function()
     editEnhanceElement.selectionStart - lineTextLen;
     editEnhanceElement.focus();
   }
-  
+
+/*  
   // Ctrl+(shift)+enter to begin a new line below or above the current line
   else if (event.keyCode == 13 && (event.ctrlKey || event.metaKey))
   {
@@ -797,9 +798,10 @@ window.addEventListener('keydown', function()
       editEnhanceElement.selectionEnd = lineEnd-1;
       document.execCommand("insertText", false, "\n");
     }
-    editEnhanceElement.blur();
-    editEnhanceElement.focus();
+		editEnhanceElement.blur();
+		editEnhanceElement.focus();
   }
+*/
   
   // Ctrl ; to scroll to the next mis-spelled word
   else if (event.keyCode == 186 && (event.ctrlKey || event.metaKey))

@@ -362,6 +362,16 @@ $HTMLHeaderFmt['searchReplace'] = "
 <script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
 */
 
+/*
+// Plugin for Merriam-Webster API
+// if ($action =='browse')
+{
+	$merriamApiKey = file_get_contents("$PubDirUrl/merriamWebster/apiKey");
+  $HTMLHeaderFmt['merrianWebster'] = "
+  <script> var merriamWebster = {}; merriamWebster.apiKey = '$merriamApiKey'; </script>
+  <script src='$PubDirUrl/merriamWebster/merriamWebster.js'></script>";
+}
+*/
 
 /*
 // For debugging
