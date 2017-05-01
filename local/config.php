@@ -483,5 +483,7 @@ $ROSPatterns ['/“/'] = "\"";
 $ROSPatterns ['/”/'] = "\"";
 $ROSPatterns ['/	/'] = " ";
 $ROSPatterns ["/ *\n/"] = "\n";
-
+$ROSPatterns ["//"] = "";
+$ROSPatterns ["//"] = "";
+$ROSPatterns ["//"] = "";
 

@@ -2774,7 +2774,7 @@ function IsAuthorized($chal, $source, &$from)
 			$nPwAttempt = sizeof($AuthPw);
       if ($nPwAttempt >= $pwRetryLimit)
       {
-				sendAlertEmail("Pmwiki ".$nPwAttempt." Failed Passwords", "Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
+// 				sendAlertEmail("Pmwiki ".$nPwAttempt." Failed Passwords", "Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
 				Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
       }
     }
