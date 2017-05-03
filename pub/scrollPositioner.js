@@ -37,6 +37,8 @@ var scrollPositioner = scrollPositioner || (function()
 	var _imgfocus = window.imgfocus;
 
 	// Private properties
+	var _isInit = false;
+	var _initCallback;
   var _isBrowsing = false;
   var _nWaitForLatex = 0;
   var _OS = "";
@@ -472,6 +474,19 @@ var scrollPositioner = scrollPositioner || (function()
 		}
 	}
 
+	// Return true if init() has been executed; false otherwise
+// 	function isInitDone()	{ return _isInit;	}
+	
+	function subscribe(event, callback)
+	{
+	  if (event === "init")
+	  {
+	  	if (_isInit) { callback(); } // If init done, invoke it now
+	  	else { _initCallback = callback; } // Else register it for later invocation
+	  }
+	  else { throw "Unexpected event: " + event; }
+	}
+
   function init()
   {
   	// Determine the _OS
@@ -621,6 +636,9 @@ var scrollPositioner = scrollPositioner || (function()
       
       window.addEventListener('resize', fixTextareaHeight);
     }
+    
+    _isInit = true;
+		if (_initCallback) { _initCallback(); }
   }
   
  	// Reveal public API	
@@ -634,6 +652,7 @@ var scrollPositioner = scrollPositioner || (function()
 		
     // Methods
 	  init: init,
+	  subscribe: subscribe,
 		setScrollAndCaretPosCookie: setScrollAndCaretPosCookie,
 	  highlightScroll: highlightScroll,
 	  setStorageByKey: setStorageByKey

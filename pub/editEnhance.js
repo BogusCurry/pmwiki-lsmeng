@@ -218,28 +218,29 @@ window.addEventListener('load',function()
   updateInfoDiv();
   
   
+/*
   // On textInput, replace some frequently used full-width characters
 	// Comma, dot is too tricky to deal with as an extra space has to be inserted after
 	// replacement.
 	editEnhanceElement.addEventListener('textInput', function()
 	{
 		var inputText = event.data;
-		
+
 		if (inputText.indexOf('＊') != -1)
 		{ inputText = inputText.replace(/\uff0a/g,'*'); }
-		
-		if (inputText.indexOf('＃') != -1)
-		{ inputText = inputText.replace(/\uFF03/g,'#'); }
-	
-		if (inputText.indexOf('＼') != -1)
-		{ inputText = inputText.replace(/\uFF3C/g,'\\'); }
+
+		else if (inputText.indexOf('＃') != -1)
+		{ console.log('ht');inputText = inputText.replace(/\uFF03/g,'#'); }
+
+		else if (inputText.indexOf('＼') != -1)
+		{ console.log("here");inputText = inputText.replace(/\uFF3C/g,'\\'); }
 		
 		if (inputText.indexOf('、') != -1)
 		{ inputText = inputText.replace(/\u3001/g,'\''); }
 	
 		if (inputText.indexOf('	') != -1)
 		{ inputText = inputText.replace(/	/g,' '); }
-	
+
 		if (inputText.indexOf('；；') != -1)
 		{
 			inputText = inputText.replace('；；','""');
@@ -247,13 +248,14 @@ window.addEventListener('load',function()
 			{ editEnhanceElement.selectionStart =
 				editEnhanceElement.selectionEnd = (editEnhanceElement.selectionStart - 1); }, 0);
 		}
-		
+
 		if (inputText != event.data)
 		{
 			document.execCommand("insertText", false, inputText);
 			event.preventDefault();
 		}
 	});
+*/
 });
 
 // Update the char offset and line number in the information div
@@ -1242,7 +1244,7 @@ window.addEventListener('keydown', function()
 	  event.preventDefault();
 	  document.execCommand("insertText", false, "  ");
 	}
-	
+
 	// Focus after undo/redo
 	else if (event.keyCode == 90 && (event.ctrlKey || event.metaKey))
 	{
