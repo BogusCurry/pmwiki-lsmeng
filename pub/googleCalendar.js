@@ -54,15 +54,16 @@ window.addEventListener('load', function()
 
 	// Create an image element for signaling the status of GC
 	var GCImg = document.createElement('img');
-	GCImg.style.position = "fixed";
-	GCImg.style.top = "0px";
-	GCImg.style.right = "80px";
-	GCImg.style.width = "30px";
-	GCImg.style.height = "auto";
-	GCImg.style.zIndex = 2;
-	GCImg.style.webkitFilter = 'drop-shadow(3px 3px 3px gray)';
-	GCImg.style.opacity = 0.3;
-	GCImg.style.cursor = "pointer";
+	var style = GCImg.style;
+	style.position = "fixed";
+	style.top = "0px";
+	style.right = "80px";
+	style.width = "30px";
+	style.height = "auto";
+	style.zIndex = 2;
+	style.webkitFilter = 'drop-shadow(3px 3px 3px gray)';
+	style.opacity = 0.3;
+	style.cursor = "pointer";
 	GCImg.onclick = function(){ window.open("https://calendar.google.com/calendar/", '_blank'); }
   GCImg.src = GCImgUrl;
 	GCImg.onload = function() { document.body.appendChild(this); }
@@ -127,7 +128,7 @@ window.addEventListener('load', function()
 				
 				console.log('Calendar ready');
 				        
-				GCImg.style.opacity = 1.0;
+				style.opacity = 1.0;
 				
 				// A fix to work with Imgfocus...
 				if (GCImg.originalOpacity) { GCImg.originalOpacity = 1.0; }
