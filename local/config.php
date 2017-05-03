@@ -459,6 +459,7 @@ $ROSPatterns ['/，/'] = ", "; // \uFF0C
 $ROSPatterns ['/。/'] = ". "; // \u3002
 $ROSPatterns ['/：/'] = ": ";
 $ROSPatterns ['/；/'] = "; ";
+$ROSPatterns ['/、/'] = "'";
 $ROSPatterns ['/％/'] = "%";
 $ROSPatterns ['/＄/'] = "$";
 $ROSPatterns ['/＆/'] = "&";
