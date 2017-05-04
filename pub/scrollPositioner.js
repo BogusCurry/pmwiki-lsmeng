@@ -25,8 +25,8 @@
 * Cookies have been replaced with local storages except textAreaWidth, which has to be
 * sent to the server side.
 *
-* Author: Ling-San Meng
-* Email: f95942117@gmail.com
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170507
 */
 
 "use strict";
@@ -64,7 +64,6 @@ var scrollPositioner = scrollPositioner || (function()
     else
     {
       var content = JSON.parse(localStorage.getItem(name));
-
       if (content == null) { content = new Object(); }
       if (value == null) { delete content[key]; }
       else { content[key] = value; }
@@ -474,13 +473,16 @@ var scrollPositioner = scrollPositioner || (function()
 		}
 	}
 
-	// Return true if init() has been executed; false otherwise
-// 	function isInitDone()	{ return _isInit;	}
-	
+	// Currently only init event is open for registering, and only one callback
+	// is supported. This is exclusively written for searchReplace.js
+	// Can be expanded in the future.
 	function subscribe(event, callback)
 	{
 	  if (event === "init")
 	  {
+	  	if (typeof callback !== "function")
+	  	{ throw "Unexpected param: " + callback; return; }
+	  	
 	  	if (_isInit) { callback(); } // If init done, invoke it now
 	  	else { _initCallback = callback; } // Else register it for later invocation
 	  }

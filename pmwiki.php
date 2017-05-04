@@ -1229,7 +1229,10 @@ class PageStore {
       renameWait("wiki.d/$pagename,new", "wiki.d/deleteMe"); 
       unlink("wiki.d/deleteMe");
     }
-    
+
+		global $localLastModFile;
+		file_put_contents($localLastModFile, "");
+
     PCache($pagename, $page);
   }
   function exists($pagename) {
@@ -1302,7 +1305,6 @@ function ReadPage($pagename, $since=0) {
   }
   if (@!$page) $page['ctime'] = $Now;
   if (@!$page['time']) $page['time'] = $Now;
-
   return $page;
 }
 
@@ -1983,11 +1985,9 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 
 // echo testDeleteGC();
 
-		// Update the pageindex if the pageindex does not reflect the newest changes in this 
-		// page based on some timestamps. The field and hence the page itself will also be
-		// updated. This has to go before "redirecting to the editing page for non-existent 
-		// pages", for a newly constructed page's 1st edit to correctly get a pageindex update
-    updatePageindexOnBrowse($pagename,$page);
+
+		// Meng. Handle the pageindex process on browsing
+		handlePageindex($pagename);
 
 		// If page doesn't exist, open the editing page
     if (PageExists($pagename) != 1) { Redirect($pagename."?action=edit"); }
@@ -2118,6 +2118,10 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL) {
     }
   }
   StopWatch("UpdatePage: end $pagename");
+  
+  // Meng. Handle the pageindex process on editing
+  handlePageindex($pagename);
+  
   return $IsPagePosted;
 }
 
@@ -2278,17 +2282,6 @@ function PostPage($pagename, &$page, &$new)
         $new['lastVerTime'] = $lastVersionTime;
         $new['LastVerText'] = $lastVersionText;
       }
-
-      // Update Pageindex.
-      global $pageIndexUpdateInterval;
-      $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
-      if ($Now-$lastPageindexUpdateTime > $pageIndexUpdateInterval || !isset($lastPageindexUpdateTime))
-      {
-        $new['lastPageindexUpdateTime'] = $Now;
-              
-        // Go to a special link address to perform pageindex update in a non-blocking way.
-				post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
-      }
     }
 
 /****************************************************************************************/
@@ -2301,6 +2294,10 @@ function PostPage($pagename, &$page, &$new)
       {
         // Delete its backup
 //         preservePageBackup($pagename, null);
+				
+				// Delete its pageindex update time record
+				global $pageindexTimeDir;
+				@unlink("$pageindexTimeDir/$pagename");
 				
         // Meng. The original delete() doesn't seem to work. 
         global $WorkDir;
@@ -2397,6 +2394,7 @@ function HandleEdit($pagename, $auth = 'edit') {
     str_replace('$','&#036;',PHSC(@$new['text'],ENT_NOQUOTES));
 
 /****************************************************************************************/
+
   // Meng. The fix for the mysteriously removed newline at the beginning.    
 	if( $FmtV['$EditText'][0] == "\n") { $FmtV['$EditText'] = "\n".$FmtV['$EditText']; }
 

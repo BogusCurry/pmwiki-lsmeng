@@ -1462,12 +1462,21 @@ function decryptStr($text, $key = "")
   return $decryptText;
 }
 
-/****************************************************************************************/
+/********************************PAGEINDEX RELATED***************************************/
+
+// Reset pageindex file & folder.
+$FmtPV['$resetPageindex'] = 'resetPageindex()';
+function resetPageindex()
+{
+  global $pageindexTimeDir;
+	exec('rm -rf '.$pageindexTimeDir);
+	
+	initPageindex();
+}
 
 // Reconstruct pageindex by first deleting the current file and then performing an empty
 // search.
-$FmtPV['$reconstructPageindex'] = 'reconstructPageindex()';
-function reconstructPageindex()
+function rebuildPageindexFile()
 {
   global $PageIndexFile;
   if (file_exists($PageIndexFile)) { unlink($PageIndexFile); }
@@ -1476,68 +1485,133 @@ function reconstructPageindex()
   MakePageList("Main.Homepage", $opt, 0, 1);
 }
 
-// Check the last time the page is modified, and the last time pageindex is updated for 
-// this page. If after the page was last modified, the pageindex hasn't been updated for
-// it, a special link will be visited in an async way which triggera a pageindex update
-// in the background. The page's corresponding field is also updated in the background.
-function updatePageindexOnBrowse($pagename, $page)
+function getPageindexUpdateTime($pagename)
 {
-  // If this is an async request for updating pageindex in the background
+ 	global $pageindexTimeDir;
+ 	$pagefile = "$pageindexTimeDir/$pagename";
+ 	if (file_exists($pagefile))	{	return filemtime($pagefile); }
+	else { return 0;	} 
+}
+
+function setPageindexUpdateTime($pagename)
+{
+	global $pageindexTimeDir;
+	file_put_contents("$pageindexTimeDir/$pagename", "");
+}
+
+// Reconstruct the whole pageindex stuff including the pagindex itself in case
+// the local pageindex time stamp folder is missing
+function initPageindex()
+{
+	global $pageindexTimeDir;
+	if (!file_exists($pageindexTimeDir))
+	{
+		mkdir($pageindexTimeDir, 0770);
+		global $localLastModFile, $pageindexSyncFile;
+		file_put_contents($localLastModFile, "");
+		file_put_contents($pageindexSyncFile, "");;
+// DEBUG
+file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Init\n", FILE_APPEND);
+		rebuildPageindexFile();
+		return true;
+	}
+	else { return false; }
+}
+
+// The main pageindex sync routine; it periodically checks whether there is any 
+// page whose pagesindex is not up to date. It can also identify which pages are
+// modified "not locally", i.e., modified by another computer. In this case the
+// pageindex are updated immediately.
+function syncPageindex()
+{
+	global $Now, $pageindexSyncInterval, $localLastModFile,
+	$pageindexSyncFile, $WorkDir;
+	
+	// Since the local and cloud lastmod time are updated at the same time in normal cases,
+	// a diff > 10 sec means that the cloud has been modified by someone else. Sync
+	// the pageindex in this case. Otherwise, perform sync periodically.
+	$localLastModTime = filemtime($localLastModFile);
+	$cloudLastModTime = filemtime($WorkDir);
+	$lastSyncTime = filemtime($pageindexSyncFile);
+	if (($cloudLastModTime - $localLastModTime > 10) || ($Now - $lastSyncTime >= $pageindexSyncInterval))
+	{
+	  
+// DEBUG
+global $pageindexTimeDir;
+if ($cloudLastModTime - $localLastModTime > 10)
+{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND); }
+else
+{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex\n", FILE_APPEND); }
+
+		$ignored = array('.', '..', '.htaccess');
+		foreach (scandir($WorkDir) as $pagename)
+		{
+			// Ignore not wiki-related pages
+			if (in_array($pagename, $ignored)) { continue; }
+			$pagemtime = filemtime("$WorkDir/$pagename");
+			
+			// page is not modified since last sync
+			if ($pagemtime <= $lastSyncTime) { continue; }
+			
+			// its pageindex is up to date
+			if ($pagemtime <= getPageindexUpdateTime($pagename)) { continue; } 
+
+			// Skip recentchanges pages
+			if (strcasecmp(substr($pagename, -13), "recentchanges") === 0) { continue; }
+			
+// DEBUG
+file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Fixing ".$pagename."...\n", FILE_APPEND);
+
+			// Finally update its pageindex
+// 			Meng_PageIndexUpdate($pagename); 
+			post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
+		}
+		
+		file_put_contents($pageindexSyncFile, "");
+		file_put_contents($localLastModFile, "");
+	}
+}
+
+// Detects async request for updating pageindex in the background
+function updatePageindex($pagename)
+{
   if ($_GET["updatePageIndex"])
   {
-    // Free riding the PostRecentChanges functionality here. It appears that the 2nd and
-    // 3rd input parameters are not used at all in PostRecentChanges().
-    PostRecentChanges($pagename, NULL, NULL);
-    
-    Meng_PageIndexUpdate($pagename);
-    
-    $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
-    $pageLastModTime = $page['time'];
-    if (isset($lastPageindexUpdateTime) && $pageLastModTime > $lastPageindexUpdateTime)
-    {
-      global $WorkDir;
-      $file = "$WorkDir/$pagename";
-      
-      // Get the full page file content
-      $pageContent = fileGetContentsWait($file);
-      $pageContent = decryptStr($pageContent);
-      if ($pageContent === -1) { exit; }
-      
-      // This field should exist according to the parent if else condition.
-      $pos = strpos($pageContent,$lastPageindexUpdateTime);
-      if ($pos === false) { exit; }
-      else { $pageContent = substr_replace($pageContent, $pageLastModTime, $pos, strlen($lastPageindexUpdateTime)); }
-      
-      global $EnableEncryption;
-      if ($EnableEncryption == 1) { $pageContent = encryptStr($pageContent); }
-      
-      filePutContentsWait("wiki.d/$pagename", $pageContent);
-      
-      copyWait("wiki.d/$pagename", "$WorkDir/$pagename");
-      unlink("wiki.d/$pagename");
-    }
-    
+		global $WorkDir;
+		$pagemtime = filemtime("$WorkDir/$pagename");
+
+		// Double check if the page is indeed modified after the last pageindex update
+		if ($pagemtime > getPageindexUpdateTime($pagename))
+		{
+// DEBUG
+global $pageindexTimeDir;
+file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." updated\n", FILE_APPEND);
+
+			// Meng. Record the pageindex update time for this page
+   	  setPageindexUpdateTime($pagename);
+
+			// Free riding the PostRecentChanges functionality here. It appears that the 2nd and
+			// 3rd input parameters are not used at all in PostRecentChanges().
+			PostRecentChanges($pagename, NULL, NULL);
+
+			Meng_PageIndexUpdate($pagename);
+		}
+
+else { file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND); }
+
     exit;
   }
-  
-  /******************************************/
-  
-  global $Now;
-  $pageLastModTime = $page['time'];
-  $lastPageindexUpdateTime = $page['lastPageindexUpdateTime'];
-  
-  // See if the time attribute has been set. If not, then this page is most likely invalid.
-  if (isset($pageLastModTime) && noEncryptPage($pagename) == 0)
-  {
-    // See if the "lastPageindexUpdateTime" has been set. If not, then this page is from
-    // previous releases. Update the pageindex depending on its last modified time.
-    // On 2nd thought, normally lastPageindexUpdateTime should be set already when viewed
-    if (isset($lastPageindexUpdateTime) && $pageLastModTime > $lastPageindexUpdateTime)
-    {
-      // Go to a special link address to perform pageindex update in a non-block way.
-      post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
-    }
-  }
+}
+
+// The pageindex handling procedures as a wrapped function.
+function handlePageindex($pagename)
+{	
+	if (initPageindex()) {}
+	else
+	{
+	  updatePageindex($pagename);
+	  syncPageindex();
+	}
 }
 
 /****************************************************************************************/
@@ -1888,9 +1962,6 @@ function updatePageHistory()
     global $pagename;
     if (strripos($URI,'?action=diff&updateHistoryNow') !== false)
     {
-      // Also update the pageindex.
-      Meng_PageIndexUpdate($pagename);
-      
       // get auth page => page and new
       $page = RetrieveAuthPage($pagename, 'edit');
       if (!$page) Abort("Error in updatePageHistory()!");
