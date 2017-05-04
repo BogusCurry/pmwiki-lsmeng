@@ -12,7 +12,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170127
+ * Version 20170507
  */
 
 var pageTimer = 
@@ -51,9 +51,12 @@ var pageTimer =
 	    var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
       localStorage.setItem('StandbyLogout', msg);
       
+      pageindexUpdater.requestPageindexUpdate();
+      
       window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action;
 	    return;
 		}
+/*
 		// For debugging purpose
 		else if (timeDiff > 5)
 		{
@@ -65,6 +68,7 @@ var pageTimer =
 		  var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
 		  console.log(msg);
 		}
+*/
 
 		pageTimer.lastDiff = diff;
 		
@@ -114,8 +118,44 @@ var pageTimer =
   }
 };
 
-window.addEventListener('load', pageTimer.init, false);
-//window.addEventListener('focus', pageTimer.updateClock, false);
-// window.addEventListener('input', pageTimer.resetTimer, false);
-window.addEventListener('keydown', pageTimer.resetTimer, false);
-window.addEventListener('scroll', pageTimer.resetTimer, false);
+window.addEventListener('load', pageTimer.init);
+//window.addEventListener('focus', pageTimer.updateClock);
+// window.addEventListener('input', pageTimer.resetTimer);
+
+// If the module Autosave is included, this is editing
+if (window.AS)
+{
+	AS.subscribe("saved", (function()
+	{
+		// If the module pageindexUpdater is included, set a timer for requesting 
+		// pageindex update on saved event
+		if (!window.pageindexUpdater)
+		{ return function () { pageTimer.resetTimer(); } }
+		else
+		{
+			var timerID;
+			
+			return function()
+			{
+				// On saving, update the shutdown timer as the server keeps its timer depending on 
+				// the saving activity. The timer value shown is then in line with the server's one
+				pageTimer.resetTimer();
+		
+				// Right before the server restricts page access (logout timer is set to be the same
+				// as the counter timer), perform a pageindex update			
+				if (timerID) { clearTimeout(timerID); }
+				timerID = setTimeout(function()
+				{
+					pageindexUpdater.requestPageindexUpdate();
+				}, (pageTimer.TIMER_EXP_DURATION - 3)*1000);
+			};
+		}
+	})());  
+}
+// Else this is browsing. Update the shutdown timer on any user activity
+else
+{
+	window.addEventListener('click', pageTimer.resetTimer);
+	window.addEventListener('keydown', pageTimer.resetTimer);
+	window.addEventListener('scroll', pageTimer.resetTimer);  
+}

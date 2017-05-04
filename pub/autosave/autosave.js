@@ -9,8 +9,8 @@
  * Closing the page at any time with unsaved changes triggers a synchronous saving
  * (blocking saving). This can cause a bit unresponsiveness.
  *
- * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20161217
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170507
  */
 
 var AS = 
@@ -42,8 +42,10 @@ var AS =
 	busy: false,
 	ef: null, txt: null, //lbl: null, 
 	req: null, id: null,
-  
+
   basetime: 0,
+  
+  savedEventCallback: [], // queue for callback functions on saved event
 
   // Set a local storage item "name" with key/value pair "key" and "value".
   // If "key" is null then the item is treated as a simple variable; otherwise it is an 
@@ -119,6 +121,11 @@ var AS =
 					catch(e) {}
 				}
 
+				// Saved event is open for registering callback
+				// Process them here
+				if (AS.savedEventCallback.length)
+				{ AS.savedEventCallback.forEach(function(fn) { fn(); }); }
+				
         break;
 			        
 			case "Autosaving":
@@ -374,6 +381,20 @@ var AS =
 	
 		localStorage.setItem('AutosaveSymTop', top);
 		localStorage.setItem('AutosaveSymLeft', left);
+	},
+	
+	// Provide a subscribe method for registering callback on certain events.
+	// Currently only saved event is supported.
+  subscribe(event, callback)
+	{
+		if (event === "saved")
+	  {
+			if (typeof callback !== "function")
+			{ throw "Unexpected param: " + callback; return; }
+			
+			AS.savedEventCallback.push(callback);
+	  }
+	  else { throw "Unexpected event: " + event; }
 	},
   
 	init: function()

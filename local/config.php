@@ -232,10 +232,6 @@ $pageHistoryUpdateInterval = 3600;
 $EnableEncryption = 1;
 $OPENSSL_METHOD = "AES-256-CBC";
 
-// The time period for updating the pageindex file, and the recentChanges pages when 
-// editing. Uncaptured changes will be updated upon the 1st time the page is viewed. 
-$pageIndexUpdateInterval = 300;
-
 require_once("$FarmD/cookbook/plugin_LSMENG.php"); 
 
 // Max allowable upload size in bytes. Currently set to 100 MB.
@@ -268,6 +264,18 @@ $autoSaveDelayHttps = 1000;
 // $autoSaveOffDay days
 $autoSaveOffDay = 30;
 include_once("$FarmD/cookbook/autosave.php");
+
+$pageindexTimeDir = "wiki.d/pageindex";
+$localLastModFile = "$pageindexTimeDir/.localLastmod";
+$pageindexSyncFile = "$pageindexTimeDir/.lastsync";
+$pageindexSyncInterval = 3600; // The interval for checking all the pages to keep their pageindex up to date.
+// A script to trigger pageindex update request on page saving.
+// This has to go after Autosave.
+if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
+{
+	$HTMLHeaderFmt["pageindexUpdate"] = 
+	"<script type='text/javascript' src='$PubDirUrl/pageindexUpdate.js'></script>";
+}
 
 if ($action == 'edit' || $action == 'browse')
 {
@@ -375,7 +383,7 @@ $HTMLHeaderFmt['searchReplace'] = "
 
 /*
 // For debugging
-//file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
+file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
 file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent);
 */
 
