@@ -2040,6 +2040,13 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 		}
 
 		else if (strcasecmp($pagename,"Main.Map") == 0) {}
+		
+// DEBUG pageindex
+		else if (strcasecmp($pagename,"Main.PageindexLog") == 0)
+		{
+			global $pageindexTimeDir;
+			$text = "[@".file_get_contents("$pageindexTimeDir/log.txt")."@]";
+		}
 
 		// All other pages, including diary pages.
 		else

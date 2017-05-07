@@ -311,7 +311,7 @@ if ($action == 'browse' || $_REQUEST['preview'])
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, and prevent the memory from being paged.
-// if ($OS == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
+if (getOS() == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
 
 // Rich edit commands
 if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
