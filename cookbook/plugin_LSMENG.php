@@ -1541,15 +1541,15 @@ function syncPageindex()
 	$lastSyncTime = filemtime($pageindexSyncFile);
 	if (($cloudLastModTime - $localLastModTime > 10) || ($Now - $lastSyncTime >= $pageindexSyncInterval))
 	{
-	  
 // DEBUG
-global $pageindexTimeDir;
-if ($cloudLastModTime - $localLastModTime > 10)
-{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND); }
-else
-{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex\n", FILE_APPEND); }
+		global $pageindexTimeDir;
+		if ($cloudLastModTime - $localLastModTime > 10)
+		{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND); }
+		else
+		{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex\n", FILE_APPEND); }
 
-		$ignored = array('.', '..', '.htaccess');
+		$ignored = array('.', '..', '.htaccess', '.lastmod');
+		$pagelist = array();
 		foreach (scandir($WorkDir) as $pagename)
 		{
 			// Ignore not wiki-related pages
@@ -1565,57 +1565,83 @@ else
 			// Skip recentchanges pages
 			if (strcasecmp(substr($pagename, -13), "recentchanges") === 0) { continue; }
 			
-// DEBUG
-file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Fixing ".$pagename."...\n", FILE_APPEND);
-
-			// Finally update its pageindex
-// 			Meng_PageIndexUpdate($pagename); 
-			post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
+			array_push($pagelist, $pagename);
 		}
 		
 		file_put_contents($pageindexSyncFile, "");
 		file_put_contents($localLastModFile, "");
+
+		if (count($pagelist) === 0) { return; }
+		
+		$pagelistStr = implode(",", $pagelist);
+		
+// DEBUG
+		file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Fixing ".$pagelistStr."\n", FILE_APPEND);
+
+		// Update pageindex. Note that there is a 2048 char limit to the url length
+		$url = "http://localhost".$_SERVER['SCRIPT_NAME']."?updatePageIndex=$pagelistStr";
+		if (strlen($url) > 2000) { Meng_PageIndexUpdate($pagelist); }
+		else { post_async($url); }
 	}
 }
 
 // Detects async request for updating pageindex in the background
-function updatePageindex($pagename)
+function updatePageindex()
 {
-  if ($_GET["updatePageIndex"])
+  $pagelistStr = $_GET["updatePageIndex"];
+  if (isset($pagelistStr))
   {
-		global $WorkDir;
-		$pagemtime = filemtime("$WorkDir/$pagename");
-
-		// Double check if the page is indeed modified after the last pageindex update
-		if ($pagemtime > getPageindexUpdateTime($pagename))
+  	// The 1st case is explict update request from the client
+  	//     2nd case is due to page index sync process
+  	if ($pagelistStr === "1")	{ global $pagename; $pagelist = array($pagename); }
+  	else { $pagelist = explode(",", $pagelistStr); }
+  	
+		foreach ($pagelist as $pagename)
 		{
+		  // Exit if the page is explicitly excluded from being indexed
+// 			global $noPageindexPage;
+// 			if (in_array($pagename, $noPageindexPage)) { exit; }
+		
+			// Double check if the page is indeed modified after the last pageindex update
+			global $WorkDir;
+			$pagemtime = filemtime("$WorkDir/$pagename");
+			if ($pagemtime > getPageindexUpdateTime($pagename))
+			{
 // DEBUG
-global $pageindexTimeDir;
-file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." updated\n", FILE_APPEND);
-
-			// Meng. Record the pageindex update time for this page
-   	  setPageindexUpdateTime($pagename);
-
-			// Free riding the PostRecentChanges functionality here. It appears that the 2nd and
-			// 3rd input parameters are not used at all in PostRecentChanges().
-			PostRecentChanges($pagename, NULL, NULL);
-
-			Meng_PageIndexUpdate($pagename);
+				global $pageindexTimeDir;
+				file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." updated\n", FILE_APPEND);
+	
+				// Meng. Record the pageindex update time for this page
+				setPageindexUpdateTime($pagename);
+	
+				// Free riding the PostRecentChanges functionality here. It appears that the 2nd and
+				// 3rd input parameters are not used at all in PostRecentChanges().
+				PostRecentChanges($pagename, NULL, NULL);				
+			}
+			// Its pageindex is already up to date, remove it from the list
+			else
+			{
+// DEBUG
+				file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND);
+				
+				$key = array_search($pagename, $pagelist);
+				unset($pagelist[$key]);
+			}
 		}
-
-else { file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND); }
-
+		
+		Meng_PageIndexUpdate($pagelist);
+    
     exit;
   }
 }
 
 // The pageindex handling procedures as a wrapped function.
-function handlePageindex($pagename)
+function handlePageindex()
 {	
 	if (initPageindex()) {}
 	else
 	{
-	  updatePageindex($pagename);
+	  updatePageindex();
 	  syncPageindex();
 	}
 }

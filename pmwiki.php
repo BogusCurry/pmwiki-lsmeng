@@ -1230,6 +1230,7 @@ class PageStore {
       unlink("wiki.d/deleteMe");
     }
 
+		// Update local lastmod time for pageindex sync process
 		global $localLastModFile;
 		file_put_contents($localLastModFile, "");
 
@@ -1985,9 +1986,8 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 
 // echo testDeleteGC();
 
-
 		// Meng. Handle the pageindex process on browsing
-		handlePageindex($pagename);
+		handlePageindex();
 
 		// If page doesn't exist, open the editing page
     if (PageExists($pagename) != 1) { Redirect($pagename."?action=edit"); }
@@ -2127,7 +2127,7 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL) {
   StopWatch("UpdatePage: end $pagename");
   
   // Meng. Handle the pageindex process on editing
-  handlePageindex($pagename);
+  handlePageindex();
   
   return $IsPagePosted;
 }
@@ -2299,14 +2299,19 @@ function PostPage($pagename, &$page, &$new)
         Abort('$[The page has an "attr" attribute and cannot be deleted.]');
       else 
       {
-        // Delete its backup
+        // Delete its backup.
+        // On 2nd thought, backup should be preserved
 //         preservePageBackup($pagename, null);
 				
 				// Delete its pageindex update time record
 				global $pageindexTimeDir;
 				@unlink("$pageindexTimeDir/$pagename");
 				
-        // Meng. The original delete() doesn't seem to work. 
+				// Update local lastmod time for pageindex sync process
+				global $localLastModFile;
+				file_put_contents($localLastModFile, "");
+
+        // Meng. The original delete() doesn't seem to work. Use unlink instead
         global $WorkDir;
         @unlink("$WorkDir/$pagename");
 
