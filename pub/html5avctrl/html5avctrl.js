@@ -10,7 +10,7 @@
  * video.
  * 
  * In Chrome Version 55.0.2883.95 (64-bit) on MAC, video sometimes gets unresponsive
- * by preloading metadata. This is solved by continuous polling using an interval timer
+ * by preloading metadata. This is solved by continuous polling using an interval 
  * timer. The polling timer runs until the video actually start playing.
  *
  * This program is free software; you can redistribute it
@@ -21,30 +21,21 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170112
+ * Version 20170507
  */
 
-// Arrange all the play icons so that they situate at the center of associated video 
-// elements.
-function Html5AVCtrlArrangePlayIcon()
+// Arrange the play icon so that it situates at the center of the given video element.
+function Html5AVCtrlArrangePlayIcon(element)
 {
-  var videoElement = document.getElementsByTagName('video');
-
-  // Manually set preload and then play/pause to get around Chrome's socket bug.
-  // Also introduce the play icon
-  var videoElementLen = videoElement.length;
-  for (var i = 0; i < videoElementLen; i++)
-  {
 		// Position the play icon
-		var playIconElement = videoElement[i].playIconElement;
+		var playIconElement = element.playIconElement;
 		if (typeof playIconElement != 'undefined')
 		{
-			var rectObject = videoElement[i].getBoundingClientRect();
+			var rectObject = element.getBoundingClientRect();
 			playIconElement.style.top = rectObject.top+document.body.scrollTop+rectObject.height/2 + 'px';
 			playIconElement.style.left = rectObject.left+rectObject.width/2 + 'px';  
 			playIconElement.style.display = 'initial';
 		}
-  }
 }
 
 // Toggle between play & pause for a video or audio element
@@ -65,6 +56,7 @@ function Html5AVCtrlTogglePlay(element) {
     element.pause();
   }
 }
+
 // A routine for playing the video element for the very 1st time; removing its play icon
 // and then keep polling until the video actually starts 
 function Html5AVCtrlRemoveIconAndPlay(element)
@@ -92,103 +84,112 @@ function Html5AVCtrlRemoveIconAndPlay(element)
 
 window.addEventListener('load', function()
 {
+	/****************************Process Video elements************************************/
+	
   // Capture the audio/video element by changing the controls
   var videoElement = document.getElementsByTagName('video');
   var videoElementLen = videoElement.length;
-  var audioElement = document.getElementsByTagName('audio');
-  var audioElementLen = audioElement.length;
+  
+  // Process if there are at least one video
+  if (videoElementLen > 0)
+  {
+		for (var i = 0; i < videoElementLen; i++)
+		{  
+			if (i === videoElementLen - 1) {  }
+			else { videoElement[i].nextVideoElement = videoElement[i + 1]; }
+		}
 
-  // Manually set preload and then play/pause to get around Chrome's socket bug.
-  // Also introduce the play icon
-  for (var i = 0; i < videoElementLen; i++)
-  {  
-    videoElement[i].preload = 'metadata';
-//     videoElement[i].preload = 'auto';
-    
-    videoElement[i].onloadedmetadata = function()
-    {
+		// Load the metadata for the very first video element	
+		videoElement[0].preload = 'metadata';
+		videoElement[0].onloadedmetadata = function() { metadataOnLoad.call(this); }
+		
+		// Declare the onmetadata loaded routine
+		function metadataOnLoad()
+		{
+			var videoName = this.children[0].src;
+			console.log(videoName.slice(videoName.lastIndexOf("/")+1) + " meta loaded");
+	
 			// Use the existence of the playIconElement to prevent running this twice
 			// This is needed for a workaround of failing to play video occasionally in Chrome
 			// with metadata preloaded
-      if (this.playIconElement) { return; }
-      
-      this.poster = '';
-
-      this.style.width = Math.round(this.clientHeight*this.videoWidth/this.videoHeight) + 'px';
-        
-// 			this.play();
-// 			this.pause();
-//       setTimeout("delete(Html5AVCtrlElement);", 0);
-      
-      // On load remove the control bar
-      this.controls = false;
-            
+			if (this.playIconElement) { return; }
+			
+			this.poster = '';
+	
+			this.style.width = Math.round(this.clientHeight*this.videoWidth/this.videoHeight) + 'px';
+			
+	// 		this.play(); this.pause();
+	// 		setTimeout(function() { delete(Html5AVCtrlElement); }, 0);
+			
+			// On load remove the control bar
+			this.controls = false;
+						
 			// Overlay the play icon
 			var playIcon = document.createElement('img');
 			playIcon.src = 'http://localhost/pmwiki/pub/html5avctrl/playIcon.png';
-      playIcon.style.transform = 'translate(-50%, -50%)';
-      playIcon.style.position = 'absolute';
+			playIcon.style.transform = 'translate(-50%, -50%)';
+			playIcon.style.position = 'absolute';
 			playIcon.style.webkitTransition = "opacity 0.2s ease, height 0.2s ease";
 			playIcon.style.opacity = 0.6;
-      playIcon.style.display = 'none';
+			playIcon.style.display = 'none';
 			playIcon.onload = function()
 			{ playIcon.style.height = playIcon.naturalHeight + 'px'; }
 			document.body.appendChild(playIcon);
 			
-      // Associate the play icon to the video element      	
+			// Associate the play icon to the video element      	
 			this.playIconElement = playIcon;
-
-      // Click on the play icon, fade out
+	
+			// Click on the play icon, fade out
 			playIcon.videoElement = this;
-      playIcon.onclick = function()
-      { Html5AVCtrlRemoveIconAndPlay(playIcon.videoElement); }
+			playIcon.onclick = function()
+			{ Html5AVCtrlRemoveIconAndPlay(playIcon.videoElement); }
+	
+			// Set visual effects for the play icons
+			this.onmouseover = function()
+			{
+				playIcon.style.opacity = 0.8;
+				playIcon.style.height = 1.1*playIcon.naturalHeight + 'px';
+			}
+			this.onmouseout = function()
+			{
+				playIcon.style.opacity = 0.6;
+				playIcon.style.height = playIcon.naturalHeight + 'px';
+			}
+			playIcon.onmouseover = function()
+			{
+				playIcon.style.opacity = 0.8;
+				playIcon.style.height = 1.1*playIcon.naturalHeight + 'px';
+			}
+			playIcon.onmouseout = function()
+			{
+				playIcon.style.opacity = 0.6;
+				playIcon.style.height = playIcon.naturalHeight + 'px';
+			}
+			
+			Html5AVCtrlArrangePlayIcon(this); // Add its play icon
 
-      // Set visual effects for the play icons
-      this.onmouseover = function()
-      {
-        playIcon.style.opacity = 0.8;
-        playIcon.style.height = 1.1*playIcon.naturalHeight + 'px';
-      }
-      this.onmouseout = function()
-      {
-        playIcon.style.opacity = 0.6;
-        playIcon.style.height = playIcon.naturalHeight + 'px';
-      }
-      playIcon.onmouseover = function()
-      {
-        playIcon.style.opacity = 0.8;
-        playIcon.style.height = 1.1*playIcon.naturalHeight + 'px';
-      }
-      playIcon.onmouseout = function()
-      {
-        playIcon.style.opacity = 0.6;
-        playIcon.style.height = playIcon.naturalHeight + 'px';
-      }
-      
-      // Check if this is the last one processed. Actually the arrangement runs for 3 
-      // times to ensure nothing goes wrong. This is lame.
-      Html5AVCtrlNumLoad = (typeof Html5AVCtrlNumLoad == 'undefined') ? 1 : Html5AVCtrlNumLoad+1;
-      if (Html5AVCtrlNumLoad >= videoElementLen-2)
-      {
-        Html5AVCtrlArrangePlayIcon();
-        window.addEventListener('resize', Html5AVCtrlArrangePlayIcon, false);
-      }
-    }
+			// If there is a next video element, load its metadata and process on loaded
+			if (this.nextVideoElement)
+			{
+				this.nextVideoElement.preload = 'metadtata';
+				this.nextVideoElement.onloadedmetadata = 
+				function() { metadataOnLoad.call(this); }
+			}
+		};
 
-    // On error, also check if this is the last one processed
-    videoElement[i].addEventListener('error', function()
-    {
-      Html5AVCtrlNumLoad = (typeof Html5AVCtrlNumLoad == 'undefined') ? 1 : Html5AVCtrlNumLoad+1;
-      if (Html5AVCtrlNumLoad >= videoElementLen-2)
-      {
-        Html5AVCtrlArrangePlayIcon();
-        window.addEventListener('resize', Html5AVCtrlArrangePlayIcon, false);
-      }
-    }, true);
+		// On window resize, adjust the play icon for all the video elements
+		window.addEventListener('resize', function()
+		{
+		  Array.prototype.forEach.call(videoElement, function(element)
+		  { Html5AVCtrlArrangePlayIcon(element); });
+		});
   }
 
-
+  /*************************End of Video element processing******************************/
+  
   // Capture the video element on clicking or altering its control panel 
+	var audioElement = document.getElementsByTagName('audio');
+  var audioElementLen = audioElement.length;
   var videoAudioLen = videoElementLen + audioElementLen;
   for (var i = 0; i < videoAudioLen; i++) {
     var element = (i >= videoElementLen) ? audioElement[i - videoElementLen] : videoElement[i];    
