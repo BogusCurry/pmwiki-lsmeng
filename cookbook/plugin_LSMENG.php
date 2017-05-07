@@ -953,7 +953,13 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   global $diaryImgDirURL;
   if (strcasecmp($extension,'.mp4') == 0)
 // 	{ $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
-  { $imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
+  { 
+		$imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; 
+		
+		// The subdomain fix for the socket limit of 6 per domain for loading video.
+//   	$diaryImgDirURL_subDomain = str_replace("://", "://$img.", $diaryImgDirURL);
+//     $imgUrl = "(:html5video filename=".$diaryImgDirURL_subDomain.$diaryYear."/".$diaryMonth."/".$img." :)"; 
+  }
   else
   { $imgUrl = $diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img; }
   
