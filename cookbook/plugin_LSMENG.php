@@ -1470,6 +1470,14 @@ function decryptStr($text, $key = "")
 
 /********************************PAGEINDEX RELATED***************************************/
 
+// Provide a wiki method for syncing pageindex immediately
+$FmtPV['$syncPageindexNow'] = 'syncPageindexNow()';
+function syncPageindexNow()
+{
+	syncPageindex(true);
+	Redirect("Main.SiteAdmin");
+}
+
 // Reset pageindex file & folder.
 $FmtPV['$resetPageindex'] = 'resetPageindex()';
 function resetPageindex()
@@ -1528,7 +1536,7 @@ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())
 // page whose pagesindex is not up to date. It can also identify which pages are
 // modified "not locally", i.e., modified by another computer. In this case the
 // pageindex are updated immediately.
-function syncPageindex()
+function syncPageindex($flag = false)
 {
 	global $Now, $pageindexSyncInterval, $localLastModFile,
 	$pageindexSyncFile, $WorkDir;
@@ -1539,7 +1547,7 @@ function syncPageindex()
 	$localLastModTime = filemtime($localLastModFile);
 	$cloudLastModTime = filemtime($WorkDir);
 	$lastSyncTime = filemtime($pageindexSyncFile);
-	if (($cloudLastModTime - $localLastModTime > 10) || ($Now - $lastSyncTime >= $pageindexSyncInterval))
+	if ($flag || ($cloudLastModTime - $localLastModTime > 10) || ($Now - $lastSyncTime >= $pageindexSyncInterval))
 	{
 // DEBUG
 		global $pageindexTimeDir;
@@ -1622,6 +1630,7 @@ function updatePageindex()
 			else
 			{
 // DEBUG
+				global $pageindexTimeDir;
 				file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND);
 				
 				$key = array_search($pagename, $pagelist);
