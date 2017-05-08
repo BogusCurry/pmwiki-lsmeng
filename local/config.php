@@ -265,7 +265,6 @@ $autoSaveDelayHttps = 1000;
 $autoSaveOffDay = 30;
 include_once("$FarmD/cookbook/autosave.php");
 
-$noPageindexPage = array("Main.Vocabulary", "Main.Vocabulary2", "Main.AccountAndPassword");
 $pageindexTimeDir = "wiki.d/pageindex";
 $localLastModFile = "$pageindexTimeDir/.localLastmod";
 $pageindexSyncFile = "$pageindexTimeDir/.lastsync";

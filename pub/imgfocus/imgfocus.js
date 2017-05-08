@@ -52,15 +52,12 @@ imgfocus.clickHandle = function(element, idx)
     
     req.onreadystatechange = function()
     {
-      if (this.readyState == 4)
+      if (this.readyState == 4 && this.status == 200)
       {
-        if (this.status == 200)
-        {
-          // Load the image src to the temp element if present
-          if (imgfocus.popupImgElementTemp)
-          { imgfocus.popupImgElementTemp.src = this.responseText; }
-          else { imgfocus.popupImgElement.src = this.responseText; }
-        }
+				// Load the image src to the temp element if present
+				if (imgfocus.popupImgElementTemp)
+				{ imgfocus.popupImgElementTemp.src = this.responseText; }
+				else { imgfocus.popupImgElement.src = this.responseText; }
       }
     }
   }

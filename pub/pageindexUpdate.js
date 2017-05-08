@@ -8,7 +8,6 @@ var pageindexUpdater = (function()
 	// Private variables
 	var _idx = window.location.href.indexOf("?action=edit");
   var _updateUrl = window.location.href.slice(0, _idx) + "&updatePageIndex=1";
-	var _req = new XMLHttpRequest();
 	var _isSaved = false;
 	
 	// Subscribe to the "saved" event of Autosave.
@@ -20,8 +19,7 @@ var pageindexUpdater = (function()
 	{
 		if (_isSaved)
 		{
-			_req.open("GET", _updateUrl, true);
-			_req.send();
+			new Image().src = _updateUrl;
 			_isSaved = false;
 		}
 	}

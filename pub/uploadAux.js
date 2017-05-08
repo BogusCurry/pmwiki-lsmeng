@@ -11,26 +11,23 @@ uploadAux.deleteFile = function(fileName)
 
 	req.onreadystatechange = function()
 	{
-		if (this.readyState == 4)
+		if (this.readyState == 4 && this.status == 200)
 		{
-			if (this.status == 200)
+			var response = this.responseText;
+			if (response == "success")
 			{
-        var response = this.responseText;
-        if (response == "success")
-        {
-          // Adjust some styles on successful deletion
-          document.getElementById("file_"+fileName).style.color = 'black';
-          document.getElementById("file_"+fileName).style.textDecoration = 'line-through';
-          document.getElementById("file_"+fileName).style.cursor = 'default';
-          document.getElementById("img_"+fileName).onclick = "";
-          document.getElementById("up_"+fileName).style.visibility = "hidden";
-          document.getElementById("del_"+fileName).style.visibility = "hidden";
-        }
-        else if (response == "fail")
-        { alert("Deletion failed. Probably no write access!"); }
-        else if (response == "nonexistent")
-        { alert("File does not exist!"); }
+				// Adjust some styles on successful deletion
+				document.getElementById("file_"+fileName).style.color = 'black';
+				document.getElementById("file_"+fileName).style.textDecoration = 'line-through';
+				document.getElementById("file_"+fileName).style.cursor = 'default';
+				document.getElementById("img_"+fileName).onclick = "";
+				document.getElementById("up_"+fileName).style.visibility = "hidden";
+				document.getElementById("del_"+fileName).style.visibility = "hidden";
 			}
+			else if (response == "fail")
+			{ alert("Deletion failed. Probably no write access!"); }
+			else if (response == "nonexistent")
+			{ alert("File does not exist!"); }
 		}
 	}
 }
