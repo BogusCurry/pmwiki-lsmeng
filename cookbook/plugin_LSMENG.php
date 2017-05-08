@@ -1606,10 +1606,6 @@ function updatePageindex()
   	
 		foreach ($pagelist as $pagename)
 		{
-		  // Exit if the page is explicitly excluded from being indexed
-// 			global $noPageindexPage;
-// 			if (in_array($pagename, $noPageindexPage)) { exit; }
-		
 			// Double check if the page is indeed modified after the last pageindex update
 			global $WorkDir;
 			$pagemtime = filemtime("$WorkDir/$pagename");
@@ -1950,40 +1946,29 @@ if ($action == 'browse')
 /****************************************************************************************/
 
 // Preserve a copy of the given page if the specified time period since the last time 
-// the copy was created has elapsed. 
-// If "$pagefile" is null, the backup is deleted
+// the copy was created has elapsed. If "$pagefile" is null, the backup is deleted
 function preservePageBackup($pagename, $pagefile, $backupDelayHour=6)
 {
   // check the backup folder
-  $pagenameU = strtoupper($pagename);
   $dir = 'wiki.d/backup';
-  $file = scandir($dir);
-  $N_FILE = count($file);
   global $Now;
-  for ($iFile=1; $iFile<=$N_FILE; $iFile++)
-  {
-    // find the file with filename beginning with $pagename
-    if (preg_match("/^$pagenameU\_\d{10}$/", strtoupper($file[$iFile])))
-    {
-      if ($pagefile === null)
-      { return unlink($dir.'/'.$file[$iFile]); }
-      
-      // Get the time stamp in the remaining part of the file name
-      $timeStamp = substr($file[$iFile], strlen($pagename)+1);
-      
-      // Compare Now with the time stamp, if a period of $hour has passed, write backup
-      if ((($Now-$timeStamp)/3600) > $backupDelayHour)
-      {
-        unlink($dir.'/'.$file[$iFile]);
-        return copy($pagefile, $dir.'/'.$pagename.'_'.$Now);
-      }
-      else { return true; }
-    }
-  }
-  
-  // No existing backup for the file
+	if (file_exists("$dir/$pagename"))
+	{
+		// Get the time stamp in the remaining part of the file name
+		$timeStamp = filemtime("$dir/$pagename");
+		
+		// Compare Now with the time stamp, if a period of $hour has passed, write backup
+		if ((($Now-$timeStamp)/3600) > $backupDelayHour)
+		{
+			unlink($dir.'/'.$backupPage);
+			return copy($pagefile, "$dir/$pagename");
+		}
+		else { return true; }
+	}
+	
+	// No existing backup for the file
   if ($pagefile === null) { return true; }
-  else { return copy($pagefile, $dir.'/'.$pagename.'_'.$Now); }
+  else { return copy($pagefile, $dir.'/'.$pagename); }
 }
 
 /****************************************************************************************/
