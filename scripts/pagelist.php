@@ -132,7 +132,7 @@ function SearchBox($pagename, $opt) {
     $out .= "<input type='hidden' name='$k' value='$v' />";
   }
   SDV($SearchBoxInputType, 'text');
-  $out .= "<input autofocus style='width:500px; margin-top:5px;' type='$SearchBoxInputType' name='q' value='{$opt['value']}' ";
+  $out .= "<input autofocus type='$SearchBoxInputType' name='q' value='{$opt['value']}' ";
   if(@$opt['placeholder']) $out .= "  placeholder='{$opt['placeholder']}' ";
   $out .= "  class='inputbox searchbox' size='{$opt['size']}' /><input style='margin-left:8px;' type='submit' 
     class='inputbutton searchbutton' value='{$opt['label']}' />";
@@ -230,6 +230,12 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
 		}
 	}
 
+// 	echo_($opt);
+// 	var_dump($opt);
+// 	if ($searchText === "apple") { echo_("changed");$opt['q'] = "applepie"; }
+	
+// 	echo_($searchText);
+
 /*
 // If this is a backlink search, search under the same page group.
 // 5 = strlen("link=")
@@ -266,7 +272,7 @@ if (substr($searchText,0,5) === "link=")
     if (!$fn($list, $opt, $pn, $page)) continue 2;
 
     // Meng: Exclude site.sidebar
-    if (stripos($pn,'Site.SideBar') !== false) continue;
+//     if (stripos($pn,'Site.SideBar') !== false) continue;
     
     $page['pagename'] = $page['name'] = $pn;
     PCache($pn, $page);

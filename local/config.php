@@ -98,7 +98,12 @@ $DiffKeepDays=36500;
 ## contents) of read-protected pages in search results and
 ## page listings.  Set $EnablePageListProtect to keep read-protected
 ## pages from appearing in search results.
-# $EnablePageListProtect = 1;
+// Meng. That's weird. The abovementioned protection seems to be enabled by default. 
+// Disable it since listing the page names is fine for me.
+$EnablePageListProtect = 0;
+
+// Meng. Exclude the sidebar from search results
+$SearchPatterns['default'][] = '!^Site\.SideBar$!';
 
 ##  The refcount.php script enables ?action=refcount, which helps to
 ##  find missing and orphaned pages.  See PmWiki.RefCount.
@@ -418,6 +423,9 @@ include_once("$FarmD/cookbook/flipbox.php");
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
 
+# Advanced search
+include_once("$FarmD/cookbook/extract.php");
+
 /*
 # Neo mp3 and video player.
 $EnableDirectDownload = 1;
@@ -486,6 +494,7 @@ $ROSPatterns ['/todo_/'] = "%bgcolor=cyan%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
 $ROSPatterns ['/agree_/'] = "%bgcolor=rgb(106,235,19)%";
+$ROSPatterns ['/comment/'] = "%bgcolor=pink%";
 $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";

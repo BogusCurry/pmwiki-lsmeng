@@ -8,6 +8,14 @@
 **  (at your option) any later version.  See pmwiki.php for full details.
 ***********************************************************************/
 
+/* For the search boxes */
+.searchbox
+{
+	margin-top: 5px;
+  width: 500px;
+}
+
+
 /* Customize the scroll bar. This is necessary for searchReplace.js recipe to function
    correctly. */
 /*

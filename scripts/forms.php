@@ -18,8 +18,10 @@ SDV($InputAttrs, array('name', 'value', 'id', 'class', 'rows', 'cols',
 # Set up formatting for text, submit, hidden, radio, etc. types
 foreach(array('text', 'submit', 'hidden', 'password', 'reset', 'file',
     'image', 'email', 'url', 'number', 'search', 'date') as $t) 
-  SDV($InputTags[$t][':html'], "<input type='$t' \$InputFormArgs />");
-SDV($InputTags['text']['class'], 'inputbox');
+  // Meng. Add autofocus
+  SDV($InputTags[$t][':html'], "<input autofocus type='$t' \$InputFormArgs />");
+// Meng. Change class from inputbox to searchbox
+SDV($InputTags['text']['class'], 'searchbox');
 SDV($InputTags['password']['class'], 'inputbox');
 SDV($InputTags['submit']['class'], 'inputbutton');
 SDV($InputTags['reset']['class'], 'inputbutton');
