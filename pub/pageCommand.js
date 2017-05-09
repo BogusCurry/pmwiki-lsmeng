@@ -121,7 +121,7 @@ window.addEventListener('keydown', function()
 		event.preventDefault();
 		var match = pageCommand.url.match(/\?.+/i);
 		var pos = match==null ? pageCommand.url.length : match['index'];
-		window.open(pageCommand.url.slice(0, pos)+'?n=Site.Search', '_blank');
+		window.open(pageCommand.url.slice(0, pos)+'?n=Site.SearchE', '_blank');
 	}
 	
 	// Ctrl+cmd+r to open all recent changes

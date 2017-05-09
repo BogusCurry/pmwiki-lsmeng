@@ -471,7 +471,8 @@ function SetTmplDisplay($var, $val)
 function NoCache($x = '') { $GLOBALS['NoHTMLCache'] |= 1; return $x; }
 function ParseArgs($x, $optpat = '(?>(\\w+)[:=])') {
   $z = array();
-  preg_match_all("/($optpat|[-+])?(\"[^\"]*\"|'[^']*'|\\S+)/",
+// Meng. Bug fix for the unrecognized Chinese char by adding the unicode flag "u"
+  preg_match_all("/($optpat|[-+])?(\"[^\"]*\"|'[^']*'|\\S+)/u",
     $x, $terms, PREG_SET_ORDER);
   foreach($terms as $t) {
     $v = preg_replace('/^([\'"])?(.*)\\1$/', '$2', $t[3]);
