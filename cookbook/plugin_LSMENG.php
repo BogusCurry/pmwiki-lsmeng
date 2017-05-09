@@ -475,8 +475,8 @@ function getFormatTime()
 // add your account to the Group "_www".
 function chmodForPageFile($file)
 {
-	if (getOS() == 'Mac') { return chmod($file, 0440); }
-	else { return true; }
+  if (getOS() == 'Mac') { return chmod($file, 0440); }
+  else { return true; }
 }
 
 // Handle a timeStamp for different users (uniquely identified by SESSION).
@@ -573,7 +573,7 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
 // It appears that the IP of localhost will be shown as "::1". Replace it with the string 
 // "localhost".
 $IP = get_client_ip();
-function get_client_ip() 
+function get_client_ip()
 {
   $ipaddress = '';
   if ($_SERVER['HTTP_CLIENT_IP'])
@@ -767,32 +767,32 @@ function runCode($pagename)
   }
   // If the source file is the last edited one
   // Execute the file directly, and put the src file into wiki text
-  else { $text = fileGetContentsWait($srcFile); }  
-	$text = str_replace("\t","  ",$text);
-
-	// PHP
-	if (substr($text,0,5)=="<?php") { $result = shell_exec('php '.$srcFile); }
-	// C++
-	else
-	{
-	  // Remove the c exe file
-	  if (file_exists($cExeFile) !== false) { @unlink($cExeFile); }
+  else { $text = fileGetContentsWait($srcFile); }
+  $text = str_replace("\t","  ",$text);
+  
+  // PHP
+  if (substr($text,0,5)=="<?php") { $result = shell_exec('php '.$srcFile); }
+  // C++
+  else
+  {
+    // Remove the c exe file
+    if (file_exists($cExeFile) !== false) { @unlink($cExeFile); }
     exec("cd ".$runCodePath."\ng++ main.cpp", $outMsg, $result);
-		if ($result == 0) { $result = shell_exec("./".$cExeFile); }
-		else { $result = "Syntax error! Enter the following command to see details\n"."g++ ".getcwd()."/".$runCodePath."/main.cpp"; }
-	}
-	
-	// Write the results to file
-	$newResult = "[@\n".addLineNum($result)."@]";
-	filePutContentsWait($outputFile, $newResult, 1);
-	
-	if ($lastFileUpdateTime && $lastPageUpdateTime < $lastFileUpdateTime)
-	{
-		// Update the wiki text
-		$new = $page;
-		$new['text'] = $text;
-		UpdatePage($pagename, $page, $new);
-	}
+    if ($result == 0) { $result = shell_exec("./".$cExeFile); }
+    else { $result = "Syntax error! Enter the following command to see details\n"."g++ ".getcwd()."/".$runCodePath."/main.cpp"; }
+  }
+  
+  // Write the results to file
+  $newResult = "[@\n".addLineNum($result)."@]";
+  filePutContentsWait($outputFile, $newResult, 1);
+  
+  if ($lastFileUpdateTime && $lastPageUpdateTime < $lastFileUpdateTime)
+  {
+    // Update the wiki text
+    $new = $page;
+    $new['text'] = $text;
+    UpdatePage($pagename, $page, $new);
+  }
 }
 
 // Create a link in site.pageactions to serve as the execute button for the special
@@ -870,9 +870,9 @@ function getImgFileContent($file, $mime='image/png')
   $pos = strrpos($file,'/');
   if ($pos !== false) { $filename = substr($file, $pos+1); }
   else { $filename = $file; }
-
-  // Also insert the filename into the image data content. This serves a way to signify 
-  // the file name to the client side JS. Although it works, this is not a legal field. 
+  
+  // Also insert the filename into the image data content. This serves a way to signify
+  // the file name to the client side JS. Although it works, this is not a legal field.
   return ('data:' . $mime . ';filename='.$filename.';base64,' . $base64);
 }
 
@@ -953,10 +953,10 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   global $diaryImgDirURL;
   if (strcasecmp($extension,'.mp4') == 0)
 // 	{ $imgUrl = "(:neo_flv_V-player ".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; }
-  { 
-		$imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)"; 
-		
-		// The subdomain fix for the socket limit of 6 per domain for loading video.
+  {
+    $imgUrl = "(:html5video filename=".$diaryImgDirURL.$diaryYear."/".$diaryMonth."/".$img." :)";
+    
+    // The subdomain fix for the socket limit of 6 per domain for loading video.
 //   	$diaryImgDirURL_subDomain = str_replace("://", "://$img.", $diaryImgDirURL);
 //     $imgUrl = "(:html5video filename=".$diaryImgDirURL_subDomain.$diaryYear."/".$diaryMonth."/".$img." :)"; 
   }
@@ -1139,7 +1139,6 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
 /****************************************************************************************/
 
-
 // Configure and add pageTimer.js. To be called in pmwikiAuth()
 function addpageTimerJs($countdownTimer)
 {
@@ -1150,14 +1149,14 @@ function addpageTimerJs($countdownTimer)
   
   // Java logout timer update period.
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
-
-	// Determine the dummy pagename to redirect upon timer expiration 
-	$_pagename = substr($pagename,strpos($pagename,'.')+1);
-	$groupname = substr($pagename,0,strpos($pagename,'.'));
-	if (substr($groupname,0,strlen("LOCK")) == "LOCK")
-	{ $groupname = substr($groupname,strlen("LOCK")); }
-	$closeRedirectName = $_pagename.'/'.$groupname;
-
+  
+  // Determine the dummy pagename to redirect upon timer expiration
+  $_pagename = substr($pagename,strpos($pagename,'.')+1);
+  $groupname = substr($pagename,0,strpos($pagename,'.'));
+  if (substr($groupname,0,strlen("LOCK")) == "LOCK")
+  { $groupname = substr($groupname,strlen("LOCK")); }
+  $closeRedirectName = $_pagename.'/'.$groupname;
+  
   $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
   <script type='text/javascript'>
   pageTimer.TIMER_EXP_DURATION = $countdownTimer;
@@ -1366,10 +1365,10 @@ function encryptStr($text, $key = "")
   // Don't encrypt the text if it's been encrypted already.
   global $ENC_KEYWORD, $ENC_KEYWORD_LEN, $OPENSSL_METHOD;
   if (substr($text,0,$ENC_KEYWORD_LEN) == $ENC_KEYWORD) { return false; }
-
-	// Insert data compression here
+  
+  // Insert data compression here
 // 	$text = "GZCOMPRESS\n".gzcompress($text,9);
-	$text = "BZCOMPRESS\n".bzcompress($text,9);
+  $text = "BZCOMPRESS\n".bzcompress($text,9);
   
   // Generate a random salt for deriving the encryption key and IV
   global $SALT_LEN;
@@ -1458,13 +1457,13 @@ function decryptStr($text, $key = "")
   if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
   else
   { cacheRecentPageAESKey($AES_KEY, $key.$salt); }
-
-	// Insert data decompression here
-	if (substr($decryptText,0,10) == 'GZCOMPRESS')
-	{ $decryptText = gzuncompress(substr($decryptText,11)); }
+  
+  // Insert data decompression here
+  if (substr($decryptText,0,10) == 'GZCOMPRESS')
+  { $decryptText = gzuncompress(substr($decryptText,11)); }
   else if (substr($decryptText,0,10) == 'BZCOMPRESS')
-	{ $decryptText = bzdecompress(substr($decryptText,11)); }
-
+  { $decryptText = bzdecompress(substr($decryptText,11)); }
+  
   return $decryptText;
 }
 
@@ -1474,8 +1473,8 @@ function decryptStr($text, $key = "")
 $FmtPV['$syncPageindexNow'] = 'syncPageindexNow()';
 function syncPageindexNow()
 {
-	syncPageindex(true);
-	Redirect("Main.SiteAdmin");
+  syncPageindex(true);
+  Redirect("Main.SiteAdmin");
 }
 
 // Reset pageindex file & folder.
@@ -1483,9 +1482,9 @@ $FmtPV['$resetPageindex'] = 'resetPageindex()';
 function resetPageindex()
 {
   global $pageindexTimeDir;
-	exec('rm -rf '.$pageindexTimeDir);
-	
-	initPageindex();
+  exec('rm -rf '.$pageindexTimeDir);
+  
+  initPageindex();
 }
 
 // Reconstruct pageindex by first deleting the current file and then performing an empty
@@ -1501,35 +1500,35 @@ function rebuildPageindexFile()
 
 function getPageindexUpdateTime($pagename)
 {
- 	global $pageindexTimeDir;
- 	$pagefile = "$pageindexTimeDir/$pagename";
- 	if (file_exists($pagefile))	{	return filemtime($pagefile); }
-	else { return 0;	} 
+  global $pageindexTimeDir;
+  $pagefile = "$pageindexTimeDir/$pagename";
+  if (file_exists($pagefile))	{	return filemtime($pagefile); }
+  else { return 0;	}
 }
 
 function setPageindexUpdateTime($pagename)
 {
-	global $pageindexTimeDir;
-	file_put_contents("$pageindexTimeDir/$pagename", "");
+  global $pageindexTimeDir;
+  file_put_contents("$pageindexTimeDir/$pagename", "");
 }
 
 // Reconstruct the whole pageindex stuff including the pagindex itself in case
 // the local pageindex time stamp folder is missing
 function initPageindex()
 {
-	global $pageindexTimeDir;
-	if (!file_exists($pageindexTimeDir))
-	{
-		mkdir($pageindexTimeDir, 0770);
-		global $localLastModFile, $pageindexSyncFile;
-		file_put_contents($localLastModFile, "");
-		file_put_contents($pageindexSyncFile, "");;
+  global $pageindexTimeDir;
+  if (!file_exists($pageindexTimeDir))
+  {
+    mkdir($pageindexTimeDir, 0770);
+    global $localLastModFile, $pageindexSyncFile;
+    file_put_contents($localLastModFile, "");
+    file_put_contents($pageindexSyncFile, "");;
 // DEBUG
-file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Init\n", FILE_APPEND);
-		rebuildPageindexFile();
-		return true;
-	}
-	else { return false; }
+    file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Init\n", FILE_APPEND);
+    rebuildPageindexFile();
+    return true;
+  }
+  else { return false; }
 }
 
 // The main pageindex sync routine; it periodically checks whether there is any 
@@ -1538,59 +1537,63 @@ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())
 // pageindex are updated immediately.
 function syncPageindex($flag = false)
 {
-	global $Now, $pageindexSyncInterval, $localLastModFile,
-	$pageindexSyncFile, $WorkDir;
-	
-	// Since the local and cloud lastmod time are updated at the same time in normal cases,
-	// a diff > 10 sec means that the cloud has been modified by someone else. Sync
-	// the pageindex in this case. Otherwise, perform sync periodically.
-	$localLastModTime = filemtime($localLastModFile);
-	$cloudLastModTime = filemtime($WorkDir);
-	$lastSyncTime = filemtime($pageindexSyncFile);
-	if ($flag || ($cloudLastModTime - $localLastModTime > 10) || ($Now - $lastSyncTime >= $pageindexSyncInterval))
-	{
+  global $Now, $pageindexSyncInterval, $localLastModFile,
+  $pageindexSyncFile, $WorkDir;
+  
+  // Since the local and cloud lastmod time are updated at the same time in normal cases,
+  // a diff > 10 sec means that the cloud has been modified by someone else. Sync
+  // the pageindex in this case. Otherwise, perform sync periodically.
+  $localLastModTime = filemtime($localLastModFile);
+  $cloudLastModTime = filemtime($WorkDir);
+  $lastSyncTime = filemtime($pageindexSyncFile);
+  if ($flag || ($cloudLastModTime - $localLastModTime > 10) || ($Now - $lastSyncTime >= $pageindexSyncInterval))
+  {
 // DEBUG
-		global $pageindexTimeDir;
-		if ($cloudLastModTime - $localLastModTime > 10)
-		{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND); }
-		else
-		{ file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex\n", FILE_APPEND); }
-
-		$ignored = array('.', '..', '.htaccess', '.lastmod');
-		$pagelist = array();
-		foreach (scandir($WorkDir) as $pagename)
-		{
-			// Ignore not wiki-related pages
-			if (in_array($pagename, $ignored)) { continue; }
-			$pagemtime = filemtime("$WorkDir/$pagename");
-			
-			// page is not modified since last sync
-			if ($pagemtime <= $lastSyncTime) { continue; }
-			
-			// its pageindex is up to date
-			if ($pagemtime <= getPageindexUpdateTime($pagename)) { continue; } 
-
-			// Skip recentchanges pages
-			if (strcasecmp(substr($pagename, -13), "recentchanges") === 0) { continue; }
-			
-			array_push($pagelist, $pagename);
-		}
-		
-		file_put_contents($pageindexSyncFile, "");
-		file_put_contents($localLastModFile, "");
-
-		if (count($pagelist) === 0) { return; }
-		
-		$pagelistStr = implode(",", $pagelist);
-		
+    global $pageindexTimeDir;
+    if ($cloudLastModTime - $localLastModTime > 10)
+    { file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND); }
+    else
+    { file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex\n", FILE_APPEND); }
+    
+    $ignored = array('.', '..', '.htaccess', '.lastmod');
+    $pagelist = array();
+    foreach (scandir($WorkDir) as $pagename)
+    {
+      // Ignore not wiki-related pages
+      if (in_array($pagename, $ignored)) { continue; }
+      $pagemtime = filemtime("$WorkDir/$pagename");
+      
+      // page is not modified since last sync
+      if ($pagemtime <= $lastSyncTime) { continue; }
+      
+      // its pageindex is up to date
+      if ($pagemtime <= getPageindexUpdateTime($pagename)) { continue; }
+      
+      // Skip recentchanges pages
+      if (strcasecmp(substr($pagename, -13), "recentchanges") === 0) { continue; }
+      
+      array_push($pagelist, $pagename);
+    }
+    
+    file_put_contents($pageindexSyncFile, "");
+    file_put_contents($localLastModFile, "");
+    
+    if (count($pagelist) === 0) { return; }
+    
+    $pagelistStr = implode(",", $pagelist);
+    
 // DEBUG
-		file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Fixing ".$pagelistStr."\n", FILE_APPEND);
-
-		// Update pageindex. Note that there is a 2048 char limit to the url length
-		$url = "http://localhost".$_SERVER['SCRIPT_NAME']."?updatePageIndex=$pagelistStr";
-		if (strlen($url) > 2000) { Meng_PageIndexUpdate($pagelist); }
-		else { post_async($url); }
-	}
+    file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Fixing ".$pagelistStr."\n", FILE_APPEND);
+    
+    // Since the handlePageindex procedure is embedded in the builtin browsing/editing
+    // procedure, we have to come up with a pagename that does not belong to the
+    // "sensitive" pages which quickly get password locked. A newly generated page group
+    // by default is not a sensitive page. That's why we have the RandomPwdWord() part.
+    $url = "http://localhost".$_SERVER['SCRIPT_NAME']."?n=".RandomPwdWord(10)."&updatePageIndex=$pagelistStr";
+    // Update pageindex. Note that there is a 2048 char limit to the url length
+    if (strlen($url) > 2000) { Meng_PageIndexUpdate($pagelist); }
+    else { post_async($url); }
+  }
 }
 
 // Detects async request for updating pageindex in the background
@@ -1599,42 +1602,42 @@ function updatePageindex()
   $pagelistStr = $_GET["updatePageIndex"];
   if (isset($pagelistStr))
   {
-  	// The 1st case is explict update request from the client
-  	//     2nd case is due to page index sync process
-  	if ($pagelistStr === "1")	{ global $pagename; $pagelist = array($pagename); }
-  	else { $pagelist = explode(",", $pagelistStr); }
-  	
-		foreach ($pagelist as $pagename)
-		{
-			// Double check if the page is indeed modified after the last pageindex update
-			global $WorkDir;
-			$pagemtime = filemtime("$WorkDir/$pagename");
-			if ($pagemtime > getPageindexUpdateTime($pagename))
-			{
+    // The 1st case is explict update request from the client
+    //     2nd case is due to page index sync process
+    if ($pagelistStr === "1")	{ global $pagename; $pagelist = array($pagename); }
+    else { $pagelist = explode(",", $pagelistStr); }
+    
+    foreach ($pagelist as $pagename)
+    {
+      // Double check if the page is indeed modified after the last pageindex update
+      global $WorkDir;
+      $pagemtime = filemtime("$WorkDir/$pagename");
+      if ($pagemtime > getPageindexUpdateTime($pagename))
+      {
 // DEBUG
-				global $pageindexTimeDir;
-				file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." updated\n", FILE_APPEND);
-	
-				// Meng. Record the pageindex update time for this page
-				setPageindexUpdateTime($pagename);
-	
-				// Free riding the PostRecentChanges functionality here. It appears that the 2nd and
-				// 3rd input parameters are not used at all in PostRecentChanges().
-				PostRecentChanges($pagename, NULL, NULL);				
-			}
-			// Its pageindex is already up to date, remove it from the list
-			else
-			{
+        global $pageindexTimeDir;
+        file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." updated\n", FILE_APPEND);
+        
+        // Meng. Record the pageindex update time for this page
+        setPageindexUpdateTime($pagename);
+        
+        // Free riding the PostRecentChanges functionality here. It appears that the 2nd and
+        // 3rd input parameters are not used at all in PostRecentChanges().
+        PostRecentChanges($pagename, NULL, NULL);
+      }
+      // Its pageindex is already up to date, remove it from the list
+      else
+      {
 // DEBUG
-				global $pageindexTimeDir;
-				file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND);
-				
-				$key = array_search($pagename, $pagelist);
-				unset($pagelist[$key]);
-			}
-		}
-		
-		Meng_PageIndexUpdate($pagelist);
+        global $pageindexTimeDir;
+        file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND);
+        
+        $key = array_search($pagename, $pagelist);
+        unset($pagelist[$key]);
+      }
+    }
+    
+    Meng_PageIndexUpdate($pagelist);
     
     exit;
   }
@@ -1642,13 +1645,13 @@ function updatePageindex()
 
 // The pageindex handling procedures as a wrapped function.
 function handlePageindex()
-{	
-	if (initPageindex()) {}
-	else
-	{
-	  updatePageindex();
-	  syncPageindex();
-	}
+{
+  if (initPageindex()) {}
+  else
+  {
+    updatePageindex();
+    syncPageindex();
+  }
 }
 
 /****************************************************************************************/
@@ -1770,10 +1773,10 @@ function changePassword($PageStartFmt, $PageEndFmt)
       if ($isEncrypt == true || $EnableEncryption == 1)
       {
         filePutContentsWait($file, $pageText);
-				
-				// Set a very restrictive permission except the credential, which has to be 
-				// read/wirtten by GC related procedures.
-				if ($pagelist[$iFile] == 'myCalendarCredential.json')
+        
+        // Set a very restrictive permission except the credential, which has to be
+        // read/wirtten by GC related procedures.
+        if ($pagelist[$iFile] == 'myCalendarCredential.json')
         { if (getOS() == 'Mac') { chmod($file, 0660); } }
         else { chmodForPageFile($file); }
         
@@ -1873,7 +1876,7 @@ function isPasswdCorrect($passwd)
   {
     @session_start();
 //     $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
-   
+    
     $Now = time();
     $TimeFmt = '%Y/%m/%d at %H:%M:%S';
     $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd, strftime($TimeFmt, $Now)];
@@ -1952,23 +1955,23 @@ function preservePageBackup($pagename, $pagefile, $backupDelayHour=6)
   // check the backup folder
   $dir = 'wiki.d/backup';
   global $Now;
-	if (file_exists("$dir/$pagename"))
-	{
-		// Get the time stamp in the remaining part of the file name
-		$timeStamp = filemtime("$dir/$pagename");
-		
-		// Compare Now with the time stamp, if a period of $hour has passed, write backup
-		if ((($Now-$timeStamp)/3600) > $backupDelayHour)
-		{
-			unlink($dir.'/'.$backupPage);
-			return copy($pagefile, "$dir/$pagename");
-		}
-		else { return true; }
-	}
-	
-	// No existing backup for the file
+  if (file_exists("$dir/$pagename"))
+  {
+    // Get the time stamp in the remaining part of the file name
+    $timeStamp = filemtime("$dir/$pagename");
+    
+    // Compare Now with the time stamp, if a period of $hour has passed, write backup
+    if ((($Now - $timeStamp) / 3600) > $backupDelayHour)
+    {
+      @unlink("$dir/$backupPage");
+      return copy($pagefile, "$dir/$pagename");
+    }
+    else { return true; }
+  }
+  
+  // No existing backup for the file
   if ($pagefile === null) { return true; }
-  else { return copy($pagefile, $dir.'/'.$pagename); }
+  else { return copy($pagefile, "$dir/$pagename"); }
 }
 
 /****************************************************************************************/
