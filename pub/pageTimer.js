@@ -51,8 +51,9 @@ var pageTimer =
 	    var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
       localStorage.setItem('StandbyLogout', msg);
       
-      pageindexUpdater.requestPageindexUpdate();
-      
+      // Update an edited page's pageindex right before closing
+      if (window.pageindexUpdater) { pageindexUpdater.requestPageindexUpdate(); }
+			
       window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action;
 	    return;
 		}
@@ -129,8 +130,7 @@ if (window.AS)
 	{
 		// If the module pageindexUpdater is included, set a timer for requesting 
 		// pageindex update on saved event
-		if (!window.pageindexUpdater)
-		{ return function () { pageTimer.resetTimer(); } }
+		if (!window.pageindexUpdater) { return function () { pageTimer.resetTimer(); } }
 		else
 		{
 			var timerID;
