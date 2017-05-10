@@ -425,7 +425,7 @@ include_once("$FarmD/cookbook/flipbox.php");
 # Youtube (the older one).
 include_once("$FarmD/cookbook/swf-sites.php");
 
-# Advanced search
+# Advanced global search & replace
 include_once("$FarmD/cookbook/extract.php");
 
 /*
@@ -496,7 +496,7 @@ $ROSPatterns ['/todo_/'] = "%bgcolor=cyan%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
 $ROSPatterns ['/agree_/'] = "%bgcolor=rgb(106,235,19)%";
-$ROSPatterns ['/comment/'] = "%bgcolor=pink%";
+$ROSPatterns ['/comment_/'] = "%bgcolor=pink%";
 $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
