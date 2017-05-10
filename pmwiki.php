@@ -2605,9 +2605,10 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 	{
 		global $siteLogoutIdleDuration, $pageLockIdleDuration;
 		$countdownTimer = $siteLogoutIdleDuration;
-		if ($page['passwdread'] == '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
-		else if (substr($page['passwdread'],0,3) == '$1$') { $countdownTimer = $pageLockIdleDuration; }
-		else if (substr($gp['passwdread'],0,3) == '$1$') { $countdownTimer = $pageLockIdleDuration; }
+		$pagePass = $page['passwdread'];
+		if ($pagePass == '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
+		else if ($pagePass != "") { $countdownTimer = $pageLockIdleDuration; }
+		else if ($gp['passwdread']  != "") { $countdownTimer = $pageLockIdleDuration; }
 		addPageTimerJs($countdownTimer);
 	}
 
