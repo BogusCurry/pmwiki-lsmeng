@@ -100,10 +100,12 @@ $DiffKeepDays=36500;
 ## pages from appearing in search results.
 // Meng. That's weird. The abovementioned protection seems to be enabled by default. 
 // Disable it since listing the page names is fine for me.
-$EnablePageListProtect = 0;
+$EnablePageListProtect = 1;
 
 // Meng. Exclude the sidebar from search results
 $SearchPatterns['default'][] = '!^Site\.SideBar$!';
+// Meng. Exclude RecentChanges pages from search results
+$SearchPatterns['default'][] = '!\\.(All)?RecentChanges$!';
 
 ##  The refcount.php script enables ?action=refcount, which helps to
 ##  find missing and orphaned pages.  See PmWiki.RefCount.
