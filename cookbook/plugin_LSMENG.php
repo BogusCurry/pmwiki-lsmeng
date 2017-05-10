@@ -1591,7 +1591,13 @@ function syncPageindex($flag = false)
     // by default is not a sensitive page. That's why we have the RandomPwdWord() part.
     $url = "http://localhost".$_SERVER['SCRIPT_NAME']."?n=".RandomPwdWord(10)."&updatePageIndex=$pagelistStr";
     // Update pageindex. Note that there is a 2048 char limit to the url length
-    if (strlen($url) > 2000) { Meng_PageIndexUpdate($pagelist); }
+    if (strlen($url) > 2000)
+    {
+// DEBUG
+			file_put_contents("$pageindexTimeDir/log.txt", "Too many pages. Perform a blocking pageindex update\n", FILE_APPEND);
+    	foreach ($pagelist as $pagename) { setPageindexUpdateTime($pagename); }
+    	Meng_PageIndexUpdate($pagelist);
+    }
     else { post_async($url); }
   }
 }

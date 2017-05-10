@@ -13,7 +13,8 @@
    
    2016-04-23 convert source file encoding from UTF-8 to ANSI
    
-   20170510. Fixed by Ling-San Meng to correctly support Chinese char.
+   20170511. Fixed by Ling-San Meng to correctly support Chinese char, and add support
+   for global replace.
 */
 $RecipeInfo['TextExtract']['Version'] = '2016-04-23';
 $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return version as a custom page variable
@@ -21,7 +22,30 @@ $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return
 global $Extract; $Extract = 1;
 
 //initialisations
-if ($action=='search' && $_REQUEST['fmt']=='extract') {
+if ($action=='search' && $_REQUEST['fmt']=='extract')
+{
+	// Meng. Regex pattern is automatically identified by a beginning and ending forward
+	// slash.
+	$query = $_REQUEST["q"];
+	if ($query[0] === "/" && $query[strlen($query) - 1] === "/")
+	{
+	  $_REQUEST["regex"] = "1";
+	  $_REQUEST["q"] = substr($query, 1, strlen($query) - 2);
+	}
+
+	// Meng. When replacing without using a regex pattern, prepare a fully escaped version
+	// of the query string.
+	if (isset($_REQUEST["replace"]))
+	{
+		$_REQUEST["replaceCount"] = 0;
+		
+		if (!isset($_REQUEST["regex"]))
+		{
+			$_REQUEST["q3"] = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/", 
+			function($match) { return "\\$match[0]"; }, $query);
+		}
+	}
+
 	//add a space, so FmtPageList() will not transform 'foo/' to group='foo'
 	if ($_REQUEST['group'] || $_REQUEST['name'] || $_REQUEST['page']) {
 		 $_REQUEST['q'] = " ".$_REQUEST['q'];
@@ -207,7 +231,7 @@ $HTMLStylesFmt['teimages'] = " .image {max-width:10em; } ";
 	//case insensitive search
 	$qi = $par['qi'] = (@$opt['case']==1) ? '' : 'i';
 	
-// Meng. Fix for Chinese char by adding the unicode flag "u"
+	// Meng. Fix for Chinese char by adding the unicode flag "u"
 	$par['qi'] .= 'u';
 	
 	$par['listcnt'] = ($FmtV['$MatchSearched']) ? $FmtV['$MatchSearched'] : count($list);
@@ -326,14 +350,74 @@ $HTMLStylesFmt['teimages'] = " .image {max-width:10em; } ";
 	//stop timer
 	TEStopwatch($par);	
 	//make header and footer
+	
+	// Meng. Modify the output in the case of replacing.
+	if (isset($_REQUEST["replace"]))
+	{
+	  syncPageindex(true);
+
+		// Check if the number of replacement is in line with the number of search results.
+		$opt["title"] = "Replaced:";
+		$nReplaced = $_REQUEST["replaceCount"];
+		if ($nReplaced != $par['matchnum']) { $opt["title"] .= " ($nReplaced)";	}
+		
+		$par["pattern"] = "\"".$opt["q"]."\"";
+	}
+	
 	$header = TEHeader($opt, $par);
-	$header = MarkupToHTML($pagename, $header); 
+	$header = MarkupToHTML($pagename, $header); 	
 	$footer = TEFooter($opt, $par);
 	$footer = MarkupToHTML($pagename, $footer);		
 	$out = $header."<div class='te-results'>".$out."</div>".$footer;
+	
 	StopWatch('TextExtract end'); 
 	return Keep($out);
 } //}}}
+
+// Meng. The text replace routine.
+function replaceText($pagename, $page, &$par)
+{
+	if (!$page) { return; }
+	
+	// if this is a replace
+	if (isset($_REQUEST["replace"]))
+	{
+	  // get text 
+		$text = $page['text'];
+				
+		if (isset($_REQUEST["q3"])) { $query = $_REQUEST["q3"]; }
+		else { $query = $par["pat"]; }
+		$replace = $_REQUEST["q2"];
+
+	  // Perform regex replace
+	  $count = 0;
+	  $text = preg_replace("($query)".$par['qi'], $replace, $text, -1, $count);
+	  if ($count > 0)
+	  {
+	  	$_REQUEST["replaceCount"] += $count;
+	  	
+	  	$new = $page;
+
+/*
+	  	global $EditFields, $ChangeSummary;
+			foreach((array)$EditFields as $k)
+				if (isset( $_POST[$k] ))
+				{
+					$new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
+					if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
+				}
+
+			$new["csum:$Now"] = $new['csum'] = "[globalReplace] $ChangeSummary";
+*/
+		
+			$new["text"] = $text;
+			
+			UpdatePage($pagename, $page, $new);
+	  }
+	  
+	  return;
+	}  
+}
 
 //make rows array from source page
 function TETextRows($pagename, $source, $opt, &$par ) {
@@ -405,6 +489,9 @@ function TETextRows($pagename, $source, $opt, &$par ) {
 				$rows[0] = $part;
 				break;
 	} 
+	
+	replaceText($source, $page, $par);
+	
 	return $rows;
 } //}}}
 
@@ -555,7 +642,7 @@ function TEHighlight($opt, &$par, $row) {
 			else $item = $v[0];
 			$pos = $v[1] + $k * $par['hitoklen'];
 
-// Meng. The original one simply results in garbled text
+			// Meng. The original one simply results in garbled text
 // 			$row = substr_replace($row, $KeepToken."01∂".$KeepToken.$item.$KeepToken."02∂".$KeepToken, $pos, strlen($item));
 			$row = str_replace("$item", Keep("<span style='background-color:yellow'>").$item.Keep("</span>"), $row);
 
@@ -615,11 +702,13 @@ function TEHeader(&$opt, $par) {
 		case 'all':
 		case 'full':
 			$time = ($opt['timer']) ? '('.$par['time'].')' : '';
+			// Meng. Modify the output patterns a bit.
 			$pgs = ($par['listcnt']>1) ? '$[pages]' : '$[page]';
-			$from = "$[from] {$par['listcnt']} $pgs $[searched]";
-			if ($par['pagecnt']>1)
-				$from = "$[on] {$par['pagecnt']} $[pages] ".$from;
-			$out .= "[[#extracttop]]%lfloat%[+ '''{$opt['title']}''' +]  %right%'''{$cnt} $[results]''' &nbsp;&nbsp; {$from} &nbsp;&nbsp; '''{$par['pattern']}''' &nbsp;&nbsp; {$time}";
+			$from = "$[/] {$par['listcnt']} $pgs";
+// 			if ($par['pagecnt']>1)
+				$from = "$[on] {$par['pagecnt']} ".$from;
+// 			$out .= "[[#extracttop]]%lfloat%[+ '''{$opt['title']}''' +]  %right%'''{$cnt} $[results]''' &nbsp;&nbsp; {$from} &nbsp;&nbsp; '''[@{$par['pattern']}@]''' &nbsp;&nbsp; {$time}";
+			$out .= "[[#extracttop]]%lfloat%[+ '''{$opt['title']}''' +]  %right%'''{$cnt} $[results]''' &nbsp;&nbsp; {$from} &nbsp;&nbsp; {$time}";
 			$opt['footer'] = "%center% '''$[End of] {$opt['title']}'''  &nbsp;&nbsp; [[#extracttop|$[(start)]]]";
 			break;
 	}
@@ -711,7 +800,8 @@ function TELinkText($pagename,$imap,$path,$title,$txt,$fmt=NULL) {
 function TEStopwatch(&$par) {
 		$wtime = strtok(microtime(), ' ') + strtok('') - $par['stime'];
 		$xtime = sprintf("%04.2f %s", $wtime, ''); //time in secs	
-		$par['time'] = $xtime." $[seconds]";
+		//Meng. seconds => s
+		$par['time'] = $xtime." $[s]";
 } //}}}
 
 // markup (:extract ....:) search form
@@ -817,7 +907,9 @@ function FPLTextExtract($pagename, &$matches, $opt) {
 		$opt['section'] = strstr($opt['name'],'#');
 		$opt['name'] = substr($opt['name'],0,$sa);
 	}
+	
 	$list = MakePageList($pagename, $opt, 0);
+	
 	//extract page subset according to 'count=' parameter
 	if (@$opt['count'] && !$opt['section'])
 		TESliceList($list, $opt);

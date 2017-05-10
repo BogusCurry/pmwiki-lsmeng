@@ -230,12 +230,7 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
 		}
 	}
 
-// 	echo_($opt);
-// 	var_dump($opt);
-// 	if ($searchText === "apple") { echo_("changed");$opt['q'] = "applepie"; }
 	
-// 	echo_($searchText);
-
 /*
 // If this is a backlink search, search under the same page group.
 // 5 = strlen("link=")
@@ -281,7 +276,7 @@ if (substr($searchText,0,5) === "link=")
   $list = $matches;
 
   /* Meng: If there is only one match, go to the page directly. */
-  if (count($matches) == 1) { Redirect($matches[0]); }
+//   if (count($matches) == 1) { Redirect($matches[0]); }
 
   StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
 
