@@ -38,7 +38,6 @@ var scrollPositioner = scrollPositioner || (function()
 
 	// Private properties
 	var _isInit = false;
-	var _initCallback;
   var _isBrowsing = false;
   var _nWaitForLatex = 0;
   var _OS = "";
@@ -47,8 +46,10 @@ var scrollPositioner = scrollPositioner || (function()
   var _action;
   var _isDiaryPage;
   var _hash;
-
   
+  // Queue for callback functions on "image remove" event
+  var _eventCallback = {"init": []};
+	
   // Set a local storage item "name" with key/value pair "key" and "value".
   // If "key" is null then the item is treated as a simple variable; otherwise it is an
   // array. If "value" is null then the local storage is deleted in the former case; the
@@ -478,17 +479,19 @@ var scrollPositioner = scrollPositioner || (function()
 	// Can be expanded in the future.
 	function subscribe(event, callback)
 	{
-	  if (event === "init")
+	  if (_eventCallback[event] !== undefined)
 	  {
 	  	if (typeof callback !== "function")
 	  	{ throw "Unexpected param: " + callback; return; }
 	  	
-	  	if (_isInit) { callback(); } // If init done, invoke it now
-	  	else { _initCallback = callback; } // Else register it for later invocation
+			_eventCallback[event].push(callback);
+			return callback;
 	  }
-	  else { throw "Unexpected event: " + event; }
+	  else { throw "Unexpected event: " + event; return; }
 	}
 
+  function isInit() { return _isInit; }
+  
   function init()
   {
   	// Determine the _OS
@@ -640,7 +643,11 @@ var scrollPositioner = scrollPositioner || (function()
     }
     
     _isInit = true;
-		if (_initCallback) { _initCallback(); }
+
+		// Init event is open for registering callback
+		// Process them here
+		if (_eventCallback["init"].length)
+		{ _eventCallback["init"].forEach(function(fn) { fn(); }); }
   }
   
  	// Reveal public API	
@@ -654,6 +661,7 @@ var scrollPositioner = scrollPositioner || (function()
 		
     // Methods
 	  init: init,
+	  isInit: isInit,
 	  subscribe: subscribe,
 		setScrollAndCaretPosCookie: setScrollAndCaretPosCookie,
 	  highlightScroll: highlightScroll,

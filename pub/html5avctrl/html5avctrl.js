@@ -21,7 +21,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170507
+ * Version 20170511
  */
 
 // Arrange the play icon so that it situates at the center of the given video element.
@@ -82,8 +82,26 @@ function Html5AVCtrlRemoveIconAndPlay(element)
 	}, 100);
 }
 
+// Provide a subscribe method for registering callback on certain events.
+function Html5AVCtrlSubscribe(event, callback)
+{
+	if (Html5AVCtrlEventCallBack[event] !== undefined)
+	{
+		if (typeof callback !== "function")
+		{ throw "Unexpected param: " + callback; return; }
+		
+		Html5AVCtrlEventCallBack[event].push(callback);
+		return callback;
+	}
+	else { throw "Unexpected event: " + event; }
+}
+
 window.addEventListener('load', function()
 {
+	// Queue for callback functions on saved event
+	window.Html5AVCtrlEventCallBack = {"videoLoad": []};
+	window.Html5AVCtrlIsVideoLoad = false;
+	
 	/****************************Process Video elements************************************/
 	
   // Capture the audio/video element by changing the controls
@@ -175,6 +193,16 @@ window.addEventListener('load', function()
 				this.nextVideoElement.onloadedmetadata = 
 				function() { metadataOnLoad.call(this); }
 			}
+			// This is the last video element
+			else
+			{
+				Html5AVCtrlIsVideoLoad = true;
+				
+				// "Video load complete" is open for registering callback
+				// Process them here
+				if (Html5AVCtrlEventCallBack["videoLoad"].length)
+				{ Html5AVCtrlEventCallBack["videoLoad"].forEach(function(fn) { fn(); }); }
+			}
 		};
 
 		// On window resize, adjust the play icon for all the video elements
@@ -184,6 +212,7 @@ window.addEventListener('load', function()
 		  { Html5AVCtrlArrangePlayIcon(element); });
 		});
   }
+  else { Html5AVCtrlIsVideoLoad = true; }
 
   /*************************End of Video element processing******************************/
   
