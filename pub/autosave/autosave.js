@@ -45,7 +45,7 @@ var AS =
 
   basetime: 0,
   
-  savedEventCallback: [], // queue for callback functions on saved event
+  eventCallback: {"saved": []}, // queue for callback functions on saved event
 
   // Set a local storage item "name" with key/value pair "key" and "value".
   // If "key" is null then the item is treated as a simple variable; otherwise it is an 
@@ -72,7 +72,7 @@ var AS =
 
 	// Get the value of key "key" in local storage item "name"
 	// If "key" is null then the whole content of "name" is returned;
-	getStorageByKey(name, key)
+	getStorageByKey: function(name, key)
 	{
 	  if (key == null) 	{ return JSON.parse(localStorage.getItem(name)); }
 	  
@@ -123,8 +123,8 @@ var AS =
 
 				// Saved event is open for registering callback
 				// Process them here
-				if (AS.savedEventCallback.length)
-				{ AS.savedEventCallback.forEach(function(fn) { fn(); }); }
+				if (AS.eventCallback["saved"].length)
+				{ AS.eventCallback["saved"].forEach(function(fn) { fn(); }); }
 				
         break;
 			        
@@ -371,7 +371,7 @@ var AS =
       AS.setStorageByKey('VIEW-ScrollY', AS.pagenameU, 'n'+numBullet);
 	},
 
-  fixASStatusPos()
+  fixASStatusPos: function()
 	{
 		// Move the saving status to the bottom left of the textarea, ASSUMING the textarea
 		// height fills the browser area
@@ -385,16 +385,16 @@ var AS =
 	
 	// Provide a subscribe method for registering callback on certain events.
 	// Currently only saved event is supported.
-  subscribe(event, callback)
+  subscribe: function(event, callback)
 	{
-		if (event === "saved")
+		if (AS.eventCallback[event] !== undefined)
 	  {
 			if (typeof callback !== "function")
 			{ throw "Unexpected param: " + callback; return; }
 			
-			AS.savedEventCallback.push(callback);
+			AS.eventCallback[event].push(callback);
 	  }
-	  else { throw "Unexpected event: " + event; }
+	  else { throw "Unexpected event: " + event; return; }
 	},
   
 	init: function()

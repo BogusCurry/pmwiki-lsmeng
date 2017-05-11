@@ -15,10 +15,41 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170423
+* Version 20170511
 */
 
 var imgfocus = {};
+
+// Queue for callback functions on "image remove" event
+imgfocus.eventCallback = {"imgRm": []};
+
+// Provide a subscribe method for registering callback on certain events.
+imgfocus.subscribe = function(event, callback)
+{
+	if (imgfocus.eventCallback[event] !== undefined)
+	{
+		if (typeof callback !== "function")
+		{ throw "Unexpected param: " + callback; return; }
+		
+		imgfocus.eventCallback[event].push(callback);
+		return callback;
+	}
+	else { throw "Unexpected event: " + event; return; }
+};
+
+// Provide an unsubscribe method for registering callback on certain events.
+imgfocus.unsubscribe = function(event, callback)
+{
+	if (imgfocus.eventCallback[event] !== undefined)
+	{
+		if (typeof callback !== "function")
+		{ throw "Unexpected param: " + callback; return; }
+		
+		var idx = imgfocus.eventCallback[event].indexOf(callback);
+		if (idx !== -1) { console.log("unsubsribed");imgfocus.eventCallback[event].splice(idx, 1); }
+	}
+	else { throw "Unexpected event: " + event; return; }
+};
 
 imgfocus.clickHandle = function(element, idx)
 {
@@ -587,6 +618,11 @@ imgfocus.removeImgRecoverBackground = function(style)
     
     function removeImg()
     { element.remove();	delete imgfocus.popupImgElement; }
+    
+		// Img rm event is open for registering callback
+		// Process them here
+		if (imgfocus.eventCallback["imgRm"].length)
+		{ imgfocus.eventCallback["imgRm"].forEach(function(fn) { fn(); }); }
   }
 }
 
