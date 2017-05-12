@@ -58,9 +58,13 @@ var scrollPositioner = scrollPositioner || (function()
   {
     if (key == null)
     {
-      if (value == null) { localStorage.removeItem(name); }
-      else
-      { localStorage.setItem(name, value); }
+// DEBUG
+alert("Empty key (pagename)!"); throw "Empty key (pagename)!"; return;
+
+// Check if the content is nonempty first. If yes, don't overwrite
+//       if (value == null) { localStorage.removeItem(name); }
+//       else
+//       { localStorage.setItem(name, value); }
     }
     else
     {
@@ -511,6 +515,10 @@ var scrollPositioner = scrollPositioner || (function()
 
 		this.url = url;
     _pagename = this.pagename.toUpperCase();
+
+// DEBUG
+if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
+
 		_action = this.action;
 		_isDiaryPage = this.isDiaryPage;
     _wikitextElement = document.getElementById('wikitext');
@@ -605,7 +613,7 @@ var scrollPositioner = scrollPositioner || (function()
     else if (_action == 'edit')
     {
       fixTextareaHeight();
-      
+
       // Check cookie. If the cookie content begins with 'n', texts from browsing have
       // just been selected for editing. Delete it and scroll to the specified position.
       // focus() is not called before setScrollFromBrowse() in order not to disturb it.
@@ -629,7 +637,6 @@ var scrollPositioner = scrollPositioner || (function()
           var end = _textElement.form.text.value.indexOf("\n",pos);
         }
         end = end==-1 ? _textElement.form.text.value.length : end;
-        
         setCaretPos(start, end);
         setScrollPos(value);
       }
