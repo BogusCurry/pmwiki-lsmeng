@@ -492,6 +492,7 @@ $ROSPatterns ['/～/'] = "~";
 $ROSPatterns ['/todo_/'] = "%bgcolor=cyan%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
+$ROSPatterns ['/pagree_/'] = "%bgcolor=rgb(249,255,0)%Possible.%% ";
 $ROSPatterns ['/agree_/'] = "%bgcolor=rgb(106,235,19)%";
 $ROSPatterns ['/comment_/'] = "%bgcolor=pink%";
 $ROSPatterns ['/‘/'] = "'";

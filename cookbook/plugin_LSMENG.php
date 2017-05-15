@@ -1145,7 +1145,7 @@ function addpageTimerJs($countdownTimer)
   // Logout is called 5 mins after the computer standby.
   // Has to be > countDownTimerUpdateInterval+1 for correct behavior due to jitters in the
   // timer update
-  SDV($standbyLogoutDuration, 10);
+  SDV($standbyLogoutDuration, 300);
   
   // Java logout timer update period.
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
