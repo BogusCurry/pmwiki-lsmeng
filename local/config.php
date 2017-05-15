@@ -261,7 +261,7 @@ $ImgFocusFadeOutTime = 0;
 $ImgfocusZoomToFitTime = 0;
 $ImgfocusZoomScreenRatio = 0.95;
 $ImgfocusAlwaysZoom = true;
-$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', 'trashCanOpen.png', 'trashCanClose.png');
+$ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', 'trashCanOpen.png', 'trashCanClose.png', 'googleCalendar.png', 'searchBoxImg.png');
 include_once("$FarmD/cookbook/imgfocus.php"); 
 
 # For autosave. Delay is in milliseconds.
