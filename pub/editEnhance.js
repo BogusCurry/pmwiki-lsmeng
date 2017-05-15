@@ -665,6 +665,9 @@ window.addEventListener('keydown', function()
   // The 'Slash' is a fix for Yahoo Chinese input on Windows
   else if ((event.keyCode == 191 || event.code == 'Slash') && (event.ctrlKey || event.metaKey))
   {
+  	// Leave if textarea is not focused
+		if (editEnhanceElement !== document.activeElement) { return; }
+  	
     event.preventDefault();
     if ((event.ctrlKey && EditEnhanceOS == 'Mac') || ((event.altKey||event.metaKey)) && EditEnhanceOS == 'Windows')
     { 
