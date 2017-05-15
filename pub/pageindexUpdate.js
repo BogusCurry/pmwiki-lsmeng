@@ -1,5 +1,5 @@
 
-var pageindexUpdater = (function()
+(function()
 {
 	// Dependencies
 	var _AS = window.AS;
@@ -24,16 +24,8 @@ var pageindexUpdater = (function()
 		}
 	}
 	
-	// Reveal public API	
-	var returnObj =
-	{
-		// Methods
-	  requestPageindexUpdate: requestPageindexUpdate
-	};
-	return returnObj;
-
+	// window.addEventListener("focusout", function() { requestPageindexUpdate(); });
+	window.addEventListener("beforeunload", function() { requestPageindexUpdate(); });
 })();
 
 
-// window.addEventListener("focusout", function() { pageindexUpdater.requestPageindexUpdate(); });
-window.addEventListener("beforeunload", function() { pageindexUpdater.requestPageindexUpdate(); });

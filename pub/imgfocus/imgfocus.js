@@ -15,13 +15,20 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170511
+* Version 20170515
 */
 
 var imgfocus = {};
 
 // Queue for callback functions on "image remove" event
 imgfocus.eventCallback = {"imgRm": []};
+
+// Return true if a popup image currently exists; false otherwise
+imgfocus.popupImgExist = function()
+{
+  if (imgfocus.popupImgElement) { return true; }
+  else { return false; }
+};
 
 // Provide a subscribe method for registering callback on certain events.
 imgfocus.subscribe = function(event, callback)

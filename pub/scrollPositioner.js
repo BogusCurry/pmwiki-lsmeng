@@ -25,8 +25,8 @@
 * Cookies have been replaced with local storages except textAreaWidth, which has to be
 * sent to the server side.
 *
- * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170507
+* Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+* Version 20170515
 */
 
 "use strict";
@@ -46,7 +46,8 @@ var scrollPositioner = scrollPositioner || (function()
   var _action;
   var _isDiaryPage;
   var _hash;
-  
+  var _url;
+    
   // Queue for callback functions on "image remove" event
   var _eventCallback = {"init": []};
 	
@@ -504,22 +505,26 @@ alert("Empty key (pagename)!"); throw "Empty key (pagename)!"; return;
 		else { alert("Undefined OS!"); return; }
 		
 		// Record and remove hash tag if present
-		var url = window.location.href;
-		var match = url.match(/#.+$/i);
+		_url = window.location.href;
+		var match = _url.match(/#.+$/i);
 		if (match)
 		{
 			_hash = match[0];
-			window.location.href = url.replace(_hash,"#");
-			url = url.replace(_hash,"");
+			window.location.href = _url.replace(_hash,"#");
+			_url = _url.replace(_hash,"");
 		}
 
-		this.url = url;
-    _pagename = this.pagename.toUpperCase();
-
+		var match = _url.match(/\?n=([\.\w]+)/i);
+		if (!match) { _pagename = "MAIN.HOMEPAGE"; }
+		else { _pagename = match[1].toUpperCase(); }
+		
 // DEBUG
 if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
 
-		_action = this.action;
+		match = _url.match(/(\?|&)action=(\w+)/i);
+		if (!match) { _action = "browse"; }
+		else { _action = match[2]; }
+
 		_isDiaryPage = this.isDiaryPage;
     _wikitextElement = document.getElementById('wikitext');
     _textElement = document.getElementById('text');
@@ -557,9 +562,9 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
           if (selString == '')
           {
             if ((event.ctrlKey && _OS == 'Mac') || ((event.altKey||event.metaKey) && _OS == 'Windows'))
-            { window.open(url + '?action=edit', '_blank'); }
+            { window.open(_url + '?action=edit', '_blank'); }
             else
-            { window.location = url + '?action=edit'; }
+            { window.location = _url + '?action=edit'; }
             return;
           }
           
@@ -586,9 +591,9 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
           {
 // 						if (window.opener) { window.opener.location.reload(); }
 // 						else { window.open(window.location.href +'?action=edit', '_blank'); }
-						window.open(url +'?action=edit', '_blank');
+						window.open(_url +'?action=edit', '_blank');
           }
-          else { window.location = url + '?action=edit'; }
+          else { window.location = _url + '?action=edit'; }
         }
 
 				else
@@ -657,66 +662,60 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
 		{ _eventCallback["init"].forEach(function(fn) { fn(); }); }
   }
   
+  
+	window.addEventListener('load', function() { init.call(scrollPositioner); });
+
+	// Record the scroll and caret position on focusout and page close.
+	//window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie);
+	window.addEventListener("beforeunload", function() { setScrollAndCaretPosCookie(); });
+
+	// If the user clicks a hash jump link, handle it with my recipe.
+	window.addEventListener("click", function()
+	{
+		// Leave if the target is not a hyperlink or if shift key is pressed (for editing)
+		if (event.target.tagName != "A" || event.shiftKey) { return; }
+		
+		// If there is a hash tag && the target pagename is the same page
+		// then this is a hash jump within the same page
+		var url = event.target.href;
+		var match = url.match(/#.+$/i);
+		if (match && url.replace(match[0],"") == _url)
+		{
+	// 		event.preventDefault();
+			var idElement = document.getElementById(match[0].slice(1));
+			var bulletObj = idElement.parentElement;
+			if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
+			highlightScroll(bulletObj);
+		}
+	});
+	
+	// If the user directly makes a hash change to the url, handle it with my recipe.
+	window.addEventListener("hashchange", function()
+	{
+		event.preventDefault();
+		var url = event.newURL;
+		var match = url.match(/#.+$/i);
+		if (!match) { return; }
+		var idElement = document.getElementById(match[0].slice(1));
+		if (!idElement) { return; }
+		var bulletObj = idElement.parentElement;
+		if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
+		highlightScroll();
+	});
+	
  	// Reveal public API	
 	var returnObj =
 	{
 		// Properties
-		pagename: "",
-		action: "",
 		isDiaryPage: 0,
-		url: "",
 		
     // Methods
-	  init: init,
 	  isInit: isInit,
 	  subscribe: subscribe,
-		setScrollAndCaretPosCookie: setScrollAndCaretPosCookie,
-	  highlightScroll: highlightScroll,
 	  setStorageByKey: setStorageByKey
 	};
 	return returnObj;
   
 })();
 
-/*************************************End of module**************************************/
 
-window.addEventListener('load', function() { scrollPositioner.init(); });
-
-// Record the scroll and caret position on focusout and page close.
-//window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie);
-window.addEventListener("beforeunload", function()
-{ scrollPositioner.setScrollAndCaretPosCookie(); });
-
-// If the user clicks a hash jump link, handle it with my recipe.
-window.addEventListener("click", function()
-{
-	// Leave if the target is not a hyperlink or if shift key is pressed (for editing)
-	if (event.target.tagName != "A" || event.shiftKey) { return; }
-	
-	// If there is a hash tag && the target pagename is the same page
-	// then this is a hash jump within the same page
-	var url = event.target.href;
-  var match = url.match(/#.+$/i);
-	if (match && url.replace(match[0],"") == scrollPositioner.url)
-	{
-// 		event.preventDefault();
-		var idElement = document.getElementById(match[0].slice(1));
-		var bulletObj = idElement.parentElement;
-		if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
-		scrollPositioner.highlightScroll(bulletObj);
-	}
-});
-
-// If the user directly makes a hash change to the url, handle it with my recipe.
-window.addEventListener("hashchange", function()
-{
-	event.preventDefault();
-	var url = event.newURL;
-	var match = url.match(/#.+$/i);
-	if (!match) { return; }
-	var idElement = document.getElementById(match[0].slice(1));
-	if (!idElement) { return; }
-	var bulletObj = idElement.parentElement;
-	if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
-	scrollPositioner.highlightScroll(bulletObj);
-});

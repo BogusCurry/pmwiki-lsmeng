@@ -290,12 +290,9 @@ if ($action == 'edit' || $action == 'browse')
   {
     $isDiaryPage = isDiaryPage();
 		// Memorize and set the scroll position.
-		$HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/scrollPositioner.js'></script>
-		<script type='text/javascript'>
-			scrollPositioner.pagename = '$pagename';
-			scrollPositioner.isDiaryPage = '$isDiaryPage';
-			scrollPositioner.action = '$action';
-		</script>";
+		$HTMLHeaderFmt[] .= "
+		<script src='$PubDirUrl/scrollPositioner.js'></script>
+		<script> scrollPositioner.isDiaryPage = '$isDiaryPage';	</script>";
 	}
 }
 
