@@ -8,7 +8,7 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170511
+* Version 20170515
 */
 
 "use strict";
@@ -260,7 +260,7 @@
 		
 		if (window.imgfocus) 
 	 	{
-	 	  if (imgfocus.popupImgElement)
+	 	  if (imgfocus.popupImgExist())
 	 	  {
 	 	   	var callback = imgfocus.subscribe("imgRm", function()
 	 	   	{
@@ -489,8 +489,7 @@ console.log("Vidoe onload; GC adjust Pos");
 			}
 		}
 	}());
-	
-;
+
 }());
 
 
