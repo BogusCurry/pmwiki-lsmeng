@@ -260,7 +260,7 @@
 		
 		if (window.imgfocus) 
 	 	{
-	 	  if (imgfocus.popupImgExist())
+	 	  if (imgfocus.isImgfocusActive())
 	 	  {
 	 	   	var callback = imgfocus.subscribe("imgRm", function()
 	 	   	{

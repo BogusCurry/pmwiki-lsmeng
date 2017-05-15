@@ -24,7 +24,7 @@ var imgfocus = {};
 imgfocus.eventCallback = {"imgRm": []};
 
 // Return true if a popup image currently exists; false otherwise
-imgfocus.popupImgExist = function()
+imgfocus.isImgfocusActive = function()
 {
   if (imgfocus.popupImgElement) { return true; }
   else { return false; }

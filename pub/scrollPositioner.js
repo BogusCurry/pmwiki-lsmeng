@@ -555,6 +555,9 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
         // Spaces are all removed for comparison.
         if (event.keyCode == 191 && (event.ctrlKey || event.metaKey))
         {
+        	// Leave if document body is not focused
+					if (document.body !== document.activeElement) { return; }
+					
           // Remove spaces and replace special characters.
           var sel = window.getSelection();
           var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;");
