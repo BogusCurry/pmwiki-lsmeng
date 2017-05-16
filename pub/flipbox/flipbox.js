@@ -11,6 +11,8 @@
 	Copyright 2008 Petko Yotov http://5ko.fr
 
 	Version 20110827
+	
+	20170516. Modified by Ling-San Meng.
 */
 FlipboxStatus = new Array();
 
@@ -44,12 +46,42 @@ function flipbox(id, st, update)
       icon.innerHTML = "["+newst+"]";  
   }
   
-
 	if(update)
 	{
 		var ajaxdot = new Image();
 		ajaxdot.src= FlipboxPageUrl + id + '&state='+FlipboxStatus[id]+'&r='+Math.random();
+
+		// Meng. On flipbox update, modify hyperlinks' color.
+		var flipboxElement = document.getElementById("_fbl" + id);
+		Array.prototype.forEach.call(flipboxElement.children, function(item)
+		{
+			if (item.tagName === "A")
+			{
+			  if (FlipboxStatus[id] === "x")
+			  {
+					item.originalColor = window.getComputedStyle(item)['color'];
+					item.style.color = "inherit";
+				}
+			  else { item.style.color = item.originalColor; }
+			}
+		});
 	}
 }
 
+// Meng. On document load, modify hyperlinks' color.
+document.addEventListener('DOMContentLoaded', function()
+{
+	var flipboxElement = document.querySelectorAll(".fbx");
+	Array.prototype.forEach.call(flipboxElement, function(flipboxElement)
+	{
+		Array.prototype.forEach.call(flipboxElement.children, function(item)
+		{
+			if (item.tagName === "A")
+			{
+				item.originalColor = window.getComputedStyle(item)['color'];
+				item.style.color = "inherit";
+			}
+		});
+	});
+});
 
