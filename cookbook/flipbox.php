@@ -10,6 +10,10 @@
   and lack of warranty.
 
   Copyright 2008-2011 Petko Yotov www.pmwiki.org/Petko
+  
+  Copyright 2008-2011 Petko Yotov www.pmwiki.org/Petko
+  
+	20170516. Modified by Ling-San Meng.
 */
 
 # Version date
@@ -44,7 +48,8 @@ function FmtFlipbox($pagename, $_x, $id) {
   var FlipboxPageUrl = \"\$PageUrl?action=flipbox&box=\";
   var FlipboxChoices = \"$FlipboxChoices$FlipboxChoices\";
   var FlipboxIcon = new Array('{$FlipboxIcon[0]}', '{$FlipboxIcon[1]}');
-  //--></script><script type='text/javascript' src='$FlipboxPubDirUrl/flipbox.js'></script>";
+  //--></script><script type='text/javascript' src='$FlipboxPubDirUrl/flipbox.js'></script>
+  <link rel='stylesheet' href='$FlipboxPubDirUrl/flipbox.css' type='text/css'>";
 
   $_y = $_x{0};
   $wiki = sprintf($FlipboxWikiStyle, "fb$_y", "_fbl$id");
