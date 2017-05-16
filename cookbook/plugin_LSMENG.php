@@ -518,6 +518,9 @@ function checkTimeStamp()
         // Long timer expires, log out the user and shut down the site.
         if ($timeDiff >= $siteLogoutIdleDuration)
         {
+          global $sysLogFile;
+          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Long timer expires. Site shut down\n",	FILE_APPEND);
+          
 //          write temp cookie
           
           HandleLogoutA($pagename.$actionStr);
@@ -527,8 +530,12 @@ function checkTimeStamp()
         // reading passwords.
         else
         {
+          global $sysLogFile;
+          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Short timer expires. Pages locked\n",	FILE_APPEND);
+          
           @session_start();
           unset($_SESSION['authpw']);
+					$_SESSION['passwordCount'] = 0;
           @session_write_close();
         }
       }
@@ -1496,6 +1503,9 @@ function rebuildPageindexFile()
   
   $opt['action'] = 'search';
   MakePageList("Main.Homepage", $opt, 0, 1);
+  
+	global $sysLogFile;
+	file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Pageindex rebuilt\n",	FILE_APPEND);
 }
 
 function getPageindexUpdateTime($pagename)
@@ -1594,9 +1604,9 @@ function syncPageindex($flag = false)
     if (strlen($url) > 2000)
     {
 // DEBUG
-			file_put_contents("$pageindexTimeDir/log.txt", "Too many pages. Perform a blocking pageindex update\n", FILE_APPEND);
-    	foreach ($pagelist as $pagename) { setPageindexUpdateTime($pagename); }
-    	Meng_PageIndexUpdate($pagelist);
+      file_put_contents("$pageindexTimeDir/log.txt", "Too many pages. Perform a blocking pageindex update\n", FILE_APPEND);
+      foreach ($pagelist as $pagename) { setPageindexUpdateTime($pagename); }
+      Meng_PageIndexUpdate($pagelist);
     }
     else { post_async($url); }
   }
@@ -1622,7 +1632,7 @@ function updatePageindex()
       {
 // DEBUG
         global $pageindexTimeDir;
-        file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." updated\n", FILE_APPEND);
+        file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Updating ".$pagename."\n", FILE_APPEND);
         
         // Meng. Record the pageindex update time for this page
         setPageindexUpdateTime($pagename);
@@ -1643,7 +1653,13 @@ function updatePageindex()
       }
     }
     
-    Meng_PageIndexUpdate($pagelist);
+    if (sizeof($pagelist) > 0)
+    {
+      Meng_PageIndexUpdate($pagelist); 
+      
+      global $PageIndexFile;
+      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Size after update: ".round(filesize($PageIndexFile)/1000)." KB\n", FILE_APPEND);
+    }
     
     exit;
   }
@@ -1880,6 +1896,9 @@ function isPasswdCorrect($passwd)
   // only happen when initializing.
   if (stripos($decryptText, "version=pmwiki") !== false || $text === false)
   {
+    global $sysLogFile;
+    file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Login\n", FILE_APPEND);
+    
     @session_start();
 //     $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
     
@@ -1899,6 +1918,9 @@ function isPasswdCorrect($passwd)
   }
   else
   {
+    global $sysLogFile;
+    file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Wrong decrypt key\n", FILE_APPEND);
+    
 //$firstFewWord = substr($text,0,50);
 //echo "Wrong passwd. First few words: $firstFewWord<br>";
     echo "<span style='color:red; font-weight:bold;'>Password incorrect!</span>";
@@ -1907,8 +1929,8 @@ function isPasswdCorrect($passwd)
 }
 
 // Return the login date/time
-$FmtPV['$loginTime'] = 'getLoginTime()';
-function getLoginTime() { return $_SESSION['MASTER_KEY'][2]; }
+// $FmtPV['$loginTime'] = 'getLoginTime()';
+// function getLoginTime() { return $_SESSION['MASTER_KEY'][2]; }
 
 // Defunct. Attempt to clear and/or authenticate the Apache htaccess passwords.
 function httpAuth()

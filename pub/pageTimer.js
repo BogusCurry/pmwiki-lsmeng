@@ -12,10 +12,10 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170507
+ * Version 20170517
  */
 
-var pageTimer = 
+var pageTimer =
 {
   TIMER_EXP_DURATION: 0,
   STANDBY_LOGOUT_DURATION: 0,
@@ -30,92 +30,89 @@ var pageTimer =
   
   // Counting down the timer by comparing the system clock and the last recorded time
   // instant.
-	updateClock: function()
-	{
-	  // In case that the initialization is not completed, return immediately.
-	  if (pageTimer.timer == 0) { return; }
-	  
+  updateClock: function()
+  {
+    // In case that the initialization is not completed, return immediately.
+    if (pageTimer.timer == 0) { return; }
+    
     var clock = new Date();
     var diff = pageTimer.timer - clock.getTime()/1000;
     
     // Check computer standby and logout
-		var timeDiff = pageTimer.lastDiff - diff;
-		if (timeDiff >= pageTimer.STANDBY_LOGOUT_DURATION)
-		{	
-			// For debugging
-			var clock = new Date();
-			var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
-	    hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
+    var timeDiff = pageTimer.lastDiff - diff;
+    if (timeDiff >= pageTimer.STANDBY_LOGOUT_DURATION)
+    {
+      // For debugging
+      var clock = new Date();
+      var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
+      hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
       var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
-	       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
-	    var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
+      (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
+      var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
       localStorage.setItem('StandbyLogout', msg);
       
-      // Update an edited page's pageindex right before closing
-      if (window.pageindexUpdater) { pageindexUpdater.requestPageindexUpdate(); }
-			
-      window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action;
-	    return;
-		}
+      window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action + '&pageTimer';
+      return;
+    }
 /*
-		// For debugging purpose
-		else if (timeDiff > 5)
-		{
-		  var clock = new Date();
-			var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
-	    hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
+    // For debugging purpose
+    else if (timeDiff > 5)
+    {
+      var clock = new Date();
+      var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
+      hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
       var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
-	       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
-		  var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
-		  console.log(msg);
-		}
+      (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
+      var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
+      console.log(msg);
+    }
 */
-
-		pageTimer.lastDiff = diff;
-		
+    
+    pageTimer.lastDiff = diff;
+    
     // Timer expires
-		if (diff <= 0)
-		{
-		  window.location = 'http://' + pageTimer.closePagename;
-		  return;
-		}
-
+    if (diff <= 0)
+    {
+      window.location = 'http://' + pageTimer.closePagename;
+      return;
+    }
+    
     diff = Math.round(diff);
-		var hour = Math.floor(diff / 3600);
-		diff -= hour*3600;
-		var minutes = Math.floor(diff / 60);
-		diff -= minutes*60;		
-		var seconds = Math.round(diff);
-
-		hour = hour < 10 ? "0" + hour : hour;
-		minutes = minutes < 10 ? "0" + minutes : minutes;
-		seconds = seconds < 10 ? "0" + seconds : seconds;
+    var hour = Math.floor(diff / 3600);
+    diff -= hour*3600;
+    var minutes = Math.floor(diff / 60);
+    diff -= minutes*60;
+    var seconds = Math.round(diff);
+    
+    hour = hour < 10 ? "0" + hour : hour;
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
     
     document.querySelector('#ID_LOGOUTTIMER').textContent = hour +":" + minutes + ":" + seconds;
-	},
-
+  },
+  
   // Reset the timer.
   resetTimer: function()
   {
-		if (document.querySelector('#ID_LOGOUTTIMER'))
-		{ document.querySelector('#ID_LOGOUTTIMER').textContent = pageTimer.hourInit + ":" + pageTimer.minutesInit + ":" + pageTimer.secondsInit; }
-
-		var clock = new Date();    
-		pageTimer.timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
+    if (document.querySelector('#ID_LOGOUTTIMER'))
+    { document.querySelector('#ID_LOGOUTTIMER').textContent = pageTimer.hourInit + ":" + pageTimer.minutesInit + ":" + pageTimer.secondsInit; }
+    
+    var clock = new Date();
+    pageTimer.timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
   },
   
   init: function()
   {
-		var hour = parseInt(pageTimer.TIMER_EXP_DURATION / 3600, 10);
-		var minutes = parseInt((pageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
-		var seconds = parseInt(pageTimer.TIMER_EXP_DURATION % 60, 10);
-
- 		pageTimer.hourInit = hour < 10 ? "0" + hour : hour;
-		pageTimer.minutesInit = minutes < 10 ? "0" + minutes : minutes;
-		pageTimer.secondsInit = seconds < 10 ? "0" + seconds : seconds;
-  
- 	  pageTimer.resetTimer();
-	  setInterval(pageTimer.updateClock, 1000);
+    var hour = parseInt(pageTimer.TIMER_EXP_DURATION / 3600, 10);
+    var minutes = parseInt((pageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
+    var seconds = parseInt(pageTimer.TIMER_EXP_DURATION % 60, 10);
+    
+    pageTimer.hourInit = hour < 10 ? "0" + hour : hour;
+    pageTimer.minutesInit = minutes < 10 ? "0" + minutes : minutes;
+    pageTimer.secondsInit = seconds < 10 ? "0" + seconds : seconds;
+    
+    pageTimer.resetTimer();
+    setInterval(pageTimer.updateClock, 1000);
   }
 };
 
@@ -126,36 +123,36 @@ window.addEventListener('load', pageTimer.init);
 // If the module Autosave is included, this is editing
 if (window.AS)
 {
-	AS.subscribe("saved", (function()
-	{
-		// If the module pageindexUpdater is included, set a timer for requesting 
-		// pageindex update on saved event
-		if (!window.pageindexUpdater) { return function () { pageTimer.resetTimer(); } }
-		else
-		{
-			var timerID;
-			
-			return function()
-			{
-				// On saving, update the shutdown timer as the server keeps its timer depending on 
-				// the saving activity. The timer value shown is then in line with the server's one
-				pageTimer.resetTimer();
-		
-				// Right before the server restricts page access (logout timer is set to be the same
-				// as the counter timer), perform a pageindex update			
-				if (timerID) { clearTimeout(timerID); }
-				timerID = setTimeout(function()
-				{
-					pageindexUpdater.requestPageindexUpdate();
-				}, (pageTimer.TIMER_EXP_DURATION - 3)*1000);
-			};
-		}
-	})());  
+  AS.subscribe("saved", (function()
+  {
+    // If the module pageindexUpdater is included, set a timer for requesting
+    // pageindex update on saved event
+    if (!window.pageindexUpdater) { return function () { pageTimer.resetTimer(); } }
+    else
+    {
+      var timerID;
+      
+      return function()
+      {
+        // On saving, update the shutdown timer as the server keeps its timer depending on
+        // the saving activity. The timer value shown is then in line with the server's one
+        pageTimer.resetTimer();
+        
+        // Right before the server restricts page access (logout timer is set to be the same
+        // as the counter timer), perform a pageindex update
+        if (timerID) { clearTimeout(timerID); }
+        timerID = setTimeout(function()
+        {
+          pageindexUpdater.requestPageindexUpdate();
+        }, (pageTimer.TIMER_EXP_DURATION - 3)*1000);
+      };
+    }
+  })());
 }
 // Else this is browsing. Update the shutdown timer on any user activity
 else
 {
-	window.addEventListener('click', pageTimer.resetTimer);
-	window.addEventListener('keydown', pageTimer.resetTimer);
-	window.addEventListener('scroll', pageTimer.resetTimer);  
+  window.addEventListener('click', pageTimer.resetTimer);
+  window.addEventListener('keydown', pageTimer.resetTimer);
+  window.addEventListener('scroll', pageTimer.resetTimer);
 }

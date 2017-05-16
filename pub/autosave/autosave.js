@@ -360,8 +360,7 @@ var AS =
 		var HTML = textContent.substring(0,caretPos);
 
 		// Computes the number of times bullets appearing in the string "HTML".
-		var numBullet = (HTML.match(/\n\*/g) || []).length + (HTML.match(/\n＊/g) || []).length +
-                     (HTML.match(/\n#/g) || []).length + (HTML.match(/\n＃/g) || []).length;
+		var numBullet = (HTML.match(/\n[\*＊#＃]/g) || []).length;
 
     var firstChar = HTML.substring(0,1);
 		if (firstChar == '*' || firstChar == '#' || firstChar == '＊' || firstChar == '＃')

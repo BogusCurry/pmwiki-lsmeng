@@ -53,7 +53,8 @@ function flipbox(id, st, update)
 
 		// Meng. On flipbox update, modify hyperlinks' color.
 		var flipboxElement = document.getElementById("_fbl" + id);
-		Array.prototype.forEach.call(flipboxElement.children, function(item)
+		// Get all of the children of flipboxElement
+		Array.prototype.forEach.call(flipboxElement.getElementsByTagName("*"), function(item)
 		{
 			if (item.tagName === "A")
 			{
@@ -72,9 +73,11 @@ function flipbox(id, st, update)
 document.addEventListener('DOMContentLoaded', function()
 {
 	var flipboxElement = document.querySelectorAll(".fbx");
+	
 	Array.prototype.forEach.call(flipboxElement, function(flipboxElement)
 	{
-		Array.prototype.forEach.call(flipboxElement.children, function(item)
+		// Get all of the children of flipboxElement
+		Array.prototype.forEach.call(flipboxElement.getElementsByTagName("*"), function(item)
 		{
 			if (item.tagName === "A")
 			{

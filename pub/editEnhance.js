@@ -674,10 +674,10 @@ window.addEventListener('keydown', function()
     	// Declare a global property to keep track of whether the associated view page has
 			// been opened. This is to work with autosave.js to auto refresh the view page.
 			window.EditEnhanceViewWindow =
-			window.open(window.location.href.replace(/(\?|&)action=edit/i,''), '_blank');
+			window.open(window.location.href.replace(/[\?&]action=edit/i,''), '_blank');
     }
     else
-    { window.location = window.location.href.replace(/(\?|&)action=edit/i,''); }
+    { window.location = window.location.href.replace(/[\?&]action=edit/i,''); }
   }
 
 /*

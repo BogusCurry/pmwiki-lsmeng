@@ -350,18 +350,16 @@ $HTMLStylesFmt['teimages'] = " .image {max-width:10em; } ";
 	//stop timer
 	TEStopwatch($par);	
 	//make header and footer
-	
+
 	// Meng. Modify the output in the case of replacing.
 	if (isset($_REQUEST["replace"]))
 	{
 	  syncPageindex(true);
 
-		// Check if the number of replacement is in line with the number of search results.
-		$opt["title"] = "Replaced:";
-		$nReplaced = $_REQUEST["replaceCount"];
-		if ($nReplaced != $par['matchnum']) { $opt["title"] .= " ($nReplaced)";	}
+		$opt["title"] = "Replace Results:";
 		
-		$par["pattern"] = "\"".$opt["q"]."\"";
+		global $sysLogFile;
+		file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." ".$_REQUEST["replaceCount"]." replaces in ".$par['pagecnt']." pages\n",	FILE_APPEND);
 	}
 	
 	$header = TEHeader($opt, $par);
@@ -688,7 +686,10 @@ function TEShortenRow($row, $par, $opt) {
 
 //make header
 function TEHeader(&$opt, $par) {
-	$cnt = $par['matchnum'];
+	// Meng.
+	if (isset($_REQUEST["replace"])) {	$cnt = $_REQUEST["replaceCount"]; }
+  else { $cnt = $par['matchnum']; }
+  
 	$out = "";
 	if ($opt['header']) $out .= "(:div001 class='te-header':)\n";
 	switch($opt['header']) {
