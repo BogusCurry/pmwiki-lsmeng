@@ -521,9 +521,9 @@ alert("Empty key (pagename)!"); throw "Empty key (pagename)!"; return;
 // DEBUG
 if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
 
-		match = _url.match(/(\?|&)action=(\w+)/i);
+		match = _url.match(/[\?&]action=(\w+)/i);
 		if (!match) { _action = "browse"; }
-		else { _action = match[2]; }
+		else { _action = match[1]; }
 
 		_isDiaryPage = this.isDiaryPage;
     _wikitextElement = document.getElementById('wikitext');

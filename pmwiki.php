@@ -2053,6 +2053,12 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 			$text = "[@".file_get_contents("$pageindexTimeDir/log.txt")."@]";
 		}
 		
+		else if (strcasecmp($pagename,"Main.SysLog") == 0)
+		{
+			global $sysLogFile;
+			$text = "[@".file_get_contents("$sysLogFile")."@]";
+		}
+		
 		// All other pages, including diary pages.
 		else
 		{
@@ -2630,7 +2636,15 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
     {
       // For clicking the logout button
       if (substr($pagename,0,strlen("CLICKLOGOUT")) == "CLICKLOGOUT")
-      { HandleLogoutA(substr($pagename,strlen("CLICK")).$actionStr); }
+      {
+      	global $sysLogFile;
+      	if (isset($_GET["pageTimer"]))
+      	{	file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Logout due to standby\n", FILE_APPEND); }
+      	else
+      	{ file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Logout clicked\n",	FILE_APPEND); }
+      	
+      	HandleLogoutA(substr($pagename,strlen("CLICK")).$actionStr);
+      }
 
       // During login, if the pagename is preceded by the logout keyword, 
       // purge all the page reading passwords
@@ -2720,11 +2734,46 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   exit;
 }
       
+// Meng. Policy for too many failed password attempts.
+function abortOnPasswdRetryLimit()
+{
+	global $pwRetryLimit, $AuthPw;
+	$nPwAttempt = sizeof($AuthPw);
+	if ($nPwAttempt >= $pwRetryLimit)
+	{
+	  $wrongPasswd = "";
+		for ($i = 0; $i < $nPwAttempt; $i++) { $wrongPasswd .= " ".$AuthPw[$i]; }
+		global $sysLogFile;
+		file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." TOO MANY FAILED PASSWORD ATTEMPTS:".$wrongPasswd."\n", FILE_APPEND);
+
+// 				sendAlertEmail("Pmwiki ".$nPwAttempt." Failed Passwords", "Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
+		Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
+	}
+}
+
 function IsAuthorized($chal, $source, &$from)
 {
   global $AuthList, $AuthPw, $AllowPassword;
-
   if (!$chal) return $from;
+  
+	/**************************************************************************************/
+	// Meng. Check the master password for decryption here.
+  if (!isset($_SESSION['MASTER_KEY']))
+  {
+  	$nPwAttempt = sizeof($AuthPw);
+  	if ($nPwAttempt === 0) { return $from; }
+  	
+		// If the passphrase just entered is correct. Redirect.
+		if (isPasswdCorrect($AuthPw[$nPwAttempt - 1]))
+		{ global $pagename, $actionStr; redirect($pagename.$actionStr); }
+		else
+		{
+			abortOnPasswdRetryLimit();
+			return $from;
+		}
+  }
+  /**************************************************************************************/
+  
   $auth = 0; 
   $passwd = array();
   foreach((array)$chal as $c)
@@ -2746,31 +2795,16 @@ function IsAuthorized($chal, $source, &$from)
         continue;
       }
       
-      /* Meng. On top of the the original password check mechanism (MD5 hash), add the 
-       * full text decryption check mechanism.
-       */
-      // Execute the original password check if the decryption passphrase has been 
-      // captured. 
-      if (isset($_SESSION['MASTER_KEY']))
-      { if (crypt($AllowPassword, $pw) == $pw) { $auth=1; continue; } } # nopass
-      
-      foreach((array)$AuthPw as $pwresp)                       # password
+      if (crypt($AllowPassword, $pw) == $pw) { $auth=1; continue; } # nopass
+			      
+      foreach((array)$AuthPw as $pwresp) # password
       {
-				// Execute the original password check if the decryption passphrase has been 
-				// captured.
-        if (isset($_SESSION['MASTER_KEY']))
-        {
-          // The password for encryption is a universal key; it unlocks everything
-          if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
-          { $auth = 1; continue; }
-          // Else it's the default action
-          else if (crypt($pwresp, $pw) == $pw) { $auth = 1; continue; }
-        }
-        
-        // If the passphrase just entered is correct. Redirect. Otherwise it conflicts 
-        // with the password retry limit check later.
-        else if (isPasswdCorrect($pwresp))
-        { global $pagename, $actionStr; redirect($pagename.$actionStr); }
+				// Meng. The password for encryption is a universal key; it unlocks everything
+				if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
+				{ $auth = 1; continue; }
+				
+				// Else it's the default action
+				else if (crypt($pwresp, $pw) == $pw) { $auth = 1; continue; }
       } 
     }
   }
@@ -2780,22 +2814,40 @@ function IsAuthorized($chal, $source, &$from)
 
 //$auth=1;
 /****************************************************************************************/
-
-  // If we are indeed checking a password hash, or the encryption passphrase
-  if (substr($chal,0,3) == "$1$" || !isset($_SESSION['MASTER_KEY']))
-  {
-    if ($auth != 1)
-    { 
-			global $pwRetryLimit;
-			$nPwAttempt = sizeof($AuthPw);
-      if ($nPwAttempt >= $pwRetryLimit)
-      {
-// 				sendAlertEmail("Pmwiki ".$nPwAttempt." Failed Passwords", "Failed Passwords: ".$AuthPw[0]." ".$AuthPw[1]);
-				Abort("TOO MANY FAILED PASSWORD ATTEMPTS!"); 
-      }
-    }
-  }
-
+	// Meng. Prevent password guessing
+	// See if we are indeed checking a password hash
+	if (substr($chal,0,2) === "$1" || substr($chal,0,2) === "$2")
+	{
+		// $_SESSION['passwordCount'] is used to keep track of the number of passwords typed
+		$nPwAttempt = sizeof($AuthPw);
+		if ($nPwAttempt > $_SESSION['passwordCount'])
+		{
+			if ($auth != 1)
+			{
+				// Keep track of the wrong passwords the user has entered
+				@session_start();
+				$_SESSION['passwordCount'] = $nPwAttempt;
+				@session_write_close();
+				
+				global $sysLogFile;
+				file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Wrong password typed\n", FILE_APPEND);
+				
+				abortOnPasswdRetryLimit();
+			}
+			else
+			{
+				@session_start();
+				$_SESSION['passwordCount'] = $nPwAttempt;
+				@session_write_close();
+				
+				global $sysLogFile;
+				if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
+				{ file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Decrypt key typed\n", FILE_APPEND); }
+				else
+				{ file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Correct password typed\n", FILE_APPEND); }
+			}
+		}
+	}
 /****************************************************************************************/
 
   return array($auth, $passwd, $source);

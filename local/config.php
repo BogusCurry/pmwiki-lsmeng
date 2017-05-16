@@ -385,6 +385,13 @@ $HTMLHeaderFmt['searchReplace'] = "
 }
 */
 
+// Construct a system log file
+$sysLogFile = "wiki.d/systemLog.txt";
+if (!file_exists($sysLogFile))
+{
+	file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Init\n",	FILE_APPEND);
+}
+
 /*
 // For debugging
 file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
@@ -492,9 +499,10 @@ $ROSPatterns ['/～/'] = "~";
 $ROSPatterns ['/todo_/'] = "%bgcolor=cyan%";
 $ROSPatterns ['/gold_/'] = "%bgcolor=gold%";
 $ROSPatterns ['/red_/'] = "%color=red%";
-$ROSPatterns ['/pagree_/'] = "%bgcolor=rgb(249,255,0)%Possible.%% ";
+$ROSPatterns ['/pagree_/'] = "%bgcolor=rgb(249,255,0)%Possible%%. ";
 $ROSPatterns ['/agree_/'] = "%bgcolor=rgb(106,235,19)%";
 $ROSPatterns ['/comment_/'] = "%bgcolor=pink%";
+$ROSPatterns ['/WA_/'] = "%bgcolor=rgb(125,133,0)%WA%%. ";
 $ROSPatterns ['/‘/'] = "'";
 $ROSPatterns ['/’/'] = "'";
 $ROSPatterns ['/“/'] = "\"";
