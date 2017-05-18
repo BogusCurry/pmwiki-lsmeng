@@ -1,10 +1,10 @@
 var pageindexUpdater = (function()
 {
-  // Dependencies
+  /* Dependencies */
   var _AS = window.AS;
   if (!_AS) { throw "Autosave is missing!"; return; }
   
-  // Private variables
+  /* Private variables */
   var _idx = window.location.href.indexOf("?action=edit");
   var _updateUrl = window.location.href.slice(0, _idx) + "&updatePageIndex=1";
   var _isSaved = false;
