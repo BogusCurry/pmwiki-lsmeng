@@ -33,10 +33,10 @@
 
 var scrollPositioner = scrollPositioner || (function()
 {
-	// Dependencies
+	/* Dependencies */
 	var _imgfocus = window.imgfocus;
 
-	// Private properties
+	/* Private properties */
 	var _isInit = false;
   var _isBrowsing = false;
   var _nWaitForLatex = 0;
@@ -447,7 +447,7 @@ alert("Empty key (pagename)!"); throw "Empty key (pagename)!"; return;
 	function setScrollAndCaretPosCookie()
 	{
 		// Remove the LS data if the page text contains only the delete keyword
-		if (_action == 'edit' && _textElement.form.text.value.trim() == 'delete')
+		if (_action == 'edit' && _textElement.value.trim() == 'delete')
 		{
 			setScrollPosLS(null);
 			setCaretPosLS(null);
@@ -638,14 +638,14 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
         if (typeof pos == 'undefined')
         {
           var start = 0;
-          var end = _textElement.form.text.value.indexOf("\n",0);
+          var end = _textElement.value.indexOf("\n",0);
         }
         else
         {
-          var start = _textElement.form.text.value.lastIndexOf("\n",pos-1)+1;
-          var end = _textElement.form.text.value.indexOf("\n",pos);
+          var start = _textElement.value.lastIndexOf("\n",pos-1)+1;
+          var end = _textElement.value.indexOf("\n",pos);
         }
-        end = end==-1 ? _textElement.form.text.value.length : end;
+        end = end==-1 ? _textElement.value.length : end;
         setCaretPos(start, end);
         setScrollPos(value);
       }

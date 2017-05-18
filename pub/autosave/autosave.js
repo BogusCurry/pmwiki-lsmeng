@@ -105,17 +105,17 @@ var AS =
 				AS.basetime = as_time;
 
 				// If the associated view page has been opened, refresh it upon saving.
-				if (typeof EditEnhanceViewWindow != "undefined")
+				if (window.editEnhance && editEnhance.getBrowseWindow)
 				{
 					// If the viewing page is suspended by a browser plugin and the url has been
 					// replaced, security error might result due to same-origin policy
 					try
 					{
-						var pageURL = EditEnhanceViewWindow.location.href;
+						var pageURL = editEnhance.getBrowseWindow().location.href;
 						if (pageURL)
 						{
 							var pagename = pageURL.substr(pageURL.indexOf('=')+1).toUpperCase();
-							if (pagename == AS.pagenameU) { EditEnhanceViewWindow.location.reload(); }
+							if (pagename == AS.pagenameU) { editEnhance.getBrowseWindow().location.reload(); }
 						}
 					}
 					catch(e) {}
@@ -405,7 +405,7 @@ var AS =
 		// consequences. Fortunately the "true" text content can be obtained by calling
 		// textContent, which is then compared with the current text in the textarea field 
 		// to see if the current text is outdated/buffered.
-    if (document.getElementById('text').textContent != document.getElementById('text').form.text.value)
+    if (document.getElementById('text').textContent != document.getElementById('text').value)
     { location.reload(); }
 
     AS.pagenameU = AS.pagename.toUpperCase();

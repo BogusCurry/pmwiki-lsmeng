@@ -9,9 +9,9 @@
 
 (function()
 {
-  // Dependencies
+  /* Dependencies */
   
-  // Private properties
+  /* Private properties */
   var _url;
   var _pagename;
   var _action;
