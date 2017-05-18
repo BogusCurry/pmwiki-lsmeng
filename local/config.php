@@ -152,8 +152,12 @@ $SearchPatterns['default'][] = '!\\.(All)?RecentChanges$!';
 #                       '||border=1 width=80%\\n||!Hdr ||!Hdr ||!Hdr ||\\n||     ||     ||     ||\\n||     ||     ||     ||\\n', '', '', 
 #                     '$GUIButtonDirUrlFmt/table.gif"$[Table]"');
 
-/****************************************************************************************/
+# Include traditional chinese language
+include_once("$FarmD/scripts/xlpage-utf-8.php");
+# Apply Chinese to link names
+//XLPage('zhtw','PmWikiZhTw.XLPage');
 
+/****************************************************************************************/
 // Configurations for PmWiki plugins/enhancements written by LSMeng
 
 // Set the station name and path for public wiki.d
@@ -256,6 +260,23 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   $UploadDir = "$Photo$year/$mon";
 }
 
+// Run the memcached service for storing PHP session, and specify to listen to localhost
+// only, and prevent the memory from being paged.
+if (getOS() == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
+
+// Construct a system log file
+$sysLogFile = "wiki.d/systemLog.txt";
+if (!file_exists($sysLogFile))
+{
+	file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Init\n",	FILE_APPEND);
+}
+
+if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) 
+{ $lockPage = 1; return; }
+else { $lockPage = 0; }
+
+/************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
+
 $ImgfocusFadeInTime = 0;
 $ImgFocusFadeOutTime = 0;
 $ImgfocusZoomToFitTime = 0;
@@ -278,7 +299,7 @@ $pageindexSyncFile = "$pageindexTimeDir/.lastsync";
 $pageindexSyncInterval = 3600; // The interval for checking all the pages to keep their pageindex up to date.
 // A script to trigger pageindex update request on page saving.
 // This has to go after Autosave.
-if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
+if ($action == 'edit')
 {
 	$HTMLHeaderFmt["pageindexUpdate"] = 
 	"<script type='text/javascript' src='$PubDirUrl/pageindexUpdate.js'></script>";
@@ -286,14 +307,11 @@ if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
 
 if ($action == 'edit' || $action == 'browse')
 {
-  if (substr($pagename,0,4) != 'LOCK')
-  {
-    $isDiaryPage = isDiaryPage();
-		// Memorize and set the scroll position.
-		$HTMLHeaderFmt[] .= "
-		<script src='$PubDirUrl/scrollPositioner.js'></script>
-		<script> scrollPositioner.isDiaryPage = '$isDiaryPage';	</script>";
-	}
+	$isDiaryPage = isDiaryPage();
+	// Memorize and set the scroll position.
+	$HTMLHeaderFmt[] .= "
+	<script src='$PubDirUrl/scrollPositioner.js'></script>
+	<script> scrollPositioner.isDiaryPage = '$isDiaryPage';	</script>";
 }
 
 include_once("$FarmD/cookbook/pasteimgupload.php");
@@ -313,10 +331,6 @@ if ($action == 'browse' || $_REQUEST['preview'])
 	include_once("$FarmD/cookbook/HTML5Video.php");
 }
 
-// Run the memcached service for storing PHP session, and specify to listen to localhost
-// only, and prevent the memory from being paged.
-if (getOS() == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
-
 // Rich edit commands
 if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
 {	
@@ -326,11 +340,7 @@ if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
 
 // Rich universal page commands
 $HTMLHeaderFmt['pageCommand'] = "
-<script type='text/javascript' src='$PubDirUrl/pageCommand.js'></script>
-<script type='text/javascript'>
-	pageCommand.pagename = '$pagename';
-  pageCommand.action = '$action';
-</script>";
+<script type='text/javascript' src='$PubDirUrl/pageCommand.js'></script>";
 
 // Some aux functions for the upload page
 if ($action == 'upload')
@@ -385,12 +395,6 @@ $HTMLHeaderFmt['searchReplace'] = "
 }
 */
 
-// Construct a system log file
-$sysLogFile = "wiki.d/systemLog.txt";
-if (!file_exists($sysLogFile))
-{
-	file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Init\n",	FILE_APPEND);
-}
 
 /*
 // For debugging
@@ -401,11 +405,6 @@ file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata
 /****************************************************************************************/
 
 // Configurations for PmWiki plugins/enhancements written by other developers.
-
-# Include traditional chinese language
-include_once("$FarmD/scripts/xlpage-utf-8.php");
-# Apply Chinese to link names
-//XLPage('zhtw','PmWikiZhTw.XLPage');
 
 # Latex
 if ($action == 'browse')

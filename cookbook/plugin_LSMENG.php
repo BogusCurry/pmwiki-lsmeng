@@ -22,6 +22,8 @@ function echo_($str) { echo $str."<br>"; }
 /****************************************************************************************/
 
 // Return the name of the page that you are browsing from analyzing the URI.
+// Not safe
+/*
 function getPageNameFromURI()
 {
   global $URI;
@@ -36,6 +38,7 @@ function getPageNameFromURI()
   
   return $pagename;
 }
+*/
 
 // Return a string of a given number of nonempty random line.
 // Usage: {N-pagename$getNoEmptyRandLine}
@@ -509,7 +512,7 @@ function checkTimeStamp()
       @session_start();
       $_SESSION['timeStamp'] = $currentTime;
       @session_write_close();
-      
+            
       // Timer expires
       if ($timeDiff >= $pageLockIdleDuration)
       {
@@ -519,7 +522,8 @@ function checkTimeStamp()
         if ($timeDiff >= $siteLogoutIdleDuration)
         {
           global $sysLogFile;
-          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Long timer expires. Site shut down\n",	FILE_APPEND);
+          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Long timer expired while accessing $pagename. Site shut down\n",	FILE_APPEND);
+          file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",	FILE_APPEND);
           
 //          write temp cookie
           
@@ -531,7 +535,9 @@ function checkTimeStamp()
         else
         {
           global $sysLogFile;
-          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Short timer expires. Pages locked\n",	FILE_APPEND);
+          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Short timer expired while accessing $pagename. Pages locked\n",	FILE_APPEND);
+          
+          file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",	FILE_APPEND);
           
           @session_start();
           unset($_SESSION['authpw']);
@@ -1160,8 +1166,6 @@ function addpageTimerJs($countdownTimer)
   // Determine the dummy pagename to redirect upon timer expiration
   $_pagename = substr($pagename,strpos($pagename,'.')+1);
   $groupname = substr($pagename,0,strpos($pagename,'.'));
-  if (substr($groupname,0,strlen("LOCK")) == "LOCK")
-  { $groupname = substr($groupname,strlen("LOCK")); }
   $closeRedirectName = $_pagename.'/'.$groupname;
   
   $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
