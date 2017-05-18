@@ -2546,13 +2546,13 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 
   // Meng. If the pagename is preceded by the keyword LOCK, set a flag and remove the
   // keyword for later pmwiki normal processing.
-	$lockPage = 0;
-	if (substr($pagename,0,strlen("LOCK")) == "LOCK")
+	if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0)
 	{
-		$pagename = substr($pagename,strlen("LOCK"));
-		$lockPage = 1;
+	  $pagename = substr($pagename, strlen("LOCK"));
+	  $lockPage = 1;
 	}
-
+	else { $lockPage = 0; }
+	
 /****************************************************************************************/
 
   global $DefaultPasswords, $GroupAttributesFmt, $AllowPassword,
@@ -2611,15 +2611,23 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 
 	// Meng. Add pageTimer.js here since the timer expiration duration depends on whether
 	// the page is password protected, which is known after IsAuthorized() is called.
-	if (strcasecmp($pagename,getPageNameFromURI()) == 0) 
+	// If the page is locked, do not apply the timer
+	$_pagename = $pagename;
+	if ($lockPage === 0)
 	{
-		global $siteLogoutIdleDuration, $pageLockIdleDuration;
-		$countdownTimer = $siteLogoutIdleDuration;
-		$pagePass = $page['passwdread'];
-		if ($pagePass == '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
-		else if ($pagePass != "") { $countdownTimer = $pageLockIdleDuration; }
-		else if ($gp['passwdread']  != "") { $countdownTimer = $pageLockIdleDuration; }
-		addPageTimerJs($countdownTimer);
+		// This is to skip the sidebar etc pages
+		global $pagename;
+		if (strcasecmp($pagename, $_pagename) === 0)
+		{
+			global $siteLogoutIdleDuration, $pageLockIdleDuration;
+			$countdownTimer = $siteLogoutIdleDuration;
+			$pagePass = $page['passwdread'];
+			if ($pagePass == '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
+			else if ($pagePass != "") { $countdownTimer = $pageLockIdleDuration; }
+			else if ($gp['passwdread'] != "") { $countdownTimer = $pageLockIdleDuration; }
+			else { $countdownTimer = $siteLogoutIdleDuration; }
+			addPageTimerJs($countdownTimer);
+		}
 	}
 
   // Meng. This condition tells whether authorization is successful or not.
@@ -2656,7 +2664,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       // After successful decryption, previously locked pages that are now successfully
       // unlocked end up here. Redirect to clear the "LOCK" keyword. This is to get around
       // the form resubmission problem.
-      if ($lockPage == 1) { redirect($pagename.$actionStr); }
+      if ($lockPage === 1) { redirect($pagename.$actionStr); }
 
     	return $page;
   	}
@@ -2683,11 +2691,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       // After successful decryption, pages that are currently locked by the pmwiki
       // group/page passwords end up here.
       // Redirect to one preceded by "LOCK" to get around the form resubmission problem
-      if ($lockPage == 0 )
-      {
-				if (substr($pagename,0,strlen("LOCK")) != "LOCK")
-	  		{ redirect("LOCK".$pagename.$actionStr); }
-      }
+      if ($lockPage === 0) { redirect("LOCK".$pagename.$actionStr); }
     }    
   }
 

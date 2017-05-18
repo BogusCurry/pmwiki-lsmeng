@@ -514,16 +514,17 @@ alert("Empty key (pagename)!"); throw "Empty key (pagename)!"; return;
 			_url = _url.replace(_hash,"");
 		}
 
-		var match = _url.match(/\?n=([\.\w]+)/i);
-		if (!match) { _pagename = "MAIN.HOMEPAGE"; }
-		else { _pagename = match[1].toUpperCase(); }
-		
+		var match = _url.match(/pmwiki\.php(\?n=([\.\w]+))?([\?&]action=(\w+))?/i);
+		if (!match[1]) { _pagename = "Main.HomePage"; }
+		else { _pagename = match[2]; }
+		if (!match[3]) { _action = "browse"; }
+		else { _action = match[4]; }
+
+		_pagename = _pagename.toUpperCase();
+		_action = _action.toLowerCase();
+				
 // DEBUG
 if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
-
-		match = _url.match(/[\?&]action=(\w+)/i);
-		if (!match) { _action = "browse"; }
-		else { _action = match[1]; }
 
 		_isDiaryPage = this.isDiaryPage;
     _wikitextElement = document.getElementById('wikitext');
@@ -720,5 +721,3 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
 	return returnObj;
   
 })();
-
-

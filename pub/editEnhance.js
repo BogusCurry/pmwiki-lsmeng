@@ -767,12 +767,13 @@ window.addEventListener('keydown', function()
     editEnhanceElement.selectionStart - lineTextLen;
     editEnhanceElement.focus();
   }
-
-/*  
+  
   // Ctrl+(shift)+enter to begin a new line below or above the current line
   else if (event.keyCode == 13 && (event.ctrlKey || event.metaKey))
   {
     event.preventDefault();
+    
+    var initScroll = editEnhanceElement.scrollTop;
     
     if (event.shiftKey)
     {
@@ -803,10 +804,9 @@ window.addEventListener('keydown', function()
       editEnhanceElement.selectionEnd = lineEnd-1;
       document.execCommand("insertText", false, "\n");
     }
-		editEnhanceElement.blur();
-		editEnhanceElement.focus();
+
+		editEnhanceElement.scrollTop = initScroll;
   }
-*/
   
   // Ctrl ; to scroll to the next mis-spelled word
   else if (event.keyCode == 186 && (event.ctrlKey || event.metaKey))
