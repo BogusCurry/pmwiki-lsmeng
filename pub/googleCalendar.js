@@ -384,10 +384,10 @@ console.log("called");
 		
 		// if htmlavctrl module present
 		// register fixPos with its onload event
-		if (window.Html5AVCtrlSubscribe && window.Html5AVCtrlIsVideoLoad === false)
+		if (window.html5AVCtrl && !html5AVCtrl.isVideoLoad())
 		{
 console.log("GC wait for video onload");
-			window.Html5AVCtrlSubscribe("videoLoad", function()
+			html5AVCtrl.subscribe("videoLoad", function()
 			{
 console.log("Vidoe onload; GC adjust Pos");
 				for (var i=0;i<31;i++) 

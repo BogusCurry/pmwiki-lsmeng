@@ -271,9 +271,7 @@ if (!file_exists($sysLogFile))
 	file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Init\n",	FILE_APPEND);
 }
 
-if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) 
-{ $lockPage = 1; return; }
-else { $lockPage = 0; }
+if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) { return; }
 
 /************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
 
@@ -332,11 +330,8 @@ if ($action == 'browse' || $_REQUEST['preview'])
 }
 
 // Rich edit commands
-if ($action == 'edit' && substr($pagename,0,4) != 'LOCK')
-{	
-  $HTMLHeaderFmt['editEnhance'] = "
-  <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>";
-}
+$HTMLHeaderFmt['editEnhance'] = "
+<script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>";
 
 // Rich universal page commands
 $HTMLHeaderFmt['pageCommand'] = "
