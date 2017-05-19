@@ -551,7 +551,7 @@ var editEnhance = editEnhance || (function()
       event.preventDefault();
 
       // Get the line text
-      var lineStart = getLineStart(start);
+      var lineStart = getLineStart(textElement.value, start);
       var lineEnd = getLineEnd(textElement.value, start);
       textElement.selectionStart = textElement.selectionEnd = lineEnd;
       var lineText = textElement.value.slice(lineStart, lineEnd);
@@ -579,7 +579,7 @@ var editEnhance = editEnhance || (function()
 
       if (event.shiftKey)
       {
-        var lineStart = getLineStart(start);
+        var lineStart = getLineStart(textElement.value, start);
         if (lineStart == 0)
         {
           textElement.selectionStart =
@@ -709,7 +709,7 @@ var editEnhance = editEnhance || (function()
 
       if (event.altKey)
       {
-        textElement.selectionStart = getLineStart(start);
+        textElement.selectionStart = getLineStart(textElement.value, start);
         textElement.selectionEnd = start;
       }
       else if (event.ctrlKey)
@@ -722,7 +722,7 @@ var editEnhance = editEnhance || (function()
       }
       else
       {
-        textElement.selectionStart = getLineStart(start);
+        textElement.selectionStart = getLineStart(textElement.value, start);
         textElement.selectionEnd = getLineEnd(textElement.value, start);
       }
       document.execCommand("insertText", false, "");
