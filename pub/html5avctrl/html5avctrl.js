@@ -194,45 +194,9 @@ var html5AVCtrl = html5AVCtrl || (function()
     // Queue for callback functions on saved event
     _eventCallBack = { "videoLoad": [] };
 
-    // Capture the audio/video element by changing the controls
+    // Load video
     var videoElement = document.getElementsByTagName('video');
     var videoElementLen = videoElement.length;
-    var audioElement = document.getElementsByTagName('audio');
-    var audioElementLen = audioElement.length;
-
-    var videoAudioLen = videoElementLen + audioElementLen;
-
-    // Leave if there are no av elements
-    if (videoAudioLen === 0) { return; }
-/*
-    // Capture the av elements on clicking or altering its control panel
-    for (var i = 0; i < videoAudioLen; i++)
-    {
-      var element = (i >= videoElementLen) ? audioElement[i - videoElementLen] : videoElement[i];
-      element.onplay = function() { _html5Element = this; }
-      element.onpause = function() { _html5Element = this; }
-      element.onseeking = function() { _html5Element = this; }
-      element.onseeking = function() { _html5Element = this; }
-      element.onvolumechange = function() { _html5Element = this; }
-      element.onclick = function()
-      {
-        _html5Element = this;
-
-        // Click on the other part of the video, remove the play icon & play
-        if (this.playIconElement) { removeIconAndPlay(this); }
-        else { togglePlay(this); }
-      }
-      if (i < videoElementLen)
-      {
-        element.ondblclick = function()
-        {
-          _html5Element = this;
-          toggleFC(_html5Element);
-        }
-      }
-    }
-*/
-    // Process video
     if (videoElementLen > 0)
     {
       for (var i = 0; i < videoElementLen; i++)
@@ -258,7 +222,7 @@ var html5AVCtrl = html5AVCtrl || (function()
   window.addEventListener('load', init);
 
   // On mouse click, get the clicked element
-  // if it's not an audio/video, unset the captured audio/video element
+  // If it's an av element, initialize it with my recipes
   window.addEventListener('click', function(e)
   {
     var element = e.target;
