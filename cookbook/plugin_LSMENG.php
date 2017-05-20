@@ -961,7 +961,7 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   // image name format. The length and type of "X" is not limited, i.e., can be non-numeric.
   else if ($img[2] == "_" && is_numeric($img[0]) && is_numeric($img[1]) ) { $isImgFileNameValid = 1; }
   else if ($img[1] == "_" && is_numeric($img[0])) { $isImgFileNameValid = 1; }
-  else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
+//   else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
   
   global $diaryImgDirURL;
   if (strcasecmp($extension,'.mp4') == 0)
