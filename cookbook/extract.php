@@ -434,7 +434,9 @@ function TETextRows($pagename, $source, $opt, &$par ) {
   foreach ($opt[''] as $pat)  {
   if (!preg_match("($pat)".$par['qi'], $text)) return; }		
 
-	$text = rtrim(Qualify($source, $text));
+// 	$text = rtrim(Qualify($source, $text));
+	// Meng. Use qualify alters the original text, which does not make sense
+	$text = rtrim($text);
 	$rows = explode("\n", $text); //make text lines into rows array
 	//use range of lines
 	if($opt['lines']!='') {

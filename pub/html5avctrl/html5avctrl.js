@@ -21,7 +21,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170519
+ * Version 20170520
  */
 
 "use strict";
@@ -219,7 +219,7 @@ var html5AVCtrl = html5AVCtrl || (function()
     else { _isVideoLoad = true; }
   }
 
-  window.addEventListener('load', init);
+  document.addEventListener('DOMContentLoaded', init);
 
   // On mouse click, get the clicked element
   // If it's an av element, initialize it with my recipes
