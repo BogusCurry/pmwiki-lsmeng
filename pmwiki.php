@@ -37,9 +37,6 @@ StopWatch('PmWiki');
 @ini_set('magic_quotes_sybase', 0);
 if (@ini_get('pcre.backtrack_limit') < 1000000) 
   @ini_set('pcre.backtrack_limit', 1000000);
-// 	var_dump($_GET);
-// 	var_dump($_POST);
-// 	exit;
 
 if (ini_get('register_globals')) 
   foreach($_REQUEST as $k=>$v) { 
@@ -1209,7 +1206,9 @@ class PageStore {
 			if (noEncryptPage($pagename) == 0) 
 		  {
         // Preserve a copy of the modified page. Plaintext is not allowed to be backed up.
-  		  if (file_exists($pagefile) && $EnableEncryption)
+        // Skip recentchange pages.
+  		  if (file_exists($pagefile) && $EnableEncryption && 
+  		  (strcasecmp(substr($pagename, -13), "recentchanges") !== 0))
   		  {
 					if (!preservePageBackup($pagename,$pagefile))
 					{ Abort("Preserving backup failed for $pagename ($pagefile)"); }
@@ -1989,8 +1988,6 @@ $elapsedTime = (microtime(true) - $startMicroTime);
 echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
-// echo testDeleteGC();
-
 		// Meng. Handle the pageindex process on browsing
 		handlePageindex();
 
@@ -2013,10 +2010,7 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 		else if (strcasecmp($pagename,"Main.Runcode") == 0)
 		{
 			if ($_GET["exe"])
-			{
-				runCode($pagename);
-				Redirect($pagename);
-			}
+			{ runCode($pagename); Redirect($pagename); }
 			else
 			{
 				global $runCodePath;
@@ -2024,7 +2018,7 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 				$outputFile = $runCodePath."/output.txt";
 				$text = "[+'''Output'''+]\n----\n".@file_get_contents($outputFile)."\n\n";
 				// if the source file has been modified since last compilation
-				if (filemtime($srcFile) > filemtime($outputFile)) { $text .= "%color=red%"; }
+				if (@filemtime($srcFile) > @filemtime($outputFile)) { $text .= "%color=red%"; }
 				$text .= "[+'''Source'''+]\n----\n[@".addLineNum(@file_get_contents($srcFile))."@]";
 			}
 		}
@@ -2040,7 +2034,11 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 		// If the pagename begins with the keyword "src", disable the wiki markup for this page
 		else if (strcasecmp(substr($pagename,strpos($pagename,"."),4), ".src") == 0) 
 		{
-			$text = substr_replace($text, "[@", strpos($text,"(:groupheader:)")+strlen("(:groupheader:)"), 0);
+			// If the first line of the text is to show the PHP result, deisable markup after this
+			if (substr($text, 0, 35) === '(:groupheader:)// Result: {$runPHP}')
+			{ $text = substr_replace($text, "[@", strpos($text,'(:groupheader:)// Result: {$runPHP}')+strlen('(:groupheader:)// Result: {$runPHP}'), 0); }
+			else
+			{ $text = substr_replace($text, "[@", strpos($text,"(:groupheader:)")+strlen("(:groupheader:)"), 0); }
 			$text = substr_replace($text, "@]", strpos($text,"(:groupfooter:)"), 0);
 		}
 
@@ -2064,17 +2062,19 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 		{
 			// If this is the special page "OnThisDay", replace the page text with a string containing
 			// past diary corresponding to today's date.
-			if (strcasecmp($pagename,"Main.OnThisDay") == 0) { $text = printOnThisDay(); }
+			$pageType = isDiaryPage();
+			if ($pageType == 3) { $text = printOnThisDay(); }
 	 
 			// Read in the diary photo directory to find all the diary images and videos, and then
 			// paste their full URL to the diary pages
 			global $UrlScheme;
-			if ($UrlScheme == 'http') { $text = pasteImgURLToDiary($text); }
+			if ($UrlScheme == 'http' && ($pageType == 2 || $pageType == 3))
+			{
+				$text = pasteImgURLToDiary($text);
+				global $diaryImgDirURL;
+				$text = str_replace('{$Photo}',$diaryImgDirURL,$text);
+			}
 			
-			// A temp fix for the img path/url used before. Replace them with explicit URLs
-			global $diaryImgDirURL;
-			$text = str_replace('{$PhotoPx}','{$Photo}',$text);
-			$text = str_replace('{$Photo}',$diaryImgDirURL,$text);
       $text = str_replace('{$PhotoPub}',"http://replaceWithImgData/",$text);
 	
 			// Copy files except for images from Dropbox to local folder for http URL referencing
@@ -2088,11 +2088,14 @@ echo 'Execution time: '.$elapsedTime." sec\n<br>";
 
     $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt).'<br>';
 
-    // Meng. Apply default image size.
-    $FmtV['$PageText'] = formatImgSize($FmtV['$PageText']);
-
-    // Meng. Replace a public image with its file content.
-    $FmtV['$PageText'] = replaceImgWithDataContent($FmtV['$PageText']);
+		if (function_exists(formatImgSize))
+		{
+			// Meng. Apply default image size.
+			$FmtV['$PageText'] = formatImgSize($FmtV['$PageText']);
+	
+			// Meng. Replace a public image with its file content.
+			$FmtV['$PageText'] = replaceImgWithDataContent($FmtV['$PageText']);
+		}
 
     if (@$EnableHTMLCache > 0 && !$NoHTMLCache && $PageCacheFile
         && (time() - $t1 + 1) >= $EnableHTMLCache) {
@@ -2443,6 +2446,22 @@ function HandleEdit($pagename, $auth = 'edit') {
   // Meng. Add an additional field "lastmodtime" to work with autosave's default on/off
   // The field has to be added in form.php
 	$FmtV['$PageLastModTime'] = $page["time"];
+	
+/****************************************************************************************/
+	
+	// Meng. runCode mechanism. Load the source file directly in case it's modified.
+	if (strcasecmp($pagename,"Main.Runcode") == 0)
+	{
+		global $WorkDir;
+		$lastPageUpdateTime = filemtime("$WorkDir/$pagename");
+		global $runCodePath;
+		$srcFile = "$runCodePath/main.cpp";
+		$lastFileUpdateTime = filemtime($srcFile);
+		
+		if ($lastFileUpdateTime && $lastPageUpdateTime < $lastFileUpdateTime)
+		{ $FmtV['$EditText'] = file_get_contents($srcFile); }
+	}
+
 /****************************************************************************************/
 
   $FmtV['$EditBaseTime'] = $Now;
