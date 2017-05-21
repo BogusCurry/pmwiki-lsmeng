@@ -113,7 +113,7 @@
     else { return link+'.HomePage?action=edit'; }
   }
 
-	document.addEventListener('DOMContentLoaded', function()
+  document.addEventListener('DOMContentLoaded', function()
   {
     // Get url & remove hash tag if present
     _url = window.location.href.replace(/#.*?$/,"");
