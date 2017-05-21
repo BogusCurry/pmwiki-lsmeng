@@ -85,7 +85,7 @@ document.addEventListener('drop', function(e)
 
 }, false);
 
-window.addEventListener('load', function ()
+document.addEventListener('DOMContentLoaded', function()
 {
 	var uploadImgDiv = document.createElement('div');
 	uploadImgDiv.id = 'PasteImgUploadID';

@@ -2670,7 +2670,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       	else
       	{ file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Logout clicked\n",	FILE_APPEND); }
       	
-      	HandleLogoutA(substr($pagename,strlen("CLICK")).$actionStr);
+      	HandleLogoutA(substr($pagename, strlen("CLICK")).$actionStr);
       }
 
       // During login, if the pagename is preceded by the logout keyword, 

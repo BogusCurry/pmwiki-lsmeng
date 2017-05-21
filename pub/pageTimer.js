@@ -122,7 +122,7 @@ var pageTimer =
   }
 };
 
-window.addEventListener('load', pageTimer.init);
+document.addEventListener('DOMContentLoaded', pageTimer.init);
 //window.addEventListener('focus', pageTimer.updateClock);
 // window.addEventListener('input', pageTimer.resetTimer);
 

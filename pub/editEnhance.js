@@ -843,7 +843,7 @@ var editEnhance = editEnhance || (function()
     window.addEventListener('keydown', mainKeydownFun);
   }
 
-  window.addEventListener('load', init);
+  document.addEventListener('DOMContentLoaded', init);
 
   // Return the window object of the corresponding browse page if opened
   function getBrowseWindow() { return _browseWindow; }

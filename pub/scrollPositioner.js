@@ -526,7 +526,7 @@ alert("Empty key (pagename)!"); throw "Empty key (pagename)!"; return;
 // DEBUG
 if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
 
-		_isDiaryPage = this.isDiaryPage;
+		_isDiaryPage = scrollPositioner.isDiaryPage;
     _wikitextElement = document.getElementById('wikitext');
     _textElement = document.getElementById('text');
     
@@ -666,8 +666,7 @@ if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
 		{ _eventCallback["init"].forEach(function(fn) { fn(); }); }
   }
   
-  
-	window.addEventListener('load', function() { init.call(scrollPositioner); });
+	document.addEventListener('DOMContentLoaded', init);
 
 	// Record the scroll and caret position on focusout and page close.
 	//window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie);
