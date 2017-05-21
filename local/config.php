@@ -417,16 +417,17 @@ $HTMLHeaderFmt['searchReplace'] = "
 <script src='$PubDirUrl/searchReplace/searchReplace.js'></script>
 <script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
 
-// 
-// // Dictionary
-// $fromPath = "/Users/Shared/Chrome extensions/dictionary";
-// $toPath = "$FarmD/pub/dictionary";
-// syncFile($fromPath, $toPath);
-// $merriamApiKey = file_get_contents("$PubDirUrl/dictionary/apiKey");
-// $merriamApiKeyThesaurus = file_get_contents("$PubDirUrl/dictionary/apiKeyThesaurus");
-// $HTMLHeaderFmt['dictionary'] = "
-// <script src='$PubDirUrl/dictionary/dictionary.js'></script>
-// <script> dictionary.apiKey = '$merriamApiKey'; dictionary.apiKeyThesaurus = '$merriamApiKeyThesaurus'; </script>";
+// Dictionary
+$fromPath = "/Users/Shared/Chrome extensions/dictionary";
+$toPath = "$FarmD/pub/dictionary";
+syncFile($fromPath, $toPath);
+/*
+$merriamApiKey = file_get_contents("$PubDirUrl/dictionary/apiKey");
+$merriamApiKeyThesaurus = file_get_contents("$PubDirUrl/dictionary/apiKeyThesaurus");
+$HTMLHeaderFmt['dictionary'] = "
+<script src='$PubDirUrl/dictionary/dictionary.js'></script>
+<script> dictionary.apiKey = '$merriamApiKey'; dictionary.apiKeyThesaurus = '$merriamApiKeyThesaurus'; </script>";
+*/
 
 /*
 // For debugging

@@ -531,22 +531,32 @@ function getImgFileContent($file, $mime='image/png')
 // Sync files from "fromPath" to "toPath" based on the last file modification time
 function syncFile($fromPath, $toPath)
 {
+  if (!file_exists($fromPath)) { return; }
+
+  // For syncing a folder
+  if (!file_exists($toPath)) { mkdir($toPath, 0770); }
+
   $ignored = array('.', '..', '.htaccess');
-  
+
   // for each file in from path
   foreach (scandir($fromPath) as $filename)
   {
-		if (in_array($filename, $ignored)) { continue; }
-		
+    if (in_array($filename, $ignored)) { continue; }
+
     // get its filemtime
     // get the filemtime of the same file in toPath
     $fromFile = "$fromPath/$filename";
     $toFile = "$toPath/$filename";
     $fromTime = filemtime($fromFile);
     $toTime = @filemtime($toFile);
-    
+
     // if the former >= the latter
     // copy the fomer to the latter
-    if ($fromTime >= $toTime) { copy($fromFile, $toFile); }
+    if ($fromTime >= $toTime)
+    {
+    	// Recursively sync in case it's a folder
+      if (is_dir($fromFile)) { syncFile($fromFile, $toFile); }
+      else { copy($fromFile, $toFile); }
+    }
   }
 }
