@@ -743,7 +743,7 @@ imgfocus.addShadow = function(element)
 // 	element.style.boxShadow = '20px 20px 30px black';
 };
 
-window.addEventListener('load', function() { imgfocus.popupImgOnClick(); }, false);
+document.addEventListener('DOMContentLoaded', imgfocus.popupImgOnClick);
 
 window.addEventListener('keydown', function()
 {

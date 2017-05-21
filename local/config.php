@@ -313,8 +313,8 @@ if ($isBrowse || $action === "upload")
 
 if ($isBrowse)
 {
-  $HTMLHeaderFmt['html5avctrl'] = "
-  <script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
+//   $HTMLHeaderFmt['html5avctrl'] = "
+//   <script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
 
   include_once("$FarmD/cookbook/HTML5Audio.php");
   include_once("$FarmD/cookbook/HTML5Video.php");

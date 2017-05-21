@@ -389,7 +389,7 @@ console.log("called");
 console.log("GC wait for video onload");
 			html5AVCtrl.subscribe("videoLoad", function()
 			{
-console.log("Vidoe onload; GC adjust Pos");
+console.log("Video onload; GC adjust Pos");
 				for (var i=0;i<31;i++) 
 				{ if (_dayElement[i]) { fixGCElementPos(_dayElement[i]); } }
 			});

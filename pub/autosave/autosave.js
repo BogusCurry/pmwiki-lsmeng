@@ -497,8 +497,7 @@ var AS =
 	}
 };
 
-
-window.addEventListener("load", AS.init, false);
+document.addEventListener('DOMContentLoaded', AS.init);
 // window.addEventListener("input", AS.onNewInput, false);
 // window.addEventListener("paste", AS.onNewInput, false);
 // window.addEventListener("drop", AS.onNewInput, false);

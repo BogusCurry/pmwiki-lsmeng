@@ -44,6 +44,5 @@ var autoRefresher =
   }
 }
 
-window.addEventListener('load', autoRefresher.init, false);
+document.addEventListener('DOMContentLoaded', autoRefresher.init);
 window.addEventListener('focus', autoRefresher.reloadIfUpdate, false);
-
