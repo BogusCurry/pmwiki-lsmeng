@@ -85,6 +85,9 @@ function syncPageindex($flag = false)
   if (!$flag && !($cloudLastModTime - $localLastModTime > 10) && !($Now - $lastSyncTime >= $pageindexSyncInterval))
   { return; }
 
+  // Update the pageindex sync timeStamp in case of a sync
+  file_put_contents($pageindexSyncFile, "");
+
 // DEBUG
   global $pageindexTimeDir;
   if ($cloudLastModTime - $localLastModTime > 10)
@@ -113,8 +116,7 @@ function syncPageindex($flag = false)
     array_push($pagelist, $pagename);
   }
 
-  if (count($pagelist) === 0)
-  { file_put_contents($pageindexSyncFile, ""); return; }
+  if (count($pagelist) === 0) { return; }
 
   $pagelistStr = implode(",", $pagelist);
 
@@ -140,7 +142,6 @@ function syncPageindex($flag = false)
     file_put_contents("$pageindexTimeDir/log.txt", "Too many pages. Perform a blocking pageindex update\n", FILE_APPEND);
     foreach ($pagelist as $pagename) { setPageindexUpdateTime($pagename); }
     Meng_PageIndexUpdate($pagelist);
-    file_put_contents($pageindexSyncFile, "");
   }
   else { post_async($url); }
 }
@@ -154,12 +155,7 @@ function updatePageindex()
   // The 1st case is explict update request from the client
   //     2nd case is due to page index sync process
   if ($pagelistStr === "1") { global $pagename; $pagelist = array($pagename); }
-  else
-  {
-    $pagelist = explode(",", $pagelistStr);
-    // Update the pageindex sync timeStamp in case of a sync
-    file_put_contents($pageindexSyncFile, "");
-  }
+  else { $pagelist = explode(",", $pagelistStr); }
 
   foreach ($pagelist as $pagename)
   {
@@ -198,7 +194,7 @@ function updatePageindex()
     global $PageIndexFile;
     file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Size after update: ".round(filesize($PageIndexFile)/1000)." KB\n", FILE_APPEND);
   }
-  
+
   exit;
 }
 
