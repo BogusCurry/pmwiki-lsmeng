@@ -2683,7 +2683,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 				$countdownTimer = $siteLogoutIdleDuration;
 				$pagePass = $page['passwdread'];
 				if ($pagePass === '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
-				else if ($pagePass !== "" || $gp['passwdread'] !== "")
+				else if (isset($pagePass) || isset($gp['passwdread']))
 				{ $countdownTimer = $pageLockIdleDuration; }
 				else { $countdownTimer = $siteLogoutIdleDuration; }
 				addPageTimerJs($countdownTimer);
