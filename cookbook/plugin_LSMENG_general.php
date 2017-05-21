@@ -528,3 +528,25 @@ function getImgFileContent($file, $mime='image/png')
   return ('data:' . $mime . ';filename='.$filename.';base64,' . $base64);
 }
 
+// Sync files from "fromPath" to "toPath" based on the last file modification time
+function syncFile($fromPath, $toPath)
+{
+  $ignored = array('.', '..', '.htaccess');
+  
+  // for each file in from path
+  foreach (scandir($fromPath) as $filename)
+  {
+		if (in_array($filename, $ignored)) { continue; }
+		
+    // get its filemtime
+    // get the filemtime of the same file in toPath
+    $fromFile = "$fromPath/$filename";
+    $toFile = "$toPath/$filename";
+    $fromTime = filemtime($fromFile);
+    $toTime = @filemtime($toFile);
+    
+    // if the former >= the latter
+    // copy the fomer to the latter
+    if ($fromTime >= $toTime) { copy($fromFile, $toFile); }
+  }
+}

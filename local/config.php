@@ -317,8 +317,11 @@ if ($isBrowse || $action === "upload")
 
 if ($isBrowse)
 {
-//   $HTMLHeaderFmt['html5avctrl'] = "
-//   <script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
+  $fromPath = "/Users/Shared/Chrome extensions/html5avctrl";
+  $toPath = "$FarmD/pub/html5avctrl";
+  syncFile($fromPath, $toPath);
+  $HTMLHeaderFmt['html5avctrl'] = "
+  <script type='text/javascript' src='$PubDirUrl/html5avctrl/html5avctrl.js'></script>";
 
   include_once("$FarmD/cookbook/HTML5Audio.php");
   include_once("$FarmD/cookbook/HTML5Video.php");
@@ -404,25 +407,26 @@ if ($action == 'upload')
   <script src='$PubDirUrl/uploadAux.js'></script>";
 }
 
-/*
 // Enhanced search & replace
+$fromPath = "/Users/Shared/Chrome extensions/searchReplace";
+$toPath = "$FarmD/pub/searchReplace";
+syncFile($fromPath, $toPath);
 $searchBoxImgUrl = "$PubDirUrl/searchReplace/searchBoxImg.png";
 $HTMLHeaderFmt['searchReplace'] = "
 <script src='$PubDirUrl/searchReplace/mark.js'></script>
 <script src='$PubDirUrl/searchReplace/searchReplace.js'></script>
 <script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
-*/
 
-/*
-// Plugin for Merriam-Webster API
-// if ($isBrowse)
-{
-  $merriamApiKey = file_get_contents("$PubDirUrl/merriamWebster/apiKey");
-  $HTMLHeaderFmt['merrianWebster'] = "
-  <script> var merriamWebster = {}; merriamWebster.apiKey = '$merriamApiKey'; </script>
-  <script src='$PubDirUrl/merriamWebster/merriamWebster.js'></script>";
-}
-*/
+// 
+// // Dictionary
+// $fromPath = "/Users/Shared/Chrome extensions/dictionary";
+// $toPath = "$FarmD/pub/dictionary";
+// syncFile($fromPath, $toPath);
+// $merriamApiKey = file_get_contents("$PubDirUrl/dictionary/apiKey");
+// $merriamApiKeyThesaurus = file_get_contents("$PubDirUrl/dictionary/apiKeyThesaurus");
+// $HTMLHeaderFmt['dictionary'] = "
+// <script src='$PubDirUrl/dictionary/dictionary.js'></script>
+// <script> dictionary.apiKey = '$merriamApiKey'; dictionary.apiKeyThesaurus = '$merriamApiKeyThesaurus'; </script>";
 
 /*
 // For debugging
@@ -461,49 +465,6 @@ if (strcasecmp($pagename,"Site.SearchE") === 0)
   require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
   require_once("$FarmD/cookbook/extract.php");
 }
-
-/*
-if ($isBrowse)
-{
-  # Neo mp3 and video player.
-  $EnableDirectDownload = 1;
-  include_once("$FarmD/cookbook/flashmediaplayer.php");
-  $FlashMediaPlayerInfo['neo_mp3'] = array(
-  'swf' => "neolao/player_mp3_maxi.swf",
-  'objparms' => array(
-  'flashvars' => array('mp3=$url',
-  '$parms')),
-  'defaults' => array('align' => 'middle',
-  'width' => 500,
-  'height' => 20,
-  'showstop'=>1,
-  #'showvolume'=>1,
-  ));
-  $FlashMediaPlayerInfo['neo_flv_V'] = array(
-  'swf' => "neolao/player_flv_maxi.swf",
-  'objparms' => array(
-  'flashvars' => array('flv=$url',
-  '$parms')),
-  'defaults' => array('align' => 'top',
-  //                      'width' => 190,
-  'width' => 330,
-  'height' => 330,
-  'showstop'=>1,
-  #'showvolume'=>1,
-  'autoload'=>1,
-  'margin'=>1,
-  'buffer'=>1,
-  'buffermessage'=> '',
-  'showiconplay'=>1,
-  'iconplaybgalpha'=>20,
-  'showtime'=>2,
-  'showfullscreen'=>1,
-  'ondoubleclick' => 'fullscreen',
-  #'showswitchsubtitles'=>1,
-  #'srt'=>1
-  ));
-}
-*/
 
 if ($action === "autosave")
 {
