@@ -207,10 +207,14 @@ $isAtHome = 0;
 $emailAddress1 = "f95942117@gmail.com";
 $emailAddress2 = "lsmeng@ece.gatech.edu";
 
-// Idle timer duration for logging out & shutting down the site.
+// Idle timer duration (sec) for logging out & shutting down the site.
 $siteLogoutIdleDuration = 7200;
-// Idle timer duration for locking sensitive pages.
+// Idle timer duration (sec) for locking sensitive pages.
 $pageLockIdleDuration = 1200;
+
+// Logout will be triggered by the pageTimer.js module after the computer enters standby
+// longer than this duration (sec).
+$standbyLogoutDuration = 300;
 
 // Construct a system log file
 $sysLogFile = "wiki.d/systemLog.txt";

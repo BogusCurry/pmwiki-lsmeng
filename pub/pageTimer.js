@@ -12,7 +12,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170518
+ * Version 20170521
  */
 
 var pageTimer =
@@ -55,19 +55,6 @@ var pageTimer =
       window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action + '&pageTimer';
       return;
     }
-/*
-    // For debugging purpose
-    else if (timeDiff > 5)
-    {
-      var clock = new Date();
-      var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
-      hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
-      var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
-      (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
-      var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr;
-      console.log(msg);
-    }
-*/
 
     // Timer expires
     if (Math.round(diff) < 0)

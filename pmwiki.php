@@ -2558,6 +2558,7 @@ function HandleSource($pagename, $auth = 'read') {
 ## GroupAttribute pages to be able to speed up subsequent calls.
 function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 {
+	/**************************************************************************************/
 	// On access, if the user is authenticated, and pmwiki hasn't been accessed for a
 	// duration longer than a prespecified value, passwords are cleared or a full logout is
 	// called on the next access, depending on the time duration that the user has been idle.
@@ -2572,7 +2573,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 	}
 	else { $lockPage = 0; }
 	
-/****************************************************************************************/
+	/**************************************************************************************/
 
   global $DefaultPasswords, $GroupAttributesFmt, $AllowPassword,
     $AuthCascade, $FmtV, $AuthPromptFmt, $PageStartFmt, $PageEndFmt, 
@@ -2628,26 +2629,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
     foreach($page['=auth'] as $lv=>$a) @$page['=auth'][$lv] = 3;
   if (@$page['=passwd']['read']) $NoHTMLCache |= 2;
 
-	// Meng. Add pageTimer.js here since the timer expiration duration depends on whether
-	// the page is password protected, which is known after IsAuthorized() is called.
-	// If the page is locked, do not apply the timer
-	$_pagename = $pagename;
-	if ($lockPage === 0)
-	{
-		// This is to skip the sidebar etc pages
-		global $pagename;
-		if (strcasecmp($pagename, $_pagename) === 0)
-		{
-			global $siteLogoutIdleDuration, $pageLockIdleDuration;
-			$countdownTimer = $siteLogoutIdleDuration;
-			$pagePass = $page['passwdread'];
-			if ($pagePass == '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
-			else if ($pagePass != "") { $countdownTimer = $pageLockIdleDuration; }
-			else if ($gp['passwdread'] != "") { $countdownTimer = $pageLockIdleDuration; }
-			else { $countdownTimer = $siteLogoutIdleDuration; }
-			addPageTimerJs($countdownTimer);
-		}
-	}
+	/**************************************************************************************/
 
   // Meng. This condition tells whether authorization is successful or not.
   // If authorized, the page will be returned. Otherwise, go the the codes below which
@@ -2659,7 +2641,9 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
     // If this is not the special page for password change, or if this is the special page
     // but the action is not browse.
     global $action;
-    if (strcasecmp($pagename,"Main.ChangePassword") !== 0 || (strcasecmp($pagename,"Main.ChangePassword") === 0 && strcasecmp($action,"browse") !== 0))
+    if (strcasecmp($pagename, "Main.ChangePassword") !== 0 || 
+    (strcasecmp($pagename, "Main.ChangePassword") === 0 && 
+    strcasecmp($action, "browse") !== 0))
     {
       // For clicking the logout button
       if (substr($pagename,0,strlen("CLICKLOGOUT")) == "CLICKLOGOUT")
@@ -2685,6 +2669,26 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       // the form resubmission problem.
       if ($lockPage === 1) { redirect($pagename.$actionStr); }
 
+			// Apply the pageTimer.js module here.
+			// The page timer is only needed for authorized, hence opened pages.
+			// The timer value depends on the authorization level, which is known only after
+			// IsAuthorized() is called. That's why the JS module has to be put here.
+			$_pagename = $pagename;
+			global $pagename;
+			if (strcasecmp($pagename, $_pagename) === 0)
+			{
+				// The pagename comparison is to skip the sidebar etc pages that are loaded every
+				// time.
+				global $siteLogoutIdleDuration, $pageLockIdleDuration;
+				$countdownTimer = $siteLogoutIdleDuration;
+				$pagePass = $page['passwdread'];
+				if ($pagePass === '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
+				else if ($pagePass !== "" || $gp['passwdread'] !== "")
+				{ $countdownTimer = $pageLockIdleDuration; }
+				else { $countdownTimer = $siteLogoutIdleDuration; }
+				addPageTimerJs($countdownTimer);
+			}
+    	
     	return $page;
   	}
   }

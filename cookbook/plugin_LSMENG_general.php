@@ -346,15 +346,12 @@ function isDiaryPage()
 }
 
 // Configure and add pageTimer.js. To be called in pmwikiAuth()
+// $standbyLogoutDuration has to be > 2 for correct behavior due to jitters in the timer
+// update.
 function addpageTimerJs($countdownTimer)
 {
-  // Logout is called 5 mins after the computer standby.
-  // Has to be > countDownTimerUpdateInterval+1 for correct behavior due to jitters in the
-  // timer update
-  SDV($standbyLogoutDuration, 300);
-
-  // Java logout timer update period.
-  global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action;
+  global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action,
+  $standbyLogoutDuration;
 
   // Determine the dummy pagename to redirect upon timer expiration
   $_pagename = substr($pagename,strpos($pagename,'.')+1);
