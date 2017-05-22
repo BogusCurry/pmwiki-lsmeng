@@ -26,7 +26,7 @@
 * sent to the server side.
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170515
+* Version 20170522
 */
 
 "use strict";
