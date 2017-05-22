@@ -834,11 +834,13 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   $pageIndexContent = decryptStr($pageIndexContent);
   if ($pageIndexContent === -1)
   {
-//     @unlink($PageIndexFile);
-Abort("PageIndex Decrytion Error!");
+		global $pageindexTimeDir;
+		file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Decryption Error!\n", FILE_APPEND);
+		Abort("PageIndex Decrytion Error!");
 
-    global $pagename;
-    redirect($pagename);
+//     @unlink($PageIndexFile);
+//     global $pagename;
+//     redirect($pagename);
   }
 /****************************************************************************************/
 
@@ -897,8 +899,16 @@ Abort("PageIndex Decrytion Error!");
 
   // Encrypt, put to file, then close file.
   global $EnableEncryption;
-  if ($EnableEncryption == 1)
-  { $updatedPageIndexContent = encryptStr($updatedPageIndexContent); }
+  if ($EnableEncryption === 1)
+  { 
+		$updatedPageIndexContent = encryptStr($updatedPageIndexContent);
+		if ($updatedPageIndexContent === false)
+		{
+			global $pageindexTimeDir;
+			file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Encryption Error!\n", FILE_APPEND);
+			Abort("PageIndex Encryption Error!");
+		}
+  }
   fputs($ofp,$updatedPageIndexContent);
   fclose($ofp);
 
