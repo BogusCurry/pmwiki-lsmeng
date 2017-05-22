@@ -504,7 +504,7 @@ if ($action === "autosave")
   $ROSPatterns ['/’/'] = "'";
   $ROSPatterns ['/“/'] = "\"";
   $ROSPatterns ['/”/'] = "\"";
-  $ROSPatterns ['/  /'] = " ";
+  $ROSPatterns ['/	/'] = " ";
   $ROSPatterns ["/ *\n/"] = "\n";
   $ROSPatterns ["//"] = "";
   $ROSPatterns ["//"] = "";
