@@ -304,12 +304,21 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 /****************************************************************************************/
 // Meng. Javascript related config/scripts.
 
+$ChromeExtPath = "/Users/Shared/Chrome extensions";
+
+// Some enhancements for both browse and edit pages
+$fromPath = "$ChromeExtPath/editViewEnhance";
+$toPath = "$FarmD/pub/editViewEnhance";
+syncFile($fromPath, $toPath);
+$HTMLHeaderFmt['editViewEnhance'] = "
+<script type='text/javascript' src='$PubDirUrl/editViewEnhance/editViewEnhance.js'></script>";
+
 // Rich universal page commands
 $HTMLHeaderFmt['pageCommand'] = "
 <script type='text/javascript' src='$PubDirUrl/pageCommand.js'></script>";
 
 // Enhanced search & replace
-$fromPath = "/Users/Shared/Chrome extensions/searchReplace";
+$fromPath = "$ChromeExtPath/searchReplace";
 $toPath = "$FarmD/pub/searchReplace";
 syncFile($fromPath, $toPath);
 $searchBoxImgUrl = "$PubDirUrl/searchReplace/searchBoxImg.png";
@@ -319,7 +328,7 @@ $HTMLHeaderFmt['searchReplace'] = "
 <script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
 
 // Dictionary
-$fromPath = "/Users/Shared/Chrome extensions/dictionary";
+$fromPath = "$ChromeExtPath/dictionary";
 $toPath = "$FarmD/pub/dictionary";
 syncFile($fromPath, $toPath);
 /*
@@ -341,7 +350,7 @@ if ($isBrowse || $isEdit)
 
 if ($isBrowse)
 {
-  $fromPath = "/Users/Shared/Chrome extensions/html5avctrl";
+  $fromPath = "$ChromeExtPath/html5avctrl";
   $toPath = "$FarmD/pub/html5avctrl";
   syncFile($fromPath, $toPath);
   $HTMLHeaderFmt['html5avctrl'] = "
