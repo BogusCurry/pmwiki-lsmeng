@@ -807,8 +807,8 @@ var editEnhance = editEnhance || (function()
   {
     var mainTextElement = document.getElementById('text');
     if (mainTextElement) { _lineHeight = parseInt(window.getComputedStyle(mainTextElement)['line-height']); }
-		else { _lineHeight = 24; }
-		
+    else { _lineHeight = 24; }
+
     // Determine the OS
     if (window.navigator.platform === "Win32") { _OS = "Windows"; }
     else if (window.navigator.platform === "MacIntel") { _OS = "Mac"; }
@@ -836,10 +836,10 @@ var editEnhance = editEnhance || (function()
     window.addEventListener('click', function() { updateInfoDiv(infoDiv, mainTextElement) });
     window.addEventListener('keyup', function() { updateInfoDiv(infoDiv, mainTextElement) });
 */
-    
+
     // When the meta key is down, other key presses can only be detected by key up on Windows.
     if (_OS == 'Windows') { window.addEventListener('keyup', keyupFunFixForWindows); }
-    
+
     window.addEventListener('keydown', mainKeydownFun);
   }
 

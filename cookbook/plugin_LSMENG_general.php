@@ -554,7 +554,7 @@ function syncFile($fromPath, $toPath)
     // copy the fomer to the latter
     if ($fromTime >= $toTime)
     {
-    	// Recursively sync in case it's a folder
+      // Recursively sync in case it's a folder
       if (is_dir($fromFile)) { syncFile($fromFile, $toFile); }
       else { copy($fromFile, $toFile); }
     }

@@ -115,7 +115,9 @@ var AS =
 						if (pageURL)
 						{
 							var pagename = pageURL.substr(pageURL.indexOf('=')+1).toUpperCase();
-							if (pagename == AS.pagenameU) { editEnhance.getBrowseWindow().location.reload(); }
+							if (pagename == AS.pagenameU)
+							{ editEnhance.getBrowseWindow().location = 
+							location.href.replace(/[\?&]action=edit/i,""); }
 						}
 					}
 					catch(e) {}
