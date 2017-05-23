@@ -315,6 +315,15 @@ if ($isBrowse || $action === "upload")
   include_once("$FarmD/cookbook/imgfocus.php");
 }
 
+if ($isBrowse || $isEdit)
+{
+  $isDiaryPage = isDiaryPage();
+  // Memorize and set the scroll position.
+  $HTMLHeaderFmt[] .= "
+  <script src='$PubDirUrl/scrollPositioner.js'></script>
+  <script> scrollPositioner.isDiaryPage = '$isDiaryPage';  </script>";
+}
+
 if ($isBrowse)
 {
   $fromPath = "/Users/Shared/Chrome extensions/html5avctrl";
@@ -349,6 +358,13 @@ if ($isBrowse)
     <script src='$PubDirUrl/googleCalendar.js'></script>";
   }
 }
+if ($isEdit || isset($_GET["updatePageIndex"]))
+{
+  // A script to trigger pageindex update request on page saving.
+  $HTMLHeaderFmt["pageindexUpdate"] =
+  "<script type='text/javascript' src='$PubDirUrl/pageindexUpdate.js'></script>";
+  require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
+}
 
 if ($isEdit || $action === "autosave")
 {
@@ -362,14 +378,6 @@ if ($isEdit || $action === "autosave")
   require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
 }
 
-if ($isEdit || isset($_GET["updatePageIndex"]))
-{
-  // A script to trigger pageindex update request on page saving.
-  // This has to go after Autosave.
-  $HTMLHeaderFmt["pageindexUpdate"] =
-  "<script type='text/javascript' src='$PubDirUrl/pageindexUpdate.js'></script>";
-  require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
-}
 
 if ($isEdit)
 {
@@ -378,15 +386,6 @@ if ($isEdit)
   // Rich edit commands
   $HTMLHeaderFmt['editEnhance'] = "
   <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>";
-}
-
-if ($isBrowse || $isEdit)
-{
-  $isDiaryPage = isDiaryPage();
-  // Memorize and set the scroll position.
-  $HTMLHeaderFmt[] .= "
-  <script src='$PubDirUrl/scrollPositioner.js'></script>
-  <script> scrollPositioner.isDiaryPage = '$isDiaryPage';  </script>";
 }
 
 // Rich universal page commands

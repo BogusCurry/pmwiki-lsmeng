@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170520
+ * Version 20170523
 */
 
 "use strict";
@@ -17,6 +17,7 @@
 (function()
 {
   /* Dependencies */
+  // window.scrollPositioner;
 
   /* Private properties */
   var _url;
@@ -113,7 +114,7 @@
     else { return link+'.HomePage?action=edit'; }
   }
 
-  document.addEventListener('DOMContentLoaded', function()
+  function init()
   {
     // Get url & remove hash tag if present
     _url = window.location.href.replace(/#.*?$/,"");
@@ -135,7 +136,9 @@
       _hyperLinkElement[i].addEventListener('click', function()
       { _selectLink = this; handleGoToLink(); });
     }
-  });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
 
   window.addEventListener('keydown', function()
   {
