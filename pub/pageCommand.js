@@ -9,12 +9,12 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170523
+ * Version 20170524
 */
 
 "use strict";
 
-(function()
+var pageCommand = pageCommand || (function()
 {
   /* Dependencies */
   // window.scrollPositioner;
@@ -28,6 +28,7 @@
   var _selectLink;
   var _tabCount;
   var _hyperLinkElementWikiText;
+  var _browseWindow;
 
   // Since the box element shadows the original hyperlink, the clicking behavior
   // has to be defined again. Somehow "onclick" cannot detect a click when ctrl is
@@ -283,9 +284,66 @@
       }
     }
 
+    // Ctrl+/ to open browse/edit page for edit/browse page
+    // The 'Slash' is a fix for Yahoo Chinese input on Windows
+    else if ((event.keyCode == 191 || event.code == 'Slash') && (event.ctrlKey || event.metaKey))
+    {
+      event.preventDefault();
+
+      // judge from the url to tell whether this is edit or browse
+      var url = window.location.href;
+      var action = "browse";
+      if (/[\?&]action=edit/i.test(url)) { action = "edit"; }
+
+      // If the current action is edit
+      if (action === "edit")
+      {
+        // Leave if textElement is not the focused element
+        if (document.getElementById("text") !== document.activeElement) { return; }
+
+        // If a window has been opened, leave
+        if (_browseWindow) { return; }
+
+        // Declare a global property to keep track of whether the associated view page has
+        // been opened. This is to work with autosave.js to auto refresh the view page.
+        if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
+        {
+          _browseWindow = window.open(url.replace(/[\?&]action=edit/i,''), '_blank');
+          _browseWindow.addEventListener("beforeunload", function() { _browseWindow = undefined; })
+        }
+        else { window.location = url.replace(/[\?&]action=edit/i,''); }
+      }
+      // The current action is browse
+      else
+      {
+        // Leave if document body is not focused
+        if (document.body !== document.activeElement) { return; }
+
+        // If a window has been opened, leave
+        if (_browseWindow) { return; }
+
+        if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
+        {
+          _browseWindow = window.open(url + '?action=edit', '_blank');
+          _browseWindow.addEventListener("beforeunload", function() { _browseWindow = undefined; })
+        }
+        else { window.location = url + '?action=edit'; }
+      }
+    }
+
     // Handle the enter key press when a link is selected; simply call the onmouseup routine
     // since the procedure is completely the same
     else if (_action != 'edit' && event.keyCode == 13 && !event.altKey && _selectLink)
     { handleGoToLink(); }
   });
+
+  // Return the window object of the corresponding browse page if opened
+  function getBrowseWindow() { return _browseWindow; }
+
+  // Reveal public API
+  var returnObj =
+  {
+    getBrowseWindow: getBrowseWindow
+  };
+  return returnObj;
 })();

@@ -8,7 +8,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170523
+ * Version 20170524
  */
 
 "use strict";
@@ -17,6 +17,7 @@
 {
   /* Dependencies */
   // window.html5AVCtrl;
+  // window.imgfocus;
 
   /* Private variables and methods */
   var _eventByDay = [];
@@ -128,6 +129,7 @@
         var startTime = format2DigitTime(match[5]);
         var endTime = format2DigitTime(match[10]);
 
+				var endYear, endMon, endDay, startYear, startMon, startDay;
         [endYear,endMon,endDay] = [startYear,startMon,startDay] =
         parseDateTime(match,this.year,this.mon,this.day);
 
@@ -267,7 +269,6 @@
       {
         var callback = imgfocus.subscribe("imgRm", function()
         {
-          console.log("called");
           _GCImg.style.opacity = 1.0;
           addGCEventElement();
           imgfocus.unsubscribe("imgRm", callback);
@@ -387,12 +388,12 @@
 
     // if htmlavctrl module present
     // register fixPos with its onload event
-    if (window.html5AVCtrl && html5AVCtrl.isVideoLoad())
+    if (window.html5AVCtrl && !html5AVCtrl.isVideoLoad())
     {
-      console.log("GC wait for video onload");
+      console.log("GC waiting for video onload to adjust pos");
       html5AVCtrl.subscribe("videoLoad", function()
       {
-        console.log("Video onload; GC adjust Pos");
+        console.log("Video onload; GC adjusts Pos");
         for (var i=0;i<31;i++)
         { if (_dayElement[i]) { fixGCElementPos(_dayElement[i]); } }
       });
