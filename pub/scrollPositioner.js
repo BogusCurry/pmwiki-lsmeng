@@ -26,7 +26,7 @@
 * sent to the server side.
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170522
+* Version 20170523
 */
 
 "use strict";
@@ -109,8 +109,7 @@ var scrollPositioner = scrollPositioner || (function()
   }
 
   // Set a cookie with the given name/value.
-  function setCookie(name, value)
-  { document.cookie = name + "=" + escape(value); }
+  function setCookie(name, value) { document.cookie = name + "=" + escape(value); }
 
   // Delete the cookie "name"
   function delCookie(name)
@@ -145,8 +144,7 @@ var scrollPositioner = scrollPositioner || (function()
   // deleted. If the current scroll position is 0, the entry is also deleted.
   function setScrollPosLS(value)
   {
-    if (_isBrowsing == false)
-    { var name = 'EDIT-ScrollY'; }
+    if (_isBrowsing == false) { var name = 'EDIT-ScrollY'; }
     else { var name = 'VIEW-ScrollY'; }
 
     value = value===null ? value : getScrollPos();
@@ -192,9 +190,11 @@ var scrollPositioner = scrollPositioner || (function()
 
 /****************************************************************************************/
 
-  // When browsing, scroll to the position corresponding to the nth bullet stored in
-  // local storage, which is set by the autosaving mechanism whenever a saving is
-  // performed.
+  // When browsing,
+  // If a hash element has been set, scroll to it.
+  // Otherwise based on the given value, scroll to the value directly, or to the position
+  // corresponding to the nth bullet in case "value" begins with "n".
+  // The bullet is computed and set by autosave.js
   function setScrollFromEdit(value)
   {
     if (_hash)
@@ -228,7 +228,8 @@ var scrollPositioner = scrollPositioner || (function()
     highlightScroll(bulletObj);
   }
 
-  // Highlight the given obj for a short period of time and scroll into view that obj
+  // Highlight the given element "bulletObj" for a short period of time and scroll into
+  // view that element with a slight adjustment.
   function highlightScroll(bulletObj)
   {
     if (!bulletObj) { return; }
@@ -242,29 +243,10 @@ var scrollPositioner = scrollPositioner || (function()
       bulletObj.style.backgroundColor = '';
     }, 1000);
 
-    // A certain delay is needed when there are a lot of images waiting to be arranged on
-    // the page, i.e., diary pages. A delay of around 1 second is needed for diary page
-    // with a lot of images. Not satisfied with this solution; there should be a mechanism
-    // for Chrome to notify me when the images are done arranging.
-    // It turns out another fix is needed for embedding youtube using ape.js. Also fix
-    // this by introducing a delay
-    var positionDelay = 0;
-    if (/<[^<]+class="embed"[^>]*>/.test(_wikitextElement.innerHTML))
-    { positionDelay = Math.max(positionDelay,1000); }
-    if (_isDiaryPage == 2) { positionDelay = Math.max(positionDelay,1000); }
-
-    var screenHeightAdj = Math.round(window.innerHeight/3);
-
-    setTimeout(function()
-    {
-      // First scroll the lastEdit id into view, then get the id's position relative to
-      // the browser window. Adjust the scroll position so that the id is 1/3 of the
-      // browser window height.
-      bulletObj.scrollIntoView(true);
-      var idPosRelBrowser = Math.floor(bulletObj.getBoundingClientRect().top);
-      screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
-      setScrollPos(getScrollPos()-screenHeightAdj);
-    }, positionDelay);
+    var screenHeightAdj = window.innerHeight/3;
+    var idPosRelBrowser = bulletObj.getBoundingClientRect().top;
+    var pos = Math.round(idPosRelBrowser - screenHeightAdj + document.body.scrollTop);
+    setScrollPos(pos);
   }
 
   // Return the character offset of the "numBullet"-th bullet in string "HTML".
@@ -288,21 +270,13 @@ var scrollPositioner = scrollPositioner || (function()
     }
     else
     {
-      if (isFirstLineBullet != -1)
-      {
-        // Get the numBullet-1 occurrence of "\n*" or "\n#"
-        charOffset = nthIndex(HTML, "\n*", "\n#", numBullet-1);
-      }
-      else
-      {
-        // Get the numBullet occurrence of "\n*" or "\n#"
-        charOffset = nthIndex(HTML, "\n*", "\n#", numBullet);
-      }
+      // Get the numBullet occurrence of "\n*" or "\n#"
+      if (isFirstLineBullet != -1) { numBullet = numBullet - 1; }
+
+      charOffset = nthIndex(HTML, "\n*", "\n#", numBullet);
     }
 
-    charOffset++;
-
-    return charOffset;
+    return charOffset + 1;
   }
 
   // When browsing, if enter is pressed with texts selected, the caret position will
@@ -348,16 +322,14 @@ var scrollPositioner = scrollPositioner || (function()
     setCaretPos(pos, pos2);
   }
 
+  // Adjust the height of the text element based on the current window size
   function fixTextareaHeight()
   {
     // Check if the textarea height is correct; if not then adjust
     var rectObject = _textElement.getBoundingClientRect();
     var correctTextAreaHeight = window.innerHeight - rectObject.top-4;
     if (parseInt(_textElement.style.height) != correctTextAreaHeight)
-    {
-      //     console.log('Adjusting textarea height...');
-      _textElement.style.height = correctTextAreaHeight + 'px';
-    }
+    { _textElement.style.height = correctTextAreaHeight + 'px'; }
   }
 
   // Get the indexOf the nth occurrence of either "pat1" or "pat2"
@@ -388,10 +360,12 @@ var scrollPositioner = scrollPositioner || (function()
     return i;
   }
 
+  // The function to call before closing the page. Store the current scroll and caret
+  // position in local storage.
   function setScrollAndCaretPosCookie()
   {
     // Remove the LS data if the page text contains only the delete keyword
-    if (_action == 'edit' && _textElement.value.trim() == 'delete')
+    if (_action === 'edit' && _textElement.value.trim().toLowerCase() === 'delete')
     {
       setScrollPosLS(null);
       setCaretPosLS(null);
@@ -399,7 +373,8 @@ var scrollPositioner = scrollPositioner || (function()
     else
     {
       var scrollPos = getScrollPosLS();
-      if (String(scrollPos).substring(0,1) != 'n') { scrollPos = setScrollPosLS(); }
+      // If the page has not been modified, record the scroll posotion
+      if (String(scrollPos).substring(0,1) !== 'n') { scrollPos = setScrollPosLS(); }
 
       // The missing caret position problem...
       // It seems that sometimes when before the event beforeunload triggers, selectionStart
@@ -407,7 +382,7 @@ var scrollPositioner = scrollPositioner || (function()
       // to tell that a value of 0 is genuine or an unexpected one. The temp solution is
       // to also check the scroll position, and accept a caret position of 0 only if the
       // scroll position is also 0.
-      if (_action == 'edit')
+      if (_action === 'edit')
       {
         var caretPos = getCaretPos();
         if (caretPos == 0 && scrollPos == null) { caretPos = null; }
@@ -423,22 +398,28 @@ var scrollPositioner = scrollPositioner || (function()
     }
   }
 
-  // Wait for the LATEX rendering to complete first since it also replaces the page HTML.
-  // Then call setScrollFromEdit();
+  // Wait for the LATEX rendering to complete then call setScrollFromEdit();
   function waitLatexThenSetScroll(value)
   {
-    // See if latex related markup is in the HTML
+    // See if latex related markup and MathJax are both present
     var HTML = _wikitextElement.innerHTML;
-    if (/\{\$[^\n]+?\$\}/.test(HTML) ||
-    HTML.lastIndexOf('<span class="MathJax_Preview">') !== -1)
+    if ((/\{\$[^\n]+?\$\}/.test(HTML) ||
+    HTML.lastIndexOf('<span class="MathJax_Preview">') !== -1) && MathJax && MathJax.Hub)
     {
-      if (MathJax && MathJax.Hub)
-      { MathJax.Hub.Queue(function () { setScrollFromEdit(value); }); }
-      else { setScrollFromEdit(value); }
+      console.log("MathJax and markup both present. Register with MathJax");
+      MathJax.Hub.Queue(function ()
+      {
+        console.log("MathJax onload; Scroll adjust Pos");
+        setScrollFromEdit(value);
+      });
     }
-		else { setScrollFromEdit(value); }
+    else
+    {
+      console.log("No MathJax/markup. Scroll directly");
+      setScrollFromEdit(value);
+    }
   }
-  
+
   // Currently only init event is open for registering, and only one callback
   // is supported. This is exclusively written for searchReplace.js
   // Can be expanded in the future.
@@ -502,10 +483,24 @@ var scrollPositioner = scrollPositioner || (function()
       var value = getScrollPosLS();
       if (value != null || _hash)
       {
-        waitLatexThenSetScroll(value);
+        // if htmlavctrl module present
+        // register scroll with its videoload event
+        if (window.html5AVCtrl && !html5AVCtrl.isVideoLoad())
+        {
+          console.log("Scroll wait for video onload");
+          html5AVCtrl.subscribe("videoLoad", function()
+          {
+            console.log("Video onload; Scroll adjust Pos");
+            waitLatexThenSetScroll(value);
+          });
+        }
+        else
+        {
+          console.log("No video/video already loaded. Scroll directly");
+          waitLatexThenSetScroll(value);
+        }
 
-        if (String(value).substring(0,1) == 'n')
-        { setScrollPosLS(null); }
+        if (String(value).substring(0,1) == 'n') { setScrollPosLS(null); }
       }
 
       // When "/" is pressed, check whether texts are selected. If yes, compute the number of
@@ -630,7 +625,7 @@ var scrollPositioner = scrollPositioner || (function()
 
   // Record the scroll and caret position on focusout and page close.
   //window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie);
-  window.addEventListener("beforeunload", function() { setScrollAndCaretPosCookie(); });
+  window.addEventListener("beforeunload", setScrollAndCaretPosCookie);
 
   // If the user clicks a hash jump link, handle it with my recipe.
   window.addEventListener("click", function()
