@@ -304,16 +304,31 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 /****************************************************************************************/
 // Meng. Javascript related config/scripts.
 
-if ($isBrowse || $action === "upload")
-{
-  $ImgfocusFadeInTime = 0;
-  $ImgFocusFadeOutTime = 0;
-  $ImgfocusZoomToFitTime = 0;
-  $ImgfocusZoomScreenRatio = 0.95;
-  $ImgfocusAlwaysZoom = true;
-  $ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', 'trashCanOpen.png', 'trashCanClose.png', 'googleCalendar.png', 'searchBoxImg.png');
-  include_once("$FarmD/cookbook/imgfocus.php");
-}
+// Rich universal page commands
+$HTMLHeaderFmt['pageCommand'] = "
+<script type='text/javascript' src='$PubDirUrl/pageCommand.js'></script>";
+
+// Enhanced search & replace
+$fromPath = "/Users/Shared/Chrome extensions/searchReplace";
+$toPath = "$FarmD/pub/searchReplace";
+syncFile($fromPath, $toPath);
+$searchBoxImgUrl = "$PubDirUrl/searchReplace/searchBoxImg.png";
+$HTMLHeaderFmt['searchReplace'] = "
+<script src='$PubDirUrl/searchReplace/mark.js'></script>
+<script src='$PubDirUrl/searchReplace/searchReplace.js'></script>
+<script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
+
+// Dictionary
+$fromPath = "/Users/Shared/Chrome extensions/dictionary";
+$toPath = "$FarmD/pub/dictionary";
+syncFile($fromPath, $toPath);
+/*
+$merriamApiKey = file_get_contents("$PubDirUrl/dictionary/apiKey");
+$merriamApiKeyThesaurus = file_get_contents("$PubDirUrl/dictionary/apiKeyThesaurus");
+$HTMLHeaderFmt['dictionary'] = "
+<script src='$PubDirUrl/dictionary/dictionary.js'></script>
+<script> dictionary.apiKey = '$merriamApiKey'; dictionary.apiKeyThesaurus = '$merriamApiKeyThesaurus'; </script>";
+*/
 
 if ($isBrowse || $isEdit)
 {
@@ -340,6 +355,15 @@ if ($isBrowse)
   autoRefresher.pagename = '$pagename';
   </script>";
 
+  // Google calendar integration
+  if (isDiaryPage() === 2)
+  {
+    include_once("$FarmD/cookbook/googleCalendar.php");
+    $GCImgUrl = "$PubDirUrl/googleCalendar/googleCalendar.png";
+    $HTMLHeaderFmt['googleCalendar'] = "<script>window.GCImgUrl = '$GCImgUrl';</script>
+    <script src='$PubDirUrl/googleCalendar/googleCalendar.js'></script>";
+  }
+
   // Google map integration
   if (strcasecmp($pagename,"Main.Map") == 0)
   {
@@ -348,16 +372,8 @@ if ($isBrowse)
     <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
     <script src='$PubDirUrl/map/map.js'></script>";
   }
-
-  // Google calendar integration
-  if (isDiaryPage() === 2)
-  {
-    include_once("$FarmD/cookbook/googleCalendar.php");
-    $GCImgUrl = "$PubDirUrl/googleCalendar.png";
-    $HTMLHeaderFmt['googleCalendar'] = "<script>window.GCImgUrl = '$GCImgUrl';</script>
-    <script src='$PubDirUrl/googleCalendar.js'></script>";
-  }
 }
+
 if ($isEdit || isset($_GET["updatePageIndex"]))
 {
   // A script to trigger pageindex update request on page saving.
@@ -378,6 +394,16 @@ if ($isEdit || $action === "autosave")
   require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
 }
 
+if ($isBrowse || $action === "upload")
+{
+  $ImgfocusFadeInTime = 0;
+  $ImgFocusFadeOutTime = 0;
+  $ImgfocusZoomToFitTime = 0;
+  $ImgfocusZoomScreenRatio = 0.95;
+  $ImgfocusAlwaysZoom = true;
+  $ImgfocusExceptionList = array('check_.png', 'checkx.png', 'bg.jpg', 'trashCanOpen.png', 'trashCanClose.png', 'googleCalendar.png', 'searchBoxImg.png');
+  include_once("$FarmD/cookbook/imgfocus.php");
+}
 
 if ($isEdit)
 {
@@ -387,10 +413,6 @@ if ($isEdit)
   $HTMLHeaderFmt['editEnhance'] = "
   <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>";
 }
-
-// Rich universal page commands
-$HTMLHeaderFmt['pageCommand'] = "
-<script type='text/javascript' src='$PubDirUrl/pageCommand.js'></script>";
 
 // Some aux functions for the upload page
 if ($action == 'upload')
@@ -405,28 +427,6 @@ if ($action == 'upload')
   </script>
   <script src='$PubDirUrl/uploadAux.js'></script>";
 }
-
-// Enhanced search & replace
-$fromPath = "/Users/Shared/Chrome extensions/searchReplace";
-$toPath = "$FarmD/pub/searchReplace";
-syncFile($fromPath, $toPath);
-$searchBoxImgUrl = "$PubDirUrl/searchReplace/searchBoxImg.png";
-$HTMLHeaderFmt['searchReplace'] = "
-<script src='$PubDirUrl/searchReplace/mark.js'></script>
-<script src='$PubDirUrl/searchReplace/searchReplace.js'></script>
-<script> searchReplace.imgUrl = '$searchBoxImgUrl'; </script>";
-
-// Dictionary
-$fromPath = "/Users/Shared/Chrome extensions/dictionary";
-$toPath = "$FarmD/pub/dictionary";
-syncFile($fromPath, $toPath);
-/*
-$merriamApiKey = file_get_contents("$PubDirUrl/dictionary/apiKey");
-$merriamApiKeyThesaurus = file_get_contents("$PubDirUrl/dictionary/apiKeyThesaurus");
-$HTMLHeaderFmt['dictionary'] = "
-<script src='$PubDirUrl/dictionary/dictionary.js'></script>
-<script> dictionary.apiKey = '$merriamApiKey'; dictionary.apiKeyThesaurus = '$merriamApiKeyThesaurus'; </script>";
-*/
 
 /*
 // For debugging

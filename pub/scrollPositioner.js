@@ -26,7 +26,7 @@
 * sent to the server side.
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170523
+* Version 20170524
 */
 
 "use strict";
@@ -407,16 +407,16 @@ var scrollPositioner = scrollPositioner || (function()
     if ((/\{\$[^\n]+?\$\}/.test(HTML) ||
     HTML.lastIndexOf('<span class="MathJax_Preview">') !== -1) && MathJax && MathJax.Hub)
     {
-      console.log("MathJax and markup both present. Register with MathJax");
+      console.log("scrollPositioner waiting for MathJax");
       MathJax.Hub.Queue(function ()
       {
-        console.log("MathJax onload; Scroll adjust Pos");
+        console.log("MathJax loaded; scrollPositioner continues");
         setScrollFromEdit(value);
       });
     }
     else
     {
-      console.log("No MathJax/markup. Scroll directly");
+      console.log("No MathJax/markup. scrollPositioner continues");
       setScrollFromEdit(value);
     }
   }
@@ -488,16 +488,16 @@ var scrollPositioner = scrollPositioner || (function()
         // register scroll with its videoload event
         if (window.html5AVCtrl && !html5AVCtrl.isVideoLoad())
         {
-          console.log("Scroll wait for video onload");
+          console.log("scrollPositioner waiting for video onload");
           html5AVCtrl.subscribe("videoLoad", function()
           {
-            console.log("Video onload; Scroll adjust Pos");
+            console.log("Video loaded; scrollPositioner continues");
             waitLatexThenSetScroll(value);
           });
         }
         else
         {
-          console.log("No video/video already loaded. Scroll directly");
+          console.log("No video/video already loaded; scrollPositioner continues");
           waitLatexThenSetScroll(value);
         }
 
@@ -505,8 +505,7 @@ var scrollPositioner = scrollPositioner || (function()
       }
 
       // When "/" is pressed, check whether texts are selected. If yes, compute the number of
-      // html bullets before the selected text, record it in cookie, and then open a new tab
-      // for editing.
+      // html bullets before the selected text, record it in cookie
       window.addEventListener('keydown', function()
       {
         // Spaces are all removed for comparison.
@@ -519,14 +518,7 @@ var scrollPositioner = scrollPositioner || (function()
           var sel = window.getSelection();
           var selString = sel.toString().replace(/ /g,'').replace(/&/g, "&amp;").replace(/>/g, "&gt;").replace(/</g, "&lt;");
 
-          if (selString == '')
-          {
-            if ((event.ctrlKey && _OS == 'Mac') || ((event.altKey||event.metaKey) && _OS == 'Windows'))
-            { window.open(_url + '?action=edit', '_blank'); }
-            else
-            { window.location = _url + '?action=edit'; }
-            return;
-          }
+          if (selString === "") { return; }
 
           if (selString.substring(0,1) == "\n") { selString = selString.slice(1); }
           var newlinePos = selString.indexOf("\n");
@@ -546,14 +538,6 @@ var scrollPositioner = scrollPositioner || (function()
           var numBullet = (HTML.match(/<li/g) || []).length;
 
           setStorageByKey('EDIT-ScrollY', _pagename, 'n'+numBullet)
-
-          if ((event.ctrlKey && _OS == 'Mac') || ((event.altKey||event.metaKey) && _OS == 'Windows'))
-          {
-//             if (window.opener) { window.opener.location.reload(); }
-//             else { window.open(window.location.href +'?action=edit', '_blank'); }
-            window.open(_url +'?action=edit', '_blank');
-          }
-          else { window.location = _url + '?action=edit'; }
         }
 
         else

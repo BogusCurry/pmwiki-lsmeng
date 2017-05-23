@@ -26,7 +26,6 @@ var editEnhance = editEnhance || (function()
   var _lineHeight = 0;
   var _cursorPos;
   var _scrollPos;
-  var _browseWindow;
 
   // Return true if the given string contains only invisible characters
   // false otherwise
@@ -502,45 +501,6 @@ var editEnhance = editEnhance || (function()
       }
     }
 
-    // Ctrl+/ to open viewing page
-    // The 'Slash' is a fix for Yahoo Chinese input on Windows
-    else if ((event.keyCode == 191 || event.code == 'Slash') && (event.ctrlKey || event.metaKey))
-    {
-      // Leave if textarea is not focused
-      if (textElement !== document.activeElement) { return; }
-
-      event.preventDefault();
-      if ((event.ctrlKey && _OS == 'Mac') || ((event.altKey||event.metaKey)) && _OS == 'Windows')
-      {
-        // Declare a global property to keep track of whether the associated view page has
-        // been opened. This is to work with autosave.js to auto refresh the view page.
-        _browseWindow =
-        window.open(window.location.href.replace(/[\?&]action=edit/i,''), '_blank');
-      }
-      else
-      { window.location = window.location.href.replace(/[\?&]action=edit/i,''); }
-    }
-
-    // Ctrl+u to record a jump point, ctrl+j to go to the jump point
-    else if (event.keyCode == 85 && (event.ctrlKey || event.metaKey))
-    {
-      event.preventDefault();
-      _cursorPos = start;
-      _scrollPos = textElement.scrollTop;
-    }
-    else if (event.keyCode == 74 && (event.ctrlKey || event.metaKey) && !event.shiftKey)
-    {
-      if (_OS == 'Windows')
-      event.preventDefault();
-
-      if (typeof _cursorPos != 'undefined')
-      {
-        textElement.selectionStart =
-        textElement.selectionEnd = _cursorPos;
-        textElement.scrollTop = _scrollPos;
-      }
-    }
-
     // Ctrl+i to put the line with cursor at the center of the screen
     else if (event.keyCode == 73 && (event.ctrlKey || event.metaKey))
     { scrollToSelection(textElement); }
@@ -845,13 +805,5 @@ var editEnhance = editEnhance || (function()
 
   document.addEventListener('DOMContentLoaded', init);
 
-  // Return the window object of the corresponding browse page if opened
-  function getBrowseWindow() { return _browseWindow; }
-
-  // Reveal public API
-  var returnObj =
-  {
-    getBrowseWindow: getBrowseWindow
-  };
-  return returnObj;
+  return {};
 })();

@@ -105,18 +105,18 @@ var AS =
 				AS.basetime = as_time;
 
 				// If the associated view page has been opened, refresh it upon saving.
-				if (window.editEnhance && editEnhance.getBrowseWindow)
+				if (window.pageCommand && pageCommand.getBrowseWindow)
 				{
 					// If the viewing page is suspended by a browser plugin and the url has been
 					// replaced, security error might result due to same-origin policy
 					try
 					{
-						var pageURL = editEnhance.getBrowseWindow().location.href;
+						var pageURL = pageCommand.getBrowseWindow().location.href;
 						if (pageURL)
 						{
 							var pagename = pageURL.substr(pageURL.indexOf('=')+1).toUpperCase();
 							if (pagename == AS.pagenameU)
-							{ editEnhance.getBrowseWindow().location = 
+							{ pageCommand.getBrowseWindow().location = 
 							location.href.replace(/[\?&]action=edit/i,""); }
 						}
 					}
