@@ -84,7 +84,7 @@ var pageCommand = pageCommand || (function()
       }
     }
 
-    else {  }
+    else {}
 
     return link;
   }
@@ -226,7 +226,7 @@ var pageCommand = pageCommand || (function()
       if (pagename)
       {
         var pagenamePos = _url.indexOf('?n=');
-        if (pagenamePos == -1) {  }
+        if (pagenamePos == -1) {}
         else { window.open(_url.slice(0,pagenamePos+3)+pagename, '_blank'); }
       }
     }
@@ -302,15 +302,12 @@ var pageCommand = pageCommand || (function()
         if (document.getElementById("text") !== document.activeElement) { return; }
 
         // If a window has been opened, leave
-        if (_browseWindow) { return; }
+        if (_browseWindow && !_browseWindow.closed) { return; }
 
         // Declare a global property to keep track of whether the associated view page has
         // been opened. This is to work with autosave.js to auto refresh the view page.
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
-        {
-          _browseWindow = window.open(url.replace(/[\?&]action=edit/i,''), '_blank');
-          _browseWindow.addEventListener("beforeunload", function() { _browseWindow = undefined; })
-        }
+        { _browseWindow = window.open(url.replace(/[\?&]action=edit/i,''), '_blank'); }
         else { window.location = url.replace(/[\?&]action=edit/i,''); }
       }
       // The current action is browse
@@ -320,13 +317,10 @@ var pageCommand = pageCommand || (function()
         if (document.body !== document.activeElement) { return; }
 
         // If a window has been opened, leave
-        if (_browseWindow) { return; }
+        if (_browseWindow && !_browseWindow.closed) { return; }
 
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
-        {
-          _browseWindow = window.open(url + '?action=edit', '_blank');
-          _browseWindow.addEventListener("beforeunload", function() { _browseWindow = undefined; })
-        }
+        { _browseWindow = window.open(url + '?action=edit', '_blank'); }
         else { window.location = url + '?action=edit'; }
       }
     }

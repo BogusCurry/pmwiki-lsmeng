@@ -15,7 +15,7 @@ var autoRefresher =
   // If "key" is null then the whole content of "name" is returned;
   getStorageByKey(name, key)
   {
-    if (key == null) 	{ return JSON.parse(localStorage.getItem(name)); }
+    if (key == null) { return JSON.parse(localStorage.getItem(name)); }
 
     try { var value = JSON.parse(localStorage.getItem(name))[key]; }
     catch(e) {}
