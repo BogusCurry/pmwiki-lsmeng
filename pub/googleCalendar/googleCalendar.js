@@ -129,7 +129,7 @@
         var startTime = format2DigitTime(match[5]);
         var endTime = format2DigitTime(match[10]);
 
-				var endYear, endMon, endDay, startYear, startMon, startDay;
+        var endYear, endMon, endDay, startYear, startMon, startDay;
         [endYear,endMon,endDay] = [startYear,startMon,startDay] =
         parseDateTime(match,this.year,this.mon,this.day);
 

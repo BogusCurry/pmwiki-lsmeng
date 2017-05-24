@@ -408,7 +408,8 @@ while ($keys) {
 
 $LinkPattern = implode('|',array_keys($LinkFunctions));  # after InterMaps
 SDV($LinkPageCreateSpaceFmt,$LinkPageCreateFmt);
-$ActionTitle = FmtPageName(@$ActionTitleFmt[$action], $pagename);
+// Meng. Show "PmWiki" in page title for easy identification
+$ActionTitle = FmtPageName(@$ActionTitleFmt[$action]." [PmWiki]", $pagename);
 
 if (!@$HandleActions[$action] || !function_exists($HandleActions[$action])) 
   $action='browse';
