@@ -246,7 +246,7 @@ function decryptStr($text, $key = "")
 
   // Cache the decrypted text for some non-sensitive pmwiki builtin pages for speedup;
   // otherwise record the AES KEY as a recently used one
-  if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {  }
+  if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
   else
   { cacheRecentPageAESKey($AES_KEY, $key.$salt); }
 
@@ -272,7 +272,7 @@ function passMAC($text, $key)
 }
 
 $HMAC_AUTH = false;
-function generate_HMAC_KEY() {  }
+function generate_HMAC_KEY() {}
 
 // Derive the master key used for generating page-specific keys for AES encryption. Use
 // PBKDF2 with hardcoded $salt, which in fact doesn't have too much point. 

@@ -170,7 +170,7 @@ if ($AuthorLink == '')
 }
 else if ($AuthorLink == 'SAM_MENG_W7N')
 { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
-else {  }
+else {}
 
 if (!file_exists("$WorkDir"))
 { Abort("Create a folder named \"wiki.d\" following the specified path \"$WorkDir\"!"); }

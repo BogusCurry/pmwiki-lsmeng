@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170519
+ * Version 20170524
  */
 
 "use strict";
@@ -284,17 +284,10 @@ var editEnhance = editEnhance || (function()
     (textElement.value.slice(0,textElement.selectionStart).match(/\n/g) || []).length;
   }
 
-  // Return the target text element; currently only textarea is supported
-  function getTextElement(target)
-  {
-    if (target.tagName !== "TEXTAREA") { return; }
-    else { return target; }
-  }
-
   function mainKeydownFun()
   {
-    var textElement = getTextElement(event.target);
-    if (!textElement) { return; }
+    var textElement = event.target;
+    if (textElement.tagName !== "TEXTAREA") { return; }
 
     // A fix for windows. Prevent alt key to turn the focus to browser's toolbar.
     if (event.keyCode == 18)
@@ -702,14 +695,12 @@ var editEnhance = editEnhance || (function()
       if (document.activeElement === textElement)
       { setTimeout(function()  { scrollToSelection(textElement); }, 25); }
     }
-
-//   console.log(event.keyCode);
   }
 
   function keyupFunFixForWindows()
   {
-    var textElement = getTextElement(event.target);
-    if (!textElement) { return; }
+    var textElement = event.target;
+    if (textElement.tagName !== "TEXTAREA") { return; }
 
     // Up/Dn
     if (event.keyCode == 38 || event.keyCode == 40)
