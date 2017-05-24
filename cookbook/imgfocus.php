@@ -44,16 +44,16 @@ $ImgfocusExceptionList = json_encode($ImgfocusExceptionList);
 
 if($action == "browse" || $action == "upload" || $_REQUEST['preview'])
 {
-   $HTMLHeaderFmt['imgfocus'] = "
-   <script src='$PubDirUrl/imgfocus/imgfocus.js'></script>
-   <script>
-		 imgfocus.fadeInTime = $ImgfocusFadeInTime; 
-		 imgfocus.fadeOutTime = $ImgFocusFadeOutTime;
-		 imgfocus.zoomToFitTime = $ImgfocusZoomToFitTime;
-		 imgfocus.zoomScreenRatio = $ImgfocusZoomScreenRatio;
-		 imgfocus.alwaysZoom = '$ImgfocusAlwaysZoom';
-		 imgfocus.exceptionList = '$ImgfocusExceptionList';
-	 </script>
-   <link rel='stylesheet' href='$PubDirUrl/imgfocus/imgfocus.css' type='text/css'>";
+  $HTMLHeaderFmt['imgfocus'] = "
+  <script src='$PubDirUrl/imgfocus/imgfocus.js'></script>
+  <script>
+  imgfocus.fadeInTime = $ImgfocusFadeInTime;
+  imgfocus.fadeOutTime = $ImgFocusFadeOutTime;
+  imgfocus.zoomToFitTime = $ImgfocusZoomToFitTime;
+  imgfocus.zoomScreenRatio = $ImgfocusZoomScreenRatio;
+  imgfocus.alwaysZoom = '$ImgfocusAlwaysZoom';
+  imgfocus.exceptionList = '$ImgfocusExceptionList';
+  </script>
+  <link rel='stylesheet' href='$PubDirUrl/imgfocus/imgfocus.css' type='text/css'>";
 }
 

@@ -280,8 +280,8 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   $IMG_NAME_LEN = strlen("YYYYMMDD_HHMMSS");
   if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
   {
-    if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN) {  }
-    else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1) {  }
+    if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN) {}
+    else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1) {}
 //     else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
   }
   // For downloaded images that cannot be automatically renamed, D_X.jpg DD_X.jpg are valid

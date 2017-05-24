@@ -22,46 +22,46 @@ $RecipeInfo['pasteimgupload']['Version'] = '20160730';
 if ($action == 'edit')
 {
 // For publication, remove the following
-	if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
+  if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   {
-		// Use regex to get year & mon from pagename. Not satisfied with the mon; there should 
-		// be a way not to repeat the look behind part (?<=\.\d{4}0)
-		preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
-		preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
-		$uploadDirUrlHeader = "Photo}$year/$mon/";
+    // Use regex to get year & mon from pagename. Not satisfied with the mon; there should
+    // be a way not to repeat the look behind part (?<=\.\d{4}0)
+    preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
+    preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
+    $uploadDirUrlHeader = "Photo}$year/$mon/";
   }
   else
   {
-  	$groupName = substr($pagename, 0, strpos($pagename,'.'));
-		$uploadDirUrlHeader = "PhotoPub}$groupName/";
-	}
-	
+    $groupName = substr($pagename, 0, strpos($pagename,'.'));
+    $uploadDirUrlHeader = "PhotoPub}$groupName/";
+  }
+
 // Remove "uploadDirUrlHeader" for publication
   $HTMLHeaderFmt['pasteimgupload'] = '
   <script type="text/javascript" src="$PubDirUrl/pasteimgupload/pasteimgupload.js"></script>
   <script type="text/javascript">
-    PasteImgUploadImgSrc = "<img height=\'50\' src=\'$PubDirUrl/pasteimgupload/upload.png\' >";
-    PasteImgUploadUrl = "$ScriptUrl?n=$pagename?action=postupload";
-    uploadDirUrlHeader = "{$" + "$uploadDirUrlHeader";
+  PasteImgUploadImgSrc = "<img height=\'50\' src=\'$PubDirUrl/pasteimgupload/upload.png\' >";
+  PasteImgUploadUrl = "$ScriptUrl?n=$pagename?action=postupload";
+  uploadDirUrlHeader = "{$" + "$uploadDirUrlHeader";
   </script>';
 }
 
 else if ($action == 'postupload')
 {
-	$UploadRedirectFunction = 'UploadRedirectPasteImg';
-	function UploadRedirectPasteImg($pagename, $urlfmt)
-	{
-		if (isset($_SERVER['HTTP_AJAXUPLOAD']))
-		{
-			preg_match('/(?<=upresult=)[^&]*/', $urlfmt, $match);
+  $UploadRedirectFunction = 'UploadRedirectPasteImg';
+  function UploadRedirectPasteImg($pagename, $urlfmt)
+  {
+    if (isset($_SERVER['HTTP_AJAXUPLOAD']))
+    {
+      preg_match('/(?<=upresult=)[^&]*/', $urlfmt, $match);
 
-			$upresultCode = 'UL'.$match[0];
-			$upresultCode = $upresultCode=='ULtoobigext' ? 'ULtoobig' : $upresultCode;
-			global $XL;
-  		$upresult = $XL['en'][$upresultCode];
+      $upresultCode = 'UL'.$match[0];
+      $upresultCode = $upresultCode=='ULtoobigext' ? 'ULtoobig' : $upresultCode;
+      global $XL;
+      $upresult = $XL['en'][$upresultCode];
       $upresult = $upresult==null ? $upresultCode : $upresult;
-			header("UpResult: $upresult");
-		}
-		else { Redirect($pagename, $urlfmt); }
-	}
+      header("UpResult: $upresult");
+    }
+    else { Redirect($pagename, $urlfmt); }
+  }
 }

@@ -201,7 +201,7 @@ function updatePageindex()
 // The pageindex handling procedures as a wrapped function.
 function handlePageindex()
 {
-  if (initPageindex()) {  }
+  if (initPageindex()) {}
   else
   {
     updatePageindex();

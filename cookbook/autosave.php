@@ -8,8 +8,8 @@
  *	Developed and tested using PmWiki 2.2.x
  *
  *	To install, add at least the following to your configuration file:
-		$EnableDrafts = 1;
-		include_once("$FarmD/cookbook/autosave.php");
+$EnableDrafts = 1;
+include_once("$FarmD/cookbook/autosave.php");
  *	and the directive (:autosave:) to your Site.EditForm page.
  *
  *	For more information, please see the online documentation at
@@ -26,15 +26,15 @@ $RecipeInfo['AutoSave']['Version'] = '2009-05-28-2';
 SDV($AutoSaveDrag, 0);
 
 SDVA( $HandleAuth, array(
-	'autosave' => $HandleAuth['edit'] ));
+'autosave' => $HandleAuth['edit'] ));
 SDVA( $HandleActions, array(
-	'autosave' => 'HandleAutoSave' ));
+'autosave' => 'HandleAutoSave' ));
 
 if($action == "edit")
 {
-	global $PubDirUrl, $AutoSaveFmt, $AutoSavePubDirUrl, $AutoSaveDelay;
+  global $PubDirUrl, $AutoSaveFmt, $AutoSavePubDirUrl, $AutoSaveDelay;
 
-	SDV( $AutoSavePubDirUrl, "$PubDirUrl/autosave" );
+  SDV( $AutoSavePubDirUrl, "$PubDirUrl/autosave" );
 
   // Meng: Autosave timer. Setting to 1 sec pretty much means saving continuously.
   global $UrlScheme, $autoSaveDelayHttp, $autoSaveDelayHttps;
@@ -43,73 +43,73 @@ if($action == "edit")
 
   global $ScriptUrl;
   $url = "$ScriptUrl?n=$pagename&action=autosave";
-  
-	SDVA( $AutoSaveFmt, array(
-		'info' => "<div style='position:fixed; z-index:9;' id='autosaveStatus'></div>",
-		'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
-		<script type='text/javascript'>
-		AS.pagename = '$pagename';
-		</script>",
-		'config' => "
-		<script type='text/javascript'>
-		AS.enableDrag = $AutoSaveDrag;
-		AS.delay = $AutoSaveDelay;
-		AS.saveOffDay = $autoSaveOffDay;
-		AS.url = '$url';
-		</script>"
-	));
 
-	$HTMLHeaderFmt['autosave'] = "
-	{$AutoSaveFmt['info']}\n{$AutoSaveFmt['js']}\n{$AutoSaveFmt['config']}
+  SDVA( $AutoSaveFmt, array(
+  'info' => "<div style='position:fixed; z-index:9;' id='autosaveStatus'></div>",
+  'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
+  <script type='text/javascript'>
+  AS.pagename = '$pagename';
+  </script>",
+  'config' => "
+  <script type='text/javascript'>
+  AS.enableDrag = $AutoSaveDrag;
+  AS.delay = $AutoSaveDelay;
+  AS.saveOffDay = $autoSaveOffDay;
+  AS.url = '$url';
+  </script>"
+  ));
+
+  $HTMLHeaderFmt['autosave'] =
+  "{$AutoSaveFmt['info']}\n{$AutoSaveFmt['js']}\n{$AutoSaveFmt['config']}
   <link rel=\"stylesheet\" href=\"$PubDirUrl/autosave/autosave.css\" type=\"text/css\">
-	";
+  ";
 }
 
 function HandleAutoSave( $pagename, $auth = 'edit' )
 {
-	global
-		$EditFunctions,
-		$EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
+  global
+  $EditFunctions,
+  $EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
 
-	// Since I change the mechanism of Autosave from posting with content-type: 
-	// application/x-www-form-urlencoded to text/plain, the variable $_POST is not working
-	// and is simply filled in manually with corresponding information.
-	// Particularly, the basetime is replaced by a specific header sent by the client
-	// the text content is then the raw input sent using text/plain
-	$_POST['action'] = 'edit';
-	$_POST['n'] = $pagename;
-	$_POST['basetime'] = $_SERVER['HTTP_BASETIME'];
-	$_POST['text'] =  file_get_contents('php://input');
+  // Since I change the mechanism of Autosave from posting with content-type:
+  // application/x-www-form-urlencoded to text/plain, the variable $_POST is not working
+  // and is simply filled in manually with corresponding information.
+  // Particularly, the basetime is replaced by a specific header sent by the client
+  // the text content is then the raw input sent using text/plain
+  $_POST['action'] = 'edit';
+  $_POST['n'] = $pagename;
+  $_POST['basetime'] = $_SERVER['HTTP_BASETIME'];
+  $_POST['text'] =  file_get_contents('php://input');
 
-	Lock(2);
-	$page = RetrieveAuthPage($pagename, $auth, false);
-	if (!$page) { echo 'Autosave read error'; return; }
-		
-  // Meng: The following controls simultaneous editing. 
-	if ( ( $page['time'] != $Now) && ( $_POST['basetime'] < $page['time'] ) )
-	{
-	  echo 'Simultaneous editing';
-	  return;
-	}
+  Lock(2);
+  $page = RetrieveAuthPage($pagename, $auth, false);
+  if (!$page) { echo 'Autosave read error'; return; }
 
-	PCache($pagename,$page);
+  // Meng: The following controls simultaneous editing.
+  if ( ( $page['time'] != $Now) && ( $_POST['basetime'] < $page['time'] ) )
+  {
+    echo 'Simultaneous editing';
+    return;
+  }
 
-	$new = $page;
-	foreach((array)$EditFields as $k)
-		if (isset( $_POST[$k] ))
-		{
-			$new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
-			if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
-		}
-	$new["csum:$Now"] = $new['csum'] = "[autosave] $ChangeSummary";
+  PCache($pagename,$page);
 
-	UpdatePage($pagename, $page, $new);
-	Lock(0);
+  $new = $page;
+  foreach((array)$EditFields as $k)
+  if (isset( $_POST[$k] ))
+  {
+    $new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
+    if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
+  }
+  $new["csum:$Now"] = $new['csum'] = "[autosave] $ChangeSummary";
 
-	if ($IsPagePosted)
-	{
-		header("X-AutoSaveTime: $Now");
-	  echo 'Saved';
-	} 
-	else { echo 'Autosave write error'; }
+  UpdatePage($pagename, $page, $new);
+  Lock(0);
+
+  if ($IsPagePosted)
+  {
+    header("X-AutoSaveTime: $Now");
+    echo 'Saved';
+  }
+  else { echo 'Autosave write error'; }
 }
