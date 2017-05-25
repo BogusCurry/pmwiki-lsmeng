@@ -31,7 +31,7 @@ var editEnhance = editEnhance || (function()
   // false otherwise
   function isStrEmpty(str)
   {
-    if (/[^\s]/.test(str)) { return false; }
+    if (/\S/.test(str)) { return false; }
     else { return true; }
   }
 
@@ -112,12 +112,12 @@ var editEnhance = editEnhance || (function()
     }
 
     // Find an empty line
-    var matchPos = str.search(/^[   ]*$/m);
+    var matchPos = str.search(/^[ \t]*$/m);
     if (matchPos == -1) { return text.length; }
     var start = pos + matchPos;
 
     // Find a non empty line
-    matchPos = str.slice(matchPos).search(/^[   ]*[^\s]/m);
+    matchPos = str.slice(matchPos).search(/^[ \t]*[^\s]/m);
     if (matchPos == -1) { return text.length; }
 
     return start + matchPos;
@@ -132,7 +132,7 @@ var editEnhance = editEnhance || (function()
     if (isStrEmpty(text.slice(getLineStart(text, pos),pos)))
     {
       // Find the first nonempty char
-      var matchPos = str.search(/[^\s]/);
+      var matchPos = str.search(/\S/);
       if (matchPos == -1) { return text.length; }
       str = str.slice(matchPos + 1);
       pos += matchPos + 1;
