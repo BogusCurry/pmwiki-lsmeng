@@ -245,7 +245,7 @@ require_once("$FarmD/cookbook/plugin_LSMENG_general.php");
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, and prevent the memory from being paged.
-if (getOS() == 'Mac') { shell_exec("memcached -d -l localhost -k"); }
+if ($AuthorLink === "MBA") { shell_exec("memcached -d -l localhost -k"); }
 
 /************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
 if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) { return; }
@@ -276,7 +276,6 @@ else if (strcasecmp($pagename,"Main.Runcode") === 0)
 {
   $runCodePath = "pub/runCode";
   require_once("$FarmD/cookbook/runCode.php");
-  require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
 }
 
 // Paths for images
@@ -304,7 +303,8 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 /****************************************************************************************/
 // Meng. Javascript related config/scripts.
 
-$ChromeExtPath = "/Users/Shared/Chrome extensions";
+if ($AuthorLink === "MBA") { $ChromeExtPath = "/Users/Shared/Chrome extensions"; }
+else { $ChromeExtPath = 'D:\Chrome extensions'; }
 
 // Some enhancements for both browse and edit pages
 $fromPath = "$ChromeExtPath/editViewEnhance";
@@ -400,7 +400,6 @@ if ($isEdit || $action === "autosave")
   // $autoSaveOffDay days
   $autoSaveOffDay = 30;
   include_once("$FarmD/cookbook/autosave.php");
-  require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
 }
 
 if ($isBrowse || $action === "upload")
@@ -414,10 +413,11 @@ if ($isBrowse || $action === "upload")
   include_once("$FarmD/cookbook/imgfocus.php");
 }
 
+if ($isEdit || $action === "postupload")
+{ include_once("$FarmD/cookbook/pasteimgupload.php"); }
+
 if ($isEdit)
 {
-  include_once("$FarmD/cookbook/pasteimgupload.php");
-
   // Rich edit commands
   $HTMLHeaderFmt['editEnhance'] = "
   <script type='text/javascript' src='$PubDirUrl/editEnhance.js'></script>";
@@ -459,21 +459,13 @@ if ($isBrowse)
   # For flipbox
   include_once("$FarmD/cookbook/flipbox.php");
 
-  # For wpap mp3 player
-  // $wpap_initialvolume = "1";
-  // $wpap_width = "500";
-  // include_once("$FarmD/cookbook/wpap/wpap.php");
-
   # Youtube (the older one).
   include_once("$FarmD/cookbook/swf-sites.php");
 }
 
 # Advanced global search & replace
 if (strcasecmp($pagename,"Site.SearchE") === 0)
-{
-  require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
-  require_once("$FarmD/cookbook/extract.php");
-}
+{ require_once("$FarmD/cookbook/extract.php"); }
 
 if ($action === "autosave")
 {

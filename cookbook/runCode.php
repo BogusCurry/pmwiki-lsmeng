@@ -1,5 +1,7 @@
 <?php
 
+require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
+
 // Should be clear.
 function addLineNum($text)
 {
