@@ -13,21 +13,21 @@
  * option) any later version. Available at
  * https://www.gnu.org/licenses/gpl.txt
  *
- * Copyright 2016 Ling-San Meng (f95942117@gmail.com)
- * Version 20160730
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170525
  */
 
-$RecipeInfo['pasteimgupload']['Version'] = '20160730';
+$RecipeInfo['pasteimgupload']['Version'] = '20170525';
 
 if ($action == 'edit')
 {
 // For publication, remove the following
   if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   {
-    // Use regex to get year & mon from pagename. Not satisfied with the mon; there should
-    // be a way not to repeat the look behind part (?<=\.\d{4}0)
-    preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
-    preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
+    preg_match('/\.(\d{4})/', $pagename, $match);
+    $year = $match[1];
+    preg_match('/\d\d$/', $pagename, $match);
+    $mon = (string)intval($match[0]);
     $uploadDirUrlHeader = "Photo}$year/$mon/";
   }
   else
