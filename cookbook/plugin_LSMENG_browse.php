@@ -392,6 +392,8 @@ function changePassword($PageStartFmt, $PageEndFmt)
 $FmtPV['$runPHP'] = 'runPHP($pn)';
 function runPHP($pagename)
 {
+	if (getOS() !== "Mac") { return "runPHP not supported!"; }
+	
   $page = RetrieveAuthPage($pagename, 'read', false, READPAGE_CURRENT);
   $text = $page['text'];
   if (strpos($text, "'") !== false) { return "Character ' detected. Don't use it!"; }

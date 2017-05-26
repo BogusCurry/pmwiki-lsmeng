@@ -8,12 +8,28 @@ function syncPageindexNow()
   Redirect("Main.SiteAdmin");
 }
 
+// Aux function for removing a folder & every thing within it recursively
+function removeFolder($folder)
+{
+  if (is_Dir($folder) === false) { return; }
+
+  $ignored = array('.', '..');
+  foreach (scandir($folder) as $item)
+  {
+    if (in_array($item, $ignored)) { continue; }
+    if (is_Dir("$folder/$item")) { removeFolder("$folder/$item"); }
+    else { unlink("$folder/$item"); }
+  }
+
+  rmdir($folder);
+}
+
 // Reset pageindex file & folder.
 $FmtPV['$resetPageindex'] = 'resetPageindex()';
 function resetPageindex()
 {
   global $pageindexTimeDir;
-  exec('rm -rf '.$pageindexTimeDir);
+  removeFolder($pageindexTimeDir);
 
   initPageindex();
 }
@@ -208,3 +224,5 @@ function handlePageindex()
     syncPageindex();
   }
 }
+
+
