@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170524
+ * Version 20170526
  */
 
 "use strict";
@@ -521,46 +521,6 @@ var editEnhance = editEnhance || (function()
       textElement.selectionStart = textElement.selectionEnd =
       textElement.selectionStart - lineTextLen;
       textElement.focus();
-    }
-
-    // Ctrl+(shift)+enter to begin a new line below or above the current line
-    else if (event.keyCode == 13 && (event.ctrlKey || event.metaKey))
-    {
-      event.preventDefault();
-
-      var initScroll = textElement.scrollTop;
-
-      if (event.shiftKey)
-      {
-        var lineStart = getLineStart(textElement.value, start);
-        if (lineStart == 0)
-        {
-          textElement.selectionStart =
-          textElement.selectionEnd = 0;
-          document.execCommand("insertText", false, "\n");
-          textElement.selectionStart =
-          textElement.selectionEnd = 0;
-        }
-        else
-        {
-          textElement.selectionStart =
-          textElement.selectionEnd = lineStart-1;
-          document.execCommand("insertText", false, "\n");
-        }
-      }
-      else
-      {
-        // Deal with the special case where the ending newline char is selected
-        if (start != end && textElement.value[end-1] == "\n")
-        { var lineEnd = end; }
-        else { var lineEnd = getLineEnd(textElement.value, end); }
-        if (lineEnd == textElement.value.length) { lineEnd++; }
-        textElement.selectionStart =
-        textElement.selectionEnd = lineEnd-1;
-        document.execCommand("insertText", false, "\n");
-      }
-
-      textElement.scrollTop = initScroll;
     }
 
     // Ctrl ; to scroll to the next mis-spelled word
