@@ -10,19 +10,19 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170507
+ * Version 20170528
  */
 
 var AS =
 {
   status: '',
-  savedStatusHtml: "<div class='autosaveStatus savedStatus'></div>",
-  savingStatusHtml: "<div class='autosaveStatus savingStatus'></div>",
-  disableStatusHtml: "<div class='autosaveStatus disabledStatus'></div>",
-  initStatusHtml: "<div class='autosaveStatus initStatus'></div>",
-  errStatusHtml: "<div class='autosaveStatus errStatus'></div>",
-  typingStatusHtml: "<div class='autosaveStatus typingStatus'></div>",
-
+  savedStatusHtml: "<span class='savedStatus'></span>",
+  disableStatusHtml: "<span class='disabledStatus'></span>",
+  initStatusHtml: "<span class='initStatus'></span>",
+  errStatusHtml: "<span class='errStatus'></span>",
+  typingStatusHtml: '<span class="autosaveStatus"><span class="typingStatus-outer"><span class="typingStatus-inner"></span></span></span>',
+  savingStatusHtml: '<span class="autosaveStatus"><span class="savingStatus-outer"><span class="savingStatus-inner"></span></span></span>',
+  
   enableDrag: 0,
   lastInputTime: 0,
   inputBurstStartTime: 0,
@@ -398,6 +398,7 @@ var AS =
 
   init: function()
   {
+/*
     var helpPlusHTML =
     '<span class="help-bubble"> \
     <span class="help-bubble-outer-dot">\
@@ -406,6 +407,7 @@ var AS =
     </span>';
 
     document.body.innerHTML = document.body.innerHTML + helpPlusHTML;
+*/
 
     if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
 
