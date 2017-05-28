@@ -16,15 +16,12 @@
 var AS =
 {
   status: '',
-  savedStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px #0C0); background-color: #0C0; background:-webkit-linear-gradient(right, #0C0,#cfc);'></div>",
-  savingStatusHtml: "<div class='AutosaveMsg' style='\
-  -webkit-animation-name: savingPulse;\
-  -webkit-animation-duration: 0.5s;\
-  -webkit-animation-iteration-count: infinite;'></div>",
-  disableStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px #666); background-color: #999; background:-webkit-linear-gradient(right, #666, #eee);'></div>",
-  initStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px blue); background-color: blue; background:-webkit-linear-gradient(right, blue, lightblue);'></div>",
-  errStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px red); background-color: red; background:-webkit-linear-gradient(right, red, pink);'></div>",
-  typingStatusHtml: "<div class='AutosaveMsg' style='-webkit-filter:drop-shadow(0 0 1px silver); background-color: #fc0; background:-webkit-linear-gradient(right, #fc0, #ff1);'></div>",
+  savedStatusHtml: "<div class='autosaveStatus savedStatus'></div>",
+  savingStatusHtml: "<div class='autosaveStatus savingStatus'></div>",
+  disableStatusHtml: "<div class='autosaveStatus disabledStatus'></div>",
+  initStatusHtml: "<div class='autosaveStatus initStatus'></div>",
+  errStatusHtml: "<div class='autosaveStatus errStatus'></div>",
+  typingStatusHtml: "<div class='autosaveStatus typingStatus'></div>",
 
   enableDrag: 0,
   lastInputTime: 0,
@@ -32,7 +29,6 @@ var AS =
   id1: null,
   id2: null,
   textID: null,
-//   prefix: '',
   lastTextContent: '',
   pagename: '',
   pagenameU: '',
@@ -402,6 +398,15 @@ var AS =
 
   init: function()
   {
+    var helpPlusHTML =
+    '<span class="help-bubble"> \
+    <span class="help-bubble-outer-dot">\
+    <span class="help-bubble-inner-dot"></span>\
+    </span>\
+    </span>';
+
+    document.body.innerHTML = document.body.innerHTML + helpPlusHTML;
+
     if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
 
     // Check for out-dated text. The built-in navigation mechanism "last page" of browsers
@@ -578,4 +583,3 @@ window.addEventListener('keydown', function()
     }
   }
 }, false);
-
