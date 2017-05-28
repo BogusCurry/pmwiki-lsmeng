@@ -1,76 +1,78 @@
-
-/*autosave-status*/
 .autosaveStatus
 {
-  opacity: 0.8;
-  border-radius: 50%;
-  height: 25px;
+  opacity: 1;
+  display: block;
+  position: absolute;
+  z-index: 2;
+}
+
+.autosaveStatus:after
+{
+  opacity: 1;
+  content: "";
+  background-color: #3af;
   width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  position: absolute;
+  display: block;
+  top: 1px;
+  left: 1px;
 }
 
 .savedStatus
 {
-  -webkit-filter:drop-shadow(0 0 1px #0C0);
+  opacity: 1;
   background-color: #0C0;
-  background:-webkit-linear-gradient(right, #0C0,#cfc);
-}
-
-.savingStatus
-{
-  -webkit-animation-name: savingPulse;
-  -webkit-animation-duration: 0.5s;
-  -webkit-animation-iteration-count: infinite;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  position: absolute;
+  display: block;
+  top: 1px;
+  left: 1px;
 }
 
 .disabledStatus
 {
-  -webkit-filter:drop-shadow(0 0 1px #666);
+  opacity: 1;
   background-color: #999;
-  background:-webkit-linear-gradient(right, #666, #eee);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  position: absolute;
+  display: block;
+  top: 1px;
+  left: 1px;
 }
 
 .initStatus
 {
-  -webkit-filter:drop-shadow(0 0 1px blue);
-  background-color: blue;
-  background:-webkit-linear-gradient(right, blue, lightblue);
+  opacity: 1;
+  background-color: #3af;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  position: absolute;
+  display: block;
+  top: 1px;
+  left: 1px;
 }
 
 .errStatus
 {
-  -webkit-filter:drop-shadow(0 0 1px red);
-  background-color: red;
-  background:-webkit-linear-gradient(right, red, pink);
-}
-
-.typingStatus
-{
-  -webkit-filter:drop-shadow(0 0 1px silver);
-  background-color: #fc0;
-  background:-webkit-linear-gradient(right, #fc0, #ff1);
-}
-
-/* The style signifying saving in progress. */
-@-webkit-keyframes savingPulse
-{
-  from { background-color: white; }
-  50% { background-color: #ffc; -webkit-filter:drop-shadow(0 0 1px silver); }
-  to { background-color: #ffee58; -webkit-filter:drop-shadow(0 0 1px silver); }
-}
-
-.help-bubble-outer-dot
-{
-  margin: 1px;
-  display: block;
   opacity: 1;
-  background-color: rgba(0,149,255,0.4);
+  background-color: red;
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  -webkit-animation: help-bubble-pulse 0.5s linear infinite;
+  position: absolute;
+  display: block;
+  top: 1px;
+  left: 1px;
 }
 
-.help-bubble-inner-dot
+.typingStatus-inner
 {
   background-position: absolute;
   display: block;
@@ -80,23 +82,97 @@
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  -webkit-animation: help-bubble-pulse 0.5s linear infinite;
+  -webkit-animation: help-bubble-pulse 1.25s linear infinite;
+  -moz-animation: help-bubble-pulse 1.25s linear infinite;
+  -o-animation: help-bubble-pulse 1.25s linear infinite;
+  animation: help-bubble-pulse 1.25s linear infinite;
+}
+
+.typingStatus-inner:after
+{
+  content: "";
+  background-position: absolute;
+  display: block;
+  text-align: center;
+  opacity: 1;
+  background-color: rgba(0,149,255,0.4);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  -webkit-animation: help-bubble-pulse 1.25s linear infinite;
+  -moz-animation: help-bubble-pulse 1.25s linear infinite;
+  -o-animation: help-bubble-pulse 1.25s linear infinite;
+  animation: help-bubble-pulse 1.25s linear infinite;
+}
+
+.typingStatus-outer
+{
+  margin: 1px;
+  display: block;
+  text-align: center;
+  opacity: 1;
+  background-color: rgba(0,149,255,0.4);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  -webkit-animation: help-bubble-pulse 1.25s linear infinite;
+  -moz-animation: help-bubble-pulse 1.25s linear infinite;
+  -o-animation: help-bubble-pulse 1.25s linear infinite;
+  animation: help-bubble-pulse 1.25s linear infinite;
+}
+
+.savingStatus-inner
+{
+  background-position: absolute;
+  display: block;
+  text-align: center;
+  opacity: 1;
+  background-color: rgba(0,149,255,0.4);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  -webkit-animation: help-bubble-pulse 0.50s linear infinite;
+  -moz-animation: help-bubble-pulse 0.50s linear infinite;
+  -o-animation: help-bubble-pulse 0.50s linear infinite;
+  animation: help-bubble-pulse 0.50s linear infinite;
+}
+
+.savingStatus-inner:after
+{
+  content: "";
+  background-position: absolute;
+  display: block;
+  text-align: center;
+  opacity: 1;
+  background-color: rgba(0,149,255,0.4);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  -webkit-animation: help-bubble-pulse 0.50s linear infinite;
+  -moz-animation: help-bubble-pulse 0.50s linear infinite;
+  -o-animation: help-bubble-pulse 0.50s linear infinite;
+  animation: help-bubble-pulse 0.50s linear infinite;
+}
+
+.savingStatus-outer
+{
+  margin: 1px;
+  display: block;
+  text-align: center;
+  opacity: 1;
+  background-color: rgba(0,149,255,0.4);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  -webkit-animation: help-bubble-pulse 0.50s linear infinite;
+  -moz-animation: help-bubble-pulse 0.50s linear infinite;
+  -o-animation: help-bubble-pulse 0.50s linear infinite;
+  animation: help-bubble-pulse 0.50s linear infinite;
 }
 
 @-webkit-keyframes help-bubble-pulse
 {
-  0% { transform:scale(1);opacity:.75 }
-  25% { transform:scale(1);opacity:.75 }
+  0% { transform:scale(1);opacity:.85 }
+  25% { transform:scale(1);opacity:.85 }
   100% { transform:scale(2.5);opacity:0 }
-}
-
-.help-bubble
-{
-  display: block;
-  position: absolute;
-  z-index: 2;
-  border-radius: 50%;
-  background-color: #3af;
-  left:200px;
-  top:200px;
 }
