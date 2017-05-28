@@ -57,42 +57,56 @@ function getNoEmptyRandLine($pagename)
   return $outputStr;
 }
 
-// Return a string of random characters for password.
+// Return a random password consisting of at least one digit, one letter, and one 
+// non-digit/non-letter symbol.
 // Usage: {L$RandomPwdSym}
 // L is the length of password to be generated.
 $FmtPV['$RandomPwdSym'] = 'RandomPwdSym($name)';
 function RandomPwdSym($length)
 {
-  if ($length != (string)(int)$length)
-  { echo_("Format error in RandomPwdSym()!"); return; }
+  while (true)
+  {
+    if ($length != (string)(int)$length)
+    { echo_("Format error in RandomPwdSym()!"); return; }
 
-  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{:;\'"/?<>,.';
-  $charactersLength = strlen($characters);
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{:;\'"/?<>,.';
+    $charactersLength = strlen($characters);
 
-  $length = (int)$length;
-  $randomString = '';
-  for ($i = 0; $i < $length; $i++)
-  { $randomString .= $characters[rand(0, $charactersLength - 1)]; }
+    $length = (int)$length;
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++)
+    { $randomString .= $characters[rand(0, $charactersLength - 1)]; }
 
+    // Unless the pw length < 3, it must match at least a digit & a letter
+    if ($length < 3 || (preg_match("/\d/", $randomString) &&
+    preg_match("/\w/", $randomString) &&
+    preg_match("/[^\d\w]/", $randomString))) { break; }
+  }
   return $randomString;
 }
 
-// Return a string of random characters for password.
+// Return a random password consisting of at least one digit and one letter.
 // Usage: {L$RandomPwdWord}
 // L is the length of password to be generated.
 $FmtPV['$RandomPwdWord'] = 'RandomPwdWord($name)';
 function RandomPwdWord($length)
 {
-  if ($length != (string)(int)$length)
-  { echo_("Format error in RandomPwdWord()!"); return; }
+  while (true)
+  {
+    if ($length != (string)(int)$length)
+    { echo_("Format error in RandomPwdWord()!"); return; }
 
-  $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  $charactersLength = strlen($characters);
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
 
-  $length = (int)$length;
-  $randomString = '';
-  for ($i = 0; $i < $length; $i++)
-  { $randomString .= $characters[rand(0, $charactersLength - 1)]; }
+    $length = (int)$length;
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++)
+    { $randomString .= $characters[rand(0, $charactersLength - 1)]; }
+
+    // Unless the pw length is 1, it must match at least a digit & a letter
+    if ($length === 1 || preg_match("/\d.*\w|\w.*\d/", $randomString)) { break; }
+  }
 
   return $randomString;
 }
@@ -392,11 +406,13 @@ function changePassword($PageStartFmt, $PageEndFmt)
 $FmtPV['$runPHP'] = 'runPHP($pn)';
 function runPHP($pagename)
 {
-	if (getOS() !== "Mac") { return "runPHP not supported!"; }
-	
+  if (getOS() !== "Mac") { return "runPHP not supported!"; }
+
   $page = RetrieveAuthPage($pagename, 'read', false, READPAGE_CURRENT);
   $text = $page['text'];
   if (strpos($text, "'") !== false) { return "Character ' detected. Don't use it!"; }
   $result = shell_exec("php -r '$text'");
   return $result;
 }
+
+
