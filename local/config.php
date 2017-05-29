@@ -456,11 +456,14 @@ if ($isBrowse)
   $HTMLHeaderFmt['ape'] = '<script type="text/javascript"
   src="$PubDirUrl/ape/ape.js"></script>';
 
-  # For flipbox
-  include_once("$FarmD/cookbook/flipbox.php");
-
   # Youtube (the older one).
   include_once("$FarmD/cookbook/swf-sites.php");
+}
+
+if ($isBrowse || $action === "flipbox")
+{
+  # For flipbox
+  include_once("$FarmD/cookbook/flipbox.php");
 }
 
 # Advanced global search & replace

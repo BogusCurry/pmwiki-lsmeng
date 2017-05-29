@@ -491,7 +491,7 @@ var scrollPositioner = scrollPositioner || (function()
           console.log("scrollPositioner waiting for video onload");
           html5AVCtrl.subscribe("videoLoad", function()
           {
-            console.log("Video loaded; scrollPositioner continues");
+            console.log("No video/video loaded; scrollPositioner continues");
             waitLatexThenSetScroll(value);
           });
         }

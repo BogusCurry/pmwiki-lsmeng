@@ -13,8 +13,11 @@
   
   Copyright 2008-2011 Petko Yotov www.pmwiki.org/Petko
   
-	20170516. Modified by Ling-San Meng.
+	20170529. Modified by Ling-San Meng.
 */
+
+// Meng.
+require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
 
 # Version date
 $RecipeInfo['Flipbox']['Version'] = '20111009';

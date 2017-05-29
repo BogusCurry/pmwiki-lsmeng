@@ -22,7 +22,7 @@ var AS =
   errStatusHtml: "<span class='errStatus'></span>",
   typingStatusHtml: '<span class="autosaveStatus"><span class="typingStatus-outer"><span class="typingStatus-inner"></span></span></span>',
   savingStatusHtml: '<span class="autosaveStatus"><span class="savingStatus-outer"><span class="savingStatus-inner"></span></span></span>',
-  
+
   enableDrag: 0,
   lastInputTime: 0,
   inputBurstStartTime: 0,
