@@ -12,16 +12,14 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170521
+ * Version 20170530
  */
 
 var pageTimer =
 {
   TIMER_EXP_DURATION: 0,
   STANDBY_LOGOUT_DURATION: 0,
-  ScriptUrl: '',
-  pagename: '',
-  action: '',
+  logoutUrl: '',
   timer: 0,
   timerID: 0,
   lastDiff: 0,
@@ -49,12 +47,15 @@ var pageTimer =
       hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
       var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
-      var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr+" on "+pageTimer.pagename+" while "+pageTimer.action;
+      var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr+" on "+window.pmwiki.pagename+" while "+window.pmwiki.action;
       localStorage.setItem('StandbyLogout', msg);
 
-      window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + pageTimer.pagename + '?action=' + pageTimer.action + '&pageTimer';
+//       window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + window.pmwiki.pagename + '?action=' + window.pmwiki.action + '&pageTimer';
+      window.location = pageTimer.logoutUrl + '?pageTimer';
       return;
     }
+
+// window.location = pageTimer.logoutUrl + '?pageTimer';
 
     // Timer expires
     if (Math.round(diff) < 0)

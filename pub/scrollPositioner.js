@@ -1,33 +1,33 @@
 /* 
-* Read and set cookies (local storage) for storing last scroll and caret positions.
-*
-* This also works with 'autosave.js',
-* which sets a cookie storing the number of bullets before the caret position when
-* performing autosave. When browsing, scrollPositioner reads the cookie and tries to
-* locate the position in page HTML corresponding to that stored in the cookie. Once
-* found, a special html string is dynamically inserted as an anchor for scrolling.
-*
-* When browsing, this class also implements a mechanism in which if enter is
-* pressed with texts selected, the number of bullets before the selected text
-* is calculated, and a corresponding cookie is set. The editing page will be opened
-* automatically in a new tab.
-*
-* When editing, this class reads the aforementioned cookie (if exists) and tries to
-* locate the position in textarea corresponding to that given in the cookie. Once
-* found, a special html string is dynamically inserted as an anchor for scrolling. To
-* achieve this, however, the textarea has to be dynamically changed to a div component.
-* After the scrolling, the textarea is changed back.
-*
-* Before closing, the width of the textarea will be stored in a cookie, for the server
-* side to read and set an approximate height for the textarea later. This significantly
-* speeds up setting the textarea height.
-*
-* Cookies have been replaced with local storages except textAreaWidth, which has to be
-* sent to the server side.
-*
-* Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170524
-*/
+ * Read and set cookies (local storage) for storing last scroll and caret positions.
+ *
+ * This also works with 'autosave.js',
+ * which sets a cookie storing the number of bullets before the caret position when
+ * performing autosave. When browsing, scrollPositioner reads the cookie and tries to
+ * locate the position in page HTML corresponding to that stored in the cookie. Once
+ * found, a special html string is dynamically inserted as an anchor for scrolling.
+ *
+ * When browsing, this class also implements a mechanism in which if enter is
+ * pressed with texts selected, the number of bullets before the selected text
+ * is calculated, and a corresponding cookie is set. The editing page will be opened
+ * automatically in a new tab.
+ *
+ * When editing, this class reads the aforementioned cookie (if exists) and tries to
+ * locate the position in textarea corresponding to that given in the cookie. Once
+ * found, a special html string is dynamically inserted as an anchor for scrolling. To
+ * achieve this, however, the textarea has to be dynamically changed to a div component.
+ * After the scrolling, the textarea is changed back.
+ *
+ * Before closing, the width of the textarea will be stored in a cookie, for the server
+ * side to read and set an approximate height for the textarea later. This significantly
+ * speeds up setting the textarea height.
+ *
+ * Cookies have been replaced with local storages except textAreaWidth, which has to be
+ * sent to the server side.
+ *
+ * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
+ * Version 20170530
+ */
 
 "use strict";
 
@@ -147,7 +147,6 @@ var scrollPositioner = scrollPositioner || (function()
   {
     if (_isBrowsing == false) { var name = 'EDIT-ScrollY'; }
     else { var name = 'VIEW-ScrollY'; }
-
     value = value===null ? value : getScrollPos();
     value = value==0 ? null : value;
     setStorageByKey(name, _pagename, value);
@@ -456,19 +455,10 @@ var scrollPositioner = scrollPositioner || (function()
       _url = _url.replace(_hash,"");
     }
 
-    var match = _url.match(/pmwiki\.php(\?n=([\.\w]+))?([\?&]action=(\w+))?/i);
-    if (!match[1]) { _pagename = "Main.HomePage"; }
-    else { _pagename = match[2]; }
-    if (!match[3]) { _action = "browse"; }
-    else { _action = match[4]; }
-
-    _pagename = _pagename.toUpperCase();
-    _action = _action.toLowerCase();
-
-// DEBUG
-    if (!_pagename) { alert("Empty pagename!"); throw "Empty pagename!"; return; }
-
-    _isDiaryPage = scrollPositioner.isDiaryPage;
+    _pagename = window.pmwiki.pagename.toUpperCase();
+    _action = window.pmwiki.action;
+    _isDiaryPage = window.pmwiki.isDiaryPage;
+    
     _wikitextElement = document.getElementById('wikitext');
     _textElement = document.getElementById('text');
 

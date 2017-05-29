@@ -46,19 +46,6 @@
   left: 1px;
 }
 
-.initStatus
-{
-  opacity: 1;
-  background-color: #3af;
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  position: absolute;
-  display: block;
-  top: 1px;
-  left: 1px;
-}
-
 .errStatus
 {
   opacity: 1;

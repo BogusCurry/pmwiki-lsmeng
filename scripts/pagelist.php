@@ -280,8 +280,10 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
   }
   $list = $matches;
 
-  /* Meng: If there is only one match, go to the page directly. */
-//   if (count($matches) == 1) { Redirect($matches[0]); }
+  // Meng: If there is only one match, and it's not the enhanced search page, go to that
+  // page directly.
+  if (count($matches) === 1 && !preg_match("/site[\.\/]searche/i", $pagename)) 
+  { Redirect($matches[0]); }
 
   StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
 

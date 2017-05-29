@@ -322,10 +322,10 @@ function isDiaryPage()
 {
   global $pagename;
 
-  if (strcasecmp($pagename,"Main.OnThisDay") == 0) { return 3; }
+  if (preg_match("/^Main[\.\/]OnThisDay$/i", $pagename)) { return 3; }
 
   $pageGroup = substr($pagename,0,5);
-  if (strcasecmp($pageGroup, "Main.") != 0) { return 0; }
+  if (!preg_match("/^Main[\.\/]$/i", $pageGroup)) { return 0; }
 
   $diaryYear = substr($pagename,5,4);
   $pagenameLen = strlen($pagename);
@@ -354,20 +354,20 @@ function addpageTimerJs($countdownTimer)
   $standbyLogoutDuration;
 
   // Determine the dummy pagename to redirect upon timer expiration
-  $_pagename = substr($pagename,strpos($pagename,'.')+1);
-  $groupname = substr($pagename,0,strpos($pagename,'.'));
+  preg_match("/[\.\/](\w+)$/", $pagename, $match); $_pagename = $match[1];
+  preg_match("/^(\w+)[\.\/]/", $pagename, $match); $groupname = $match[1];
   $closeRedirectName = $_pagename.'/'.$groupname;
-
+	$logoutUrl = "$ScriptUrl/CLICKLOGOUT$groupname/$_pagename/$action";
+	
   $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
   <script type='text/javascript'>
   pageTimer.TIMER_EXP_DURATION = $countdownTimer;
   pageTimer.STANDBY_LOGOUT_DURATION = $standbyLogoutDuration;
-  pageTimer.pagename = '$pagename';
   pageTimer.closePagename = '$closeRedirectName';
-  pageTimer.ScriptUrl = '$ScriptUrl';
-  pageTimer.action = '$action';
+  pageTimer.logoutUrl = '$logoutUrl';
   </script>";
 }
+// echo $ScriptUrl;
 
 // Use PBKDF2 to derive the master key based on the input password, and
 // then use the master key to decrypt "Main.Homepage"
