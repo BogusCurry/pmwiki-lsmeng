@@ -261,7 +261,7 @@ if ($isBrowse)
 
   require_once("$FarmD/cookbook/plugin_LSMENG_browse.php");
 }
-else if ($isEdit) { require_once("$FarmD/cookbook/plugin_LSMENG_edit.php"); }
+
 else if ($action === "diff") { require_once("$FarmD/cookbook/plugin_LSMENG_diff.php"); }
 
 // Functions related to the diary pages.
@@ -388,7 +388,6 @@ if ($isEdit || isset($_GET["updatePageIndex"]))
   // A script to trigger pageindex update request on page saving.
   $HTMLHeaderFmt["pageindexUpdate"] =
   "<script type='text/javascript' src='$PubDirUrl/pageindexUpdate.js'></script>";
-  require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
 }
 
 if ($isEdit || $action === "autosave")

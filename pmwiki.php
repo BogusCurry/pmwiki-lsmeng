@@ -1249,6 +1249,9 @@ class PageStore
   }
   function write($pagename,$page)
   {
+    // Meng.
+    global $FarmD; require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
+
     global $Now, $Version, $Charset, $EnableRevUserAgent;
     $page['charset'] = $Charset;
     $page['name'] = $pagename;

@@ -19,9 +19,6 @@ for global replace.
 
 $RecipeInfo['TextExtract']['Version'] = '2016-04-23';
 
-// Meng.
-require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
-
 $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return version as a custom page variable
 # declare $Extract for (:if enabled Extract:) recipe installation check
 global $Extract; $Extract = 1;
