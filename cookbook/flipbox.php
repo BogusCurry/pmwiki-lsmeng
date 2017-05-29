@@ -16,9 +16,6 @@
 	20170529. Modified by Ling-San Meng.
 */
 
-// Meng.
-require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
-
 # Version date
 $RecipeInfo['Flipbox']['Version'] = '20111009';
 

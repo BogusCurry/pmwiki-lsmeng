@@ -23,8 +23,6 @@ include_once("$FarmD/cookbook/autosave.php");
 
 $RecipeInfo['AutoSave']['Version'] = '2009-05-28-2';
 
-require_once("$FarmD/cookbook/plugin_LSMENG_edit.php");
-
 SDV($AutoSaveDrag, 0);
 
 SDVA( $HandleAuth, array(
