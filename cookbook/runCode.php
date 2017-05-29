@@ -95,7 +95,7 @@ $FmtPV['$runCodeButton'] = 'runCodeButton()';
 function runCodeButton()
 {
   global $pagename;
-  if (strcasecmp($pagename,"Main.Runcode") == 0)
+  if (preg_match("/Main[\.\/]Runcode/i", $pagename))
   { return "[[".$pagename."?exe=1|"."Execute]]"; }
 }
 

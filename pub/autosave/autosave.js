@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170528
+ * Version 20170530
  */
 
 var AS =
@@ -18,7 +18,7 @@ var AS =
   status: '',
   savedStatusHtml: "<span class='savedStatus'></span>",
   disableStatusHtml: "<span class='disabledStatus'></span>",
-  initStatusHtml: "<span class='initStatus'></span>",
+  initStatusHtml: "",
   errStatusHtml: "<span class='errStatus'></span>",
   typingStatusHtml: '<span class="autosaveStatus"><span class="typingStatus-outer"><span class="typingStatus-inner"></span></span></span>',
   savingStatusHtml: '<span class="autosaveStatus"><span class="savingStatus-outer"><span class="savingStatus-inner"></span></span></span>',
@@ -30,7 +30,6 @@ var AS =
   id2: null,
   textID: null,
   lastTextContent: '',
-  pagename: '',
   pagenameU: '',
   delay: 0, // in milliseconds
   url: '',
@@ -110,12 +109,8 @@ var AS =
           var pageURL = pageCommand.getBrowseWindow().location.href;
           if (pageURL)
           {
-            var pagename = pageURL.substr(pageURL.indexOf('=')+1).toUpperCase();
-            if (pagename == AS.pagenameU)
-            {
-              pageCommand.getBrowseWindow().location =
-              location.href.replace(/[\?&]action=edit/i,"");
-            }
+            pageCommand.getBrowseWindow().location =
+            location.href.replace(/[\?&]action=edit/i,"");
           }
         }
         catch(e) {}
@@ -398,17 +393,6 @@ var AS =
 
   init: function()
   {
-/*
-    var helpPlusHTML =
-    '<span class="help-bubble"> \
-    <span class="help-bubble-outer-dot">\
-    <span class="help-bubble-inner-dot"></span>\
-    </span>\
-    </span>';
-
-    document.body.innerHTML = document.body.innerHTML + helpPlusHTML;
-*/
-
     if ( !AS.url || !AS.delay || !document.getElementById("text") ) return;
 
     // Check for out-dated text. The built-in navigation mechanism "last page" of browsers
@@ -419,7 +403,9 @@ var AS =
     if (document.getElementById('text').textContent != document.getElementById('text').value)
     { location.reload(); }
 
-    AS.pagenameU = AS.pagename.toUpperCase();
+    var _url = window.location.href;
+
+    AS.pagenameU = window.pmwiki.pagename.toUpperCase();
 
     AS.text = document.getElementById('text');
     AS.ef = AS.text.form;

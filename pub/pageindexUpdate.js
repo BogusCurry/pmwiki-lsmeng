@@ -5,7 +5,7 @@ var pageindexUpdater = (function()
 
   /* Private variables */
   var _idx = window.location.href.indexOf("?action=edit");
-  var _updateUrl = window.location.href.slice(0, _idx) + "&updatePageIndex=1";
+  var _updateUrl = window.location.href.slice(0, _idx) + "?updatePageIndex=1";
   var _isSaved = false;
 
   // If the event "saved" has ever happened, request a pageindex update then cancel

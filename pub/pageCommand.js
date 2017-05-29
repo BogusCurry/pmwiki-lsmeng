@@ -9,8 +9,8 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170524
-*/
+ * Version 20170530
+ */
 
 "use strict";
 
@@ -57,22 +57,19 @@ var pageCommand = pageCommand || (function()
     var clock = new Date();
     var year = clock.getFullYear().toString();
 
-    var match = link.match(/pmwiki\.php\?n=([\.\w]+)[\?&]action=edit/i);
+    var pagenameAsInURL = parsePagenameAction(link)[2];
 
-    var pagename = match[1];
-    var pagenameL = pagename.toLowerCase();
-
-    if (pagenameL == 'investment.homepage')
-    { link = link.replace(pagename, 'Investment.Journal'+year); }
-    else if (pagenameL == 'htc.homepage')
-    { link = link.replace(pagename, 'HTC.Journal'+year); }
-    else if (pagenameL == 'computerscience.homepage')
-    { link = link.replace(pagename, 'ComputerScience.Journal'+year); }
-    else if (pagenameL == 'main.onthisday')
+    if (/investment[\.\/]homepage/i.test(pagenameAsInURL))
+    { link = link.replace(pagenameAsInURL, 'Investment/Journal'+year); }
+    else if (/htc[\.\/]homepage/i.test(pagenameAsInURL))
+    { link = link.replace(pagenameAsInURL, 'HTC/Journal'+year); }
+    else if (/computerscience[\.\/]homepage/i.test(pagenameAsInURL))
+    { link = link.replace(pagenameAsInURL, 'ComputerScience/Journal'+year); }
+    else if (/main[\.\/]onthisday/i.test(pagenameAsInURL))
     {
       var mon = clock.getMonth()+1;
       mon = mon<10 ? '0'+mon : mon;
-      link = link.replace(pagename, 'Main.'+year+mon);
+      link = link.replace(pagenameAsInURL, 'Main/'+year+mon);
 
       // Create a LS storing the wiki markup for editing today. E.g., "n* 11, Wed" for 11th
       // Wednesday. This is to work with scrollPositioner.js, which implements the mechanism
@@ -91,28 +88,32 @@ var pageCommand = pageCommand || (function()
 
   function getEditLink(link)
   {
-    if (/\?action=edit/i.test(link)) { return link; }
-
     // Remove hash tag if present
     var match = link.match(/#.*$/);
     if (match) { link = link.replace(match[0],""); }
 
-    // parse the pagename
-    var pagenamePos = link.toLowerCase().indexOf('?n=');
+    var pagename, action;
+    [pagename, action] = parsePagenameAction(link);
 
-    // go to editing main.homepage
-    if (pagenamePos == -1) { return link+'?n=Main.HomePage?action=edit'; }
+    // If it's already edit, return it directly
+    if (action === "edit") { return link; }
 
-    var pagename = link.substr(link.toLowerCase().indexOf('?n=')+3);
+    // If action is present
+    if (/[\?&]action=/i.test(link)) { return link.replace(action, "edit"); }
+    // Else no action specified
+    else { return link + '?action=edit'; }
+  }
 
-    // Go to main.homepage if pagename is empty
-    if (pagename == '') { return link+'?n=Main.HomePage?action=edit'; }
-
-    // if it exists and is complete, go to its editing page
-    else if (pagename.indexOf('.') != -1) { return link+'?action=edit'; }
-
-    // else go to editing its group homepage
-    else { return link+'.HomePage?action=edit'; }
+  function parsePagenameAction(url)
+  {
+    var match = url.match(/pmwiki\.php(\?n=|\/)?((\w+)[\.\/](\w+))?([\?&]action=(\w+))?/i);
+    if (!match) { return; }
+    if (!match[1]) { var pagename = "Main.HomePage"; }
+    else { pagename = match[3] + "." + match[4]; }
+    if (!match[5]) { var action = "browse"; }
+    else { action = match[6]; }
+    var pagenameAsInURL = match[2];
+    return [pagename, action, pagenameAsInURL];
   }
 
   function init()
@@ -120,13 +121,8 @@ var pageCommand = pageCommand || (function()
     // Get url & remove hash tag if present
     _url = window.location.href.replace(/#.*?$/,"");
 
-    var match = _url.match(/pmwiki\.php(\?n=([\.\w]+))?([\?&]action=(\w+))?/i);
-    if (!match[1]) { _pagename = "Main.HomePage"; }
-    else { _pagename = match[2]; }
-    if (!match[3]) { _action = "browse"; }
-    else { _action = match[4]; }
-
-    _action = _action.toLowerCase();
+    _pagename = window.pmwiki.pagename;
+    _action = window.pmwiki.action;
 
     _inputElementLen = document.getElementsByTagName("input").length;
 
@@ -155,9 +151,9 @@ var pageCommand = pageCommand || (function()
     else if ((event.keyCode == 70||event.code=="KeyF") && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      var match = _url.match(/\?.+/i);
-      var pos = match==null ? _url.length : match['index'];
-      window.open(_url.slice(0, pos)+'?n=Site.SearchE', '_blank');
+      var match = _url.match(/pmwiki\.php/i);
+      var pos = match==null ? _url.length : match['index'] + "pmwiki.php".length;
+      window.open(_url.slice(0, pos)+'/Site/SearchE', '_blank');
     }
 
     // Ctrl+cmd+r to open all recent changes
@@ -165,57 +161,45 @@ var pageCommand = pageCommand || (function()
     else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && event.metaKey)
     {
       event.preventDefault();
-      var match = _url.match(/\?.+/i);
-      var pos = match==null ? _url.length : match['index'];
-      window.open(_url.slice(0, pos)+'?n=Site.Allrecentchanges', '_blank');
+      var match = _url.match(/pmwiki\.php/i);
+      var pos = match==null ? _url.length : match['index'] + "pmwiki.php".length;
+      window.open(_url.slice(0, pos)+'/Site/Allrecentchanges', '_blank');
     }
 
     // Ctrl+cmd+u to open the upload page
     else if ((event.keyCode == 85||event.code=='KeyU') && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      if (_url.indexOf('?n=') == -1) { window.open(_url + '?n=Main.Homepage?action=upload', '_blank'); }
-      else
-      {
-        var pos = _url.indexOf('?action=');
-        if (pos != -1) { window.open(_url.slice(0,pos+8) + 'upload', '_blank'); }
-        else { window.open(_url + '?action=upload', '_blank'); }
-      }
+      var pos = _url.indexOf('?action=');
+      if (pos != -1) { window.open(_url.slice(0,pos+8) + 'upload', '_blank'); }
+      else { window.open(_url + '?action=upload', '_blank'); }
     }
 
     // Ctrl+cmd+h to open the history
     else if ((event.keyCode == 72||event.code=='KeyH') && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      if (_url.indexOf('?n=') == -1) { window.open(_url + '?n=Main.Homepage?action=diff', '_blank'); }
-      else
-      {
-        var pos = _url.indexOf('?action=');
-        if (pos != -1) { window.open(_url.slice(0,pos+8) + 'diff', '_blank'); }
-        else { window.open(_url + '?action=diff', '_blank'); }
-      }
+      var pos = _url.indexOf('?action=');
+      if (pos != -1) { window.open(_url.slice(0,pos+8) + 'diff', '_blank'); }
+      else { window.open(_url + '?action=diff', '_blank'); }
     }
 
     // Ctrl+cmd+b to open the backlink
     else if ((event.keyCode == 66||event.code=='KeyB') && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      var match = _url.match(/\?.+/i);
-      var pos = match==null ? _url.length : match['index'];
-      window.location = _url.slice(0, pos)+'?n=Site.Search?action=search&q=link='+_pagename;
+      var match = _url.match(/pmwiki\.php/i);
+      var pos = match==null ? _url.length : match['index'] + "pmwiki.php".length;
+      window.location = _url.slice(0, pos)+'/Site/Search?action=search&q=link='+_pagename;
     }
 
     // Ctrl+cmd+a to open the attribute
     else if ((event.keyCode == 65||event.code=='KeyA') && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      if (_url.indexOf('?n=') == -1) { window.open(_url + '?n=Main.Homepage?action=attr', '_blank'); }
-      else
-      {
-        var pos = _url.indexOf('?action=');
-        if (pos != -1) { window.open(_url.slice(0,pos+8) + 'attr', '_blank'); }
-        else { window.open(_url + '?action=attr', '_blank'); }
-      }
+      var pos = _url.indexOf('?action=');
+      if (pos != -1) { window.open(_url.slice(0,pos+8) + 'attr', '_blank'); }
+      else { window.open(_url + '?action=attr', '_blank'); }
     }
 
     // Ctrl+alt+g for goto page

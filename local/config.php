@@ -19,7 +19,7 @@ $WikiTitle = 'PmWiki';
 ##  it depends on your webserver and PHP configuration.  You might also
 ##  want to check http://www.pmwiki.org/wiki/Cookbook/CleanUrls more
 ##  details about this setting and other ways to create nicer-looking urls.
-#$EnablePathInfo = 1;
+$EnablePathInfo = 1;
 
 ## $PageLogoUrl is the URL for a logo image -- you can change this
 ## to your own logo if you wish.
@@ -272,7 +272,7 @@ if (isDiaryPage() !== 0)
   require_once("$FarmD/cookbook/handleDiary.php");
 }
 // Functions related to the runCode page.
-else if (strcasecmp($pagename,"Main.Runcode") === 0)
+else if (preg_match("/Main[\.\/]Runcode/i", $pagename))
 {
   $runCodePath = "pub/runCode";
   require_once("$FarmD/cookbook/runCode.php");
@@ -287,9 +287,10 @@ $pwRetryLimit = 3;
 
 // Max allowable upload size in bytes. Currently set to 100 MB.
 $maxUploadSize = 100000000;
-$groupName = substr($pagename, 0, strpos($pagename,'.'));
 // The folder for storing the uploaded files. Default to the "$WorkDir" in dropbox.
 // For diary pages, the uploaded files go to the diary photo folder if it's MBA.
+preg_match("/(\w+)[\.\/]/", $pagename, $match);
+$groupName = !$match[1] ? "Main" : $match[1];
 $UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
 if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 {
@@ -302,6 +303,16 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 
 /****************************************************************************************/
 // Meng. Javascript related config/scripts.
+
+// Some most basic pmwiki page related information.
+$isDiaryPage = isDiaryPage();
+$HTMLHeaderFmt['pmwiki'] = 
+"<script>
+window.pmwiki = {};
+pmwiki.pagename = '$pagename';
+pmwiki.action = '$action';
+pmwiki.isDiaryPage = '$isDiaryPage';
+</script>";
 
 if ($AuthorLink === "MBA") { $ChromeExtPath = "/Users/Shared/Chrome extensions"; }
 else { $ChromeExtPath = 'D:\Chrome extensions'; }
@@ -341,11 +352,9 @@ $HTMLHeaderFmt['dictionary'] = "
 
 if ($isBrowse || $isEdit)
 {
-  $isDiaryPage = isDiaryPage();
   // Memorize and set the scroll position.
-  $HTMLHeaderFmt[] .= "
-  <script src='$PubDirUrl/scrollPositioner.js'></script>
-  <script> scrollPositioner.isDiaryPage = '$isDiaryPage';  </script>";
+  $HTMLHeaderFmt["scrollPositioner"] = 
+  "<script src='$PubDirUrl/scrollPositioner.js'></script>";
 }
 
 if ($isBrowse)
@@ -359,10 +368,8 @@ if ($isBrowse)
   include_once("$FarmD/cookbook/HTML5Audio.php");
   include_once("$FarmD/cookbook/HTML5Video.php");
 
-  $HTMLHeaderFmt['autoRefresher'] = "<script type='text/javascript' src='$PubDirUrl/autoRefresher.js'></script>
-  <script type='text/javascript'>
-  autoRefresher.pagename = '$pagename';
-  </script>";
+  $HTMLHeaderFmt['autoRefresher'] =
+  "<script type='text/javascript' src='$PubDirUrl/autoRefresher.js'></script>";
 
   // Google calendar integration
   if (isDiaryPage() === 2)
@@ -374,7 +381,7 @@ if ($isBrowse)
   }
 
   // Google map integration
-  if (strcasecmp($pagename,"Main.Map") == 0)
+  if (preg_match("/Main[\.\/]Map/i", $pagename))
   {
     $HTMLHeaderFmt['map'] = "
     <script src='$PubDirUrl/map/OSC.js'></script>
@@ -466,7 +473,7 @@ if ($isBrowse || $action === "flipbox")
 }
 
 # Advanced global search & replace
-if (strcasecmp($pagename,"Site.SearchE") === 0)
+if (preg_match("/Site[\.\/]SearchE/i", $pagename))
 { require_once("$FarmD/cookbook/extract.php"); }
 
 if ($action === "autosave")

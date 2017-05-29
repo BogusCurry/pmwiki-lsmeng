@@ -743,4 +743,3 @@ function AttachExist($pagename, $condparm='*')
   }
   return count($flist);
 }
-

@@ -48,7 +48,6 @@ if($action == "edit")
   'info' => "<div style='position:fixed; z-index:9;' id='autosaveStatus'></div>",
   'js' => "<script type='text/javascript' src='$AutoSavePubDirUrl/autosave.js'></script>
   <script type='text/javascript'>
-  AS.pagename = '$pagename';
   </script>",
   'config' => "
   <script type='text/javascript'>
