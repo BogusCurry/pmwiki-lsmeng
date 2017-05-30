@@ -41,7 +41,7 @@ if ($action == 'edit')
   <script type="text/javascript" src="$PubDirUrl/pasteimgupload/pasteimgupload.js"></script>
   <script type="text/javascript">
   PasteImgUploadImgSrc = "<img height=\'50\' src=\'$PubDirUrl/pasteimgupload/upload.png\' >";
-  PasteImgUploadUrl = "$ScriptUrl?n=$pagename?action=postupload";
+  PasteImgUploadUrl = "$ScriptUrl/$pagename?action=postupload";
   uploadDirUrlHeader = "{$" + "$uploadDirUrlHeader";
   </script>';
 }

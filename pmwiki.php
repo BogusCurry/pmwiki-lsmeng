@@ -2527,7 +2527,7 @@ function PostPage($pagename, &$page, &$new)
 
         // Meng. Call pageindex update here to remove the page's content from pageindex.
         // Go to a special link address to perform pageindex update in a non-block way.
-        post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=1");
+        post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?updatePageIndex=1");
       }
     }
     else { WritePage($pagename,$new); }

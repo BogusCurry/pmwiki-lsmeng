@@ -104,15 +104,38 @@ var pageCommand = pageCommand || (function()
     else { return link + '?action=edit'; }
   }
 
+  // Parse the pagename and action from the given URL
   function parsePagenameAction(url)
   {
+    // No url mapping using mod_rewrite in Apache
+    // pmwiki.php?n=group.page?action=xxxx
+    // pmwiki.php?n=group/page?action=xxxx
+    // pmwiki.php/group.page?action=xxxx
+    // pmwiki.php/group/page?action=xxxx
     var match = url.match(/pmwiki\.php(\?n=|\/)?((\w+)[\.\/](\w+))?([\?&]action=(\w+))?/i);
-    if (!match) { return; }
-    if (!match[1]) { var pagename = "Main.HomePage"; }
-    else { pagename = match[3] + "." + match[4]; }
-    if (!match[5]) { var action = "browse"; }
-    else { action = match[6]; }
-    var pagenameAsInURL = match[2];
+    if (match)
+    {
+      if (!match[1]) { var pagename = "Main.HomePage"; }
+      else { pagename = match[3] + "." + match[4]; }
+      if (!match[5]) { var action = "browse"; }
+      else { action = match[6]; }
+      var pagenameAsInURL = match[2];
+      return [pagename, action, pagenameAsInURL];
+    }
+    // Url mapping using mod_rewrite in Apache
+    // pmwiki/group/page?action=xxxx
+    else
+    {
+      match = url.match(/pmwiki\/((\w+)\/(\w+))?(\?action=(\w+))?$/i);
+      if (!match[1]) { var pagename = "Main.HomePage"; }
+      else
+      {
+        pagename = match[2] + "/" + match[3];
+        if (!match[4]) { var action = "browse"; }
+        else { action = match[5]; }
+        var pagenameAsInURL = match[1];
+      }
+    }
     return [pagename, action, pagenameAsInURL];
   }
 
@@ -122,7 +145,7 @@ var pageCommand = pageCommand || (function()
     _url = window.location.href.replace(/#.*?$/,"");
 
     _pagename = window.pmwiki.pagename;
-    _action = window.pmwiki.action;
+    _action = window.pmwiki.action.toLowerCase();
 
     _inputElementLen = document.getElementsByTagName("input").length;
 
@@ -200,19 +223,6 @@ var pageCommand = pageCommand || (function()
       var pos = _url.indexOf('?action=');
       if (pos != -1) { window.open(_url.slice(0,pos+8) + 'attr', '_blank'); }
       else { window.open(_url + '?action=attr', '_blank'); }
-    }
-
-    // Ctrl+alt+g for goto page
-    // Kind of abandonded
-    else if (event.keyCode == 71 && event.metaKey && event.altKey)
-    {
-      var pagename = prompt("Go to page...");
-      if (pagename)
-      {
-        var pagenamePos = _url.indexOf('?n=');
-        if (pagenamePos == -1) {}
-        else { window.open(_url.slice(0,pagenamePos+3)+pagename, '_blank'); }
-      }
     }
 
     // Tab/~ to traverse the hyperlinks in the wikitext element
