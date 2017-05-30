@@ -357,7 +357,7 @@ function addpageTimerJs($countdownTimer)
   preg_match("/[\.\/](\w+)$/", $pagename, $match); $_pagename = $match[1];
   preg_match("/^(\w+)[\.\/]/", $pagename, $match); $groupname = $match[1];
   $closeRedirectName = $_pagename.'/'.$groupname;
-	$logoutUrl = "$ScriptUrl/CLICKLOGOUT$groupname/$_pagename/$action";
+	$logoutUrl = "$ScriptUrl/CLICKLOGOUT$pagename?action=$action";
 	
   $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
   <script type='text/javascript'>

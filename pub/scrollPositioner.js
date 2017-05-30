@@ -456,9 +456,9 @@ var scrollPositioner = scrollPositioner || (function()
     }
 
     _pagename = window.pmwiki.pagename.toUpperCase();
-    _action = window.pmwiki.action;
+    _action = window.pmwiki.action.toLowerCase();
     _isDiaryPage = window.pmwiki.isDiaryPage;
-    
+
     _wikitextElement = document.getElementById('wikitext');
     _textElement = document.getElementById('text');
 

@@ -42,7 +42,7 @@ if($action == "edit")
   else { SDV( $AutoSaveDelay, $autoSaveDelayHttps); }
 
   global $ScriptUrl;
-  $url = "$ScriptUrl?n=$pagename&action=autosave";
+  $url = "$ScriptUrl/$pagename?action=autosave";
 
   SDVA( $AutoSaveFmt, array(
   'info' => "<div style='position:fixed; z-index:9;' id='autosaveStatus'></div>",

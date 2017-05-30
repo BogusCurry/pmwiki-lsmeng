@@ -149,7 +149,7 @@ function syncPageindex($flag = false)
   // We simply use the currently visited page as the request pagename since even if it's
   // locked, it will be unlocked very soon as it is being visited.
   global $pagename;
-  $url = "http://localhost".$_SERVER['SCRIPT_NAME']."?n=$pagename&updatePageIndex=$pagelistStr";
+  $url = "http://localhost".$_SERVER['SCRIPT_NAME']."?updatePageIndex=$pagelistStr";
 
   // Update pageindex. Note that there is a 2048 char limit to the url length
   if (strlen($url) > 2000)

@@ -8,7 +8,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170524
+ * Version 20170530
  */
 
 "use strict";
@@ -312,7 +312,7 @@
           if (event.clientX > 250 ||
           (Math.abs(event.clientY-this.getBoundingClientRect().top) > 30)) { return; }
 
-          var date = window.location.href.match(/\?n=.+\.(\d{6})/)[1];
+          var date = window.location.href.match(/\w+[\.\/](2\d{5})/)[1];
           var year = date.slice(0,4);
           var mon = date.slice(4);
 

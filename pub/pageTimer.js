@@ -50,12 +50,9 @@ var pageTimer =
       var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr+" on "+window.pmwiki.pagename+" while "+window.pmwiki.action;
       localStorage.setItem('StandbyLogout', msg);
 
-//       window.location = pageTimer.ScriptUrl + '?n=CLICKLOGOUT' + window.pmwiki.pagename + '?action=' + window.pmwiki.action + '&pageTimer';
-      window.location = pageTimer.logoutUrl + '?pageTimer';
+      window.location = pageTimer.logoutUrl + '&pageTimer';
       return;
     }
-
-// window.location = pageTimer.logoutUrl + '?pageTimer';
 
     // Timer expires
     if (Math.round(diff) < 0)
