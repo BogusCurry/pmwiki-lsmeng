@@ -1,21 +1,19 @@
-<!DOCTYPE html 
-    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 <html>
-<link rel="shortcut icon" href="http://localhost/pmwiki/pub/favicon.ico" type="image/x-icon" />
+
 <head>
-  <title>{$Title} / {$Group} $ActionTitle</title>
+	<link rel="shortcut icon" href="http://localhost/pmwiki/pub/favicon.ico" type="image/x-icon" />
+  <title>{$Title}/{$Group} $ActionTitle</title>
   <meta http-equiv='Content-Style-Type' content='text/css' />
   <link rel='stylesheet' href='$SkinDirUrl/pmwiki.css' type='text/css' />
   <!--HTMLHeader-->
 </head>
+
 <body>
 	<div id='wikileftShadow'></div>
-
 <!--PageHeaderFmt-->
 	<div id='wikihead'><form action='{$ScriptUrl}'></form></div>
 <!--/PageHeaderFmt-->
-
 <!--PageLeftFmt-->
 	<div id='wikileft'><!--wiki:{$Group}.SideBar {$SiteGroup}.SideBar--></div>
 <!--/PageLeftFmt-->
@@ -24,19 +22,15 @@
 		<div id='wikicmds'><!--wiki:{$Group}.PageActions {$SiteGroup}.PageActions--></div>
 <!--PageTitleFmt-->
 		<div id='wikititle'> </div>
-		<div id='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> / <a href='{$ScriptUrl}/{$Group}.{$Title}'>{$Title}</a>&nbsp;<a href='{$ScriptUrl}/{$Group}.{$Title}?action=edit'>{$EditLinkMark}</a></div>
-<!-- 		<div id='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> / <a href='{$ScriptUrl}/{$Group}.{$Title}'>{$Title}</a>&nbsp;<a href='{$ScriptUrl}/{$Group}.{$Title}?action=edit'><span style='transform:rotate(90deg); position:absolute;'>{$EditLinkMark}</span></a></div> -->
-
+		<div id='pagegroup'><a href='{$ScriptUrl}/{$Group}'>{$Group}</a> / <a href='{$ScriptUrl}/{$Group}/{$Title}'>{$Title}</a>&nbsp;<a href='{$ScriptUrl}/{$Group}/{$Title}?action=edit'>{$EditLinkMark}</a></div>
 <!--PageText-->
   </div>
-
   <div id='MengWikiFoot'>
 		<a rel="nofollow" href='{$PageUrl}?action=print' target='_blank'>$[Print]</a> -
 		<a href='{$ScriptUrl}/$[{$Group}/RecentChanges]'>$[GRC]</a> - 
     $[Last modified: {$LastModified}]. 
     Closing in <span id="ID_LOGOUTTIMER"></span>&nbsp;
   </div>
-  
 </body>
 
 </html>
