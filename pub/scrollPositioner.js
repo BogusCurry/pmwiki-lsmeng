@@ -26,7 +26,7 @@
  * sent to the server side.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170530
+ * Version 20170531
  */
 
 "use strict";
@@ -327,7 +327,7 @@ var scrollPositioner = scrollPositioner || (function()
   {
     // Check if the textarea height is correct; if not then adjust
     var rectObject = _textElement.getBoundingClientRect();
-    var correctTextAreaHeight = window.innerHeight - rectObject.top-4;
+    var correctTextAreaHeight = window.innerHeight - rectObject.top - 10;
     if (parseInt(_textElement.style.height) != correctTextAreaHeight)
     { _textElement.style.height = correctTextAreaHeight + 'px'; }
   }
