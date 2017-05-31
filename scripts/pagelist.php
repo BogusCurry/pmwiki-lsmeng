@@ -950,7 +950,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     if ($updatedPageIndexContent === false)
     {
       global $pageindexTimeDir;
-      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Encryption Error!\n", FILE_APPEND);
+      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Encryption Error!\n", FILE_APPEND);      
       Abort("PageIndex Encryption Error!");
     }
   }
