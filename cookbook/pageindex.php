@@ -107,7 +107,12 @@ function syncPageindex($flag = false)
 // DEBUG
   global $pageindexTimeDir;
   if ($cloudLastModTime - $localLastModTime > 10)
-  { file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND); }
+  {
+		// Update the local last modification timeStamp to signal that an update has been
+		// scheduled
+    file_put_contents($localLastModFile, "");
+    file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND);
+  }
   else
   { file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex\n", FILE_APPEND); }
 
@@ -224,5 +229,3 @@ function handlePageindex()
     syncPageindex();
   }
 }
-
-
