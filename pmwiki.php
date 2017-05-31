@@ -1247,7 +1247,7 @@ class PageStore
     // this is not a special page that shouldn't be encrypted, and the pagefile exists in
     // the public wiki.d folder.
     global $EnableEncryption, $WorkDir;
-    if ($EnableEncryption==1 && $isPageEncrypt==false && noEncryptPage($pagename)==0 && stripos("$pagefile","$WorkDir")!==false)
+    if ($EnableEncryption==1 && $isPageEncrypt==false && noEncryptPage($pagename)==0 && stripos("$pagefile","$WorkDir"))
     {
       $wholePageText = encryptStr($wholePageText);
       if ($wholePageText !== false)
@@ -1507,9 +1507,6 @@ function Abort($msg, $info='')
 
 function Redirect($pagename, $urlfmt='$PageUrl')
 {
-// Meng.
-$pagename = str_replace(".", "/", $pagename);
-
   # redirect the browser to $pagename
   global $EnableRedirect, $RedirectDelay, $EnableStopWatch;
   SDV($RedirectDelay, 0);

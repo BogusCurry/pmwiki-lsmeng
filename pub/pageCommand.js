@@ -76,8 +76,9 @@ var pageCommand = pageCommand || (function()
       // to scroll there when the edit page is opened.
       if (window.scrollPositioner)
       {
+      	
         var weekDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        scrollPositioner.setStorageByKey('EDIT-ScrollY', 'MAIN.'+year+mon, 'n* '+clock.getDate()+', '+weekDays[clock.getDay()]);
+        scrollPositioner.setStorageByKey('EDIT-ScrollY', 'MAIN/'+year+mon, 'n* '+clock.getDate()+', '+weekDays[clock.getDay()]);
       }
     }
 

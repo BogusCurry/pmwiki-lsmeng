@@ -327,7 +327,7 @@ var scrollPositioner = scrollPositioner || (function()
   {
     // Check if the textarea height is correct; if not then adjust
     var rectObject = _textElement.getBoundingClientRect();
-    var correctTextAreaHeight = window.innerHeight - rectObject.top - 10;
+    var correctTextAreaHeight = window.innerHeight - rectObject.top - 11;
     if (parseInt(_textElement.style.height) != correctTextAreaHeight)
     { _textElement.style.height = correctTextAreaHeight + 'px'; }
   }
