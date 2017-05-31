@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170530
+ * Version 20170601
  */
 
 "use strict";
@@ -76,7 +76,6 @@ var pageCommand = pageCommand || (function()
       // to scroll there when the edit page is opened.
       if (window.scrollPositioner)
       {
-      	
         var weekDays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
         scrollPositioner.setStorageByKey('EDIT-ScrollY', 'MAIN/'+year+mon, 'n* '+clock.getDate()+', '+weekDays[clock.getDay()]);
       }
@@ -319,9 +318,6 @@ var pageCommand = pageCommand || (function()
         // Leave if textElement is not the focused element
         if (document.getElementById("text") !== document.activeElement) { return; }
 
-        // If a window has been opened, leave
-        if (_browseWindow && !_browseWindow.closed) { return; }
-
         // Declare a global property to keep track of whether the associated view page has
         // been opened. This is to work with autosave.js to auto refresh the view page.
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
@@ -333,9 +329,6 @@ var pageCommand = pageCommand || (function()
       {
         // Leave if document body is not focused
         if (document.body !== document.activeElement) { return; }
-
-        // If a window has been opened, leave
-        if (_browseWindow && !_browseWindow.closed) { return; }
 
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
         { _browseWindow = window.open(url + '?action=edit', '_blank'); }
@@ -355,6 +348,7 @@ var pageCommand = pageCommand || (function()
   // Reveal public API
   var returnObj =
   {
+    parsePagenameAction: parsePagenameAction,
     getBrowseWindow: getBrowseWindow
   };
   return returnObj;

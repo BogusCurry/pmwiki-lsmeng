@@ -1,0 +1,4 @@
+RewriteEngine On
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^((?!pmwiki.php).*)$ pmwiki.php?n=$1 [QSA,L]
