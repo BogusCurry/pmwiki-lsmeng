@@ -151,7 +151,8 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
   if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+4)) { return $text; }
 
   // Read the photo directory of this month
-  $dir = "../Photo/".$diaryYear."/".$diaryMonth;
+  global $Photo;
+  $dir = $Photo.$diaryYear."/".$diaryMonth;
 
   if (!file_exists($dir)) { return $text; }
 
