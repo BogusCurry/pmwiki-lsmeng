@@ -110,10 +110,13 @@ $ScriptUrl = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].$_SERVER['SCRIPT_NAME'];
 $PubDirUrl = preg_replace('#/[^/]*$#', '/pub', $ScriptUrl, 1);
 
 // Meng. If "pmwiki.php" does not appear in the requested URI, the server is not doing
-// mod_rewrite. Use the default method to determine $ScriptUrl. Otherwise,
-// remove "/pmwiki.php" from $ScriptUrl
+// mod_rewrite. Use the default method to determine $ScriptUrl. Otherwise, determine it
+// as the host name followed by the first dir in $_SERVER['REQUEST_URI']
 if (!preg_match("/pmwiki\.php/i", $_SERVER['REQUEST_URI']))
-{ $ScriptUrl = preg_replace("/\/pmwiki\.php/i", "", $ScriptUrl); }
+{
+  preg_match("/^\/(\w+)\/?/", $_SERVER['REQUEST_URI'], $match);
+  $ScriptUrl = $UrlScheme.'://'.$_SERVER['HTTP_HOST']."/".$match[1];
+}
 
 $HTMLVSpace = "<vspace>";
 $HTMLPNewline = '';

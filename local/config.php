@@ -262,17 +262,21 @@ if ($isBrowse)
 {
   // The default image size and enlarged size on click.
   $imgHeightPx = 330;
-
   require_once("$FarmD/cookbook/plugin_LSMENG_browse.php");
 }
 
 else if ($action === "diff") { require_once("$FarmD/cookbook/plugin_LSMENG_diff.php"); }
 
+// Paths for images
+$PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads/", $WorkDir);
+$Photo = 'photo/';
+
 // Functions related to the diary pages.
 if (isDiaryPage() !== 0)
 {
-  $diaryImgDirURL = ($AuthorLink == "MBA") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
-
+//   $diaryImgDirURL = ($AuthorLink == "MBA") ? $UrlScheme.'://'.$_SERVER['HTTP_HOST'].'/photo/' : "";
+  global $PubDirUrl;
+  $diaryImgDirURL = preg_replace("/\/pub$/i", '/photo/', $PubDirUrl);
   require_once("$FarmD/cookbook/handleDiary.php");
 }
 // Functions related to the runCode page.
@@ -281,10 +285,6 @@ else if (preg_match("/Main[\.\/]Runcode/i", $pagename))
   $runCodePath = "pub/runCode";
   require_once("$FarmD/cookbook/runCode.php");
 }
-
-// Paths for images
-$PhotoPub = str_replace('wiki.d','uploads',$WorkDir).'/';
-$Photo = '/Volumes/wiki/www/pmWiki/Photo/';
 
 // Php login password. Have to be correct at the $pwRetryLimit th time
 $pwRetryLimit = 3;
@@ -300,8 +300,8 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 {
   // Use regex to get year & mon from pagename. Not satisfied with the mon; there should
   // be a way not to repeat the look behind part (?<=\.\d{4}0)
-  preg_match('/(?<=\.)\d{4}/', $pagename, $match); $year = $match[0];
-  preg_match('/(?<=\.\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
+  preg_match('/(?<=[\.\/])\d{4}/', $pagename, $match); $year = $match[0];
+  preg_match('/(?<=[\.\/]\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
   $UploadDir = "$Photo$year/$mon";
 }
 
@@ -310,7 +310,7 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 
 // Some most basic pmwiki page related information.
 $isDiaryPage = isDiaryPage();
-$HTMLHeaderFmt['pmwiki'] = 
+$HTMLHeaderFmt['pmwiki'] =
 "<script>
 window.pmwiki = {};
 pmwiki.pagename = '$pagename';
@@ -357,7 +357,7 @@ $HTMLHeaderFmt['dictionary'] = "
 if ($isBrowse || $isEdit)
 {
   // Memorize and set the scroll position.
-  $HTMLHeaderFmt["scrollPositioner"] = 
+  $HTMLHeaderFmt["scrollPositioner"] =
   "<script src='$PubDirUrl/scrollPositioner.js'></script>";
 }
 
