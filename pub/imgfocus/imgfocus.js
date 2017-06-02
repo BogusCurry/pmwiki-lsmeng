@@ -15,7 +15,7 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170515
+* Version 20170602
 */
 
 var imgfocus = {};
@@ -84,7 +84,7 @@ imgfocus.clickHandle = function(element, idx)
   if (element.name.indexOf("_thumb.") != -1)
   {
     var req = new XMLHttpRequest();
-    var uploadUrl = window.location.href+'&show='+element.name.replace("_thumb","");
+    var uploadUrl = window.location.href+'?show='+element.name.replace("_thumb","");
     req.open('GET',uploadUrl,true);
     req.send();
 

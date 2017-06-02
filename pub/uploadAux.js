@@ -5,7 +5,7 @@ if (!uploadAux) { var uploadAux = {}; }
 uploadAux.deleteFile = function(fileName)
 {
   var req = new XMLHttpRequest();
-  var uploadUrl = window.location.href+'&delete='+fileName;
+  var uploadUrl = window.location.href+'?delete='+fileName;
   req.open('GET',uploadUrl,true);
   req.send();
 

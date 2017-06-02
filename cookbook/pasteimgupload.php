@@ -14,7 +14,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170525
+ * Version 20170602
  */
 
 $RecipeInfo['pasteimgupload']['Version'] = '20170525';
@@ -24,7 +24,7 @@ if ($action == 'edit')
 // For publication, remove the following
   if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   {
-    preg_match('/\.(\d{4})/', $pagename, $match);
+    preg_match('/[\.\/](\d{4})/', $pagename, $match);
     $year = $match[1];
     preg_match('/\d\d$/', $pagename, $match);
     $mon = (string)intval($match[0]);
@@ -32,7 +32,8 @@ if ($action == 'edit')
   }
   else
   {
-    $groupName = substr($pagename, 0, strpos($pagename,'.'));
+		preg_match('/(\w+)[\.\/]/', $pagename, $match);
+    $groupName = $match[1];
     $uploadDirUrlHeader = "PhotoPub}$groupName/";
   }
 

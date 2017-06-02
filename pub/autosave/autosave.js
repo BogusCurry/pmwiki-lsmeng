@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170601
+ * Version 20170602
  */
 
 var AS =
@@ -106,19 +106,19 @@ var AS =
         // replaced, security error might result due to same-origin policy
         try
         {
-        	// If there was a corresponding browse page opened by the current edit page
+          // If there was a corresponding browse page opened by the current edit page
           if (window.pageCommand && pageCommand.getBrowseWindow())
           { var buddyWin = pageCommand.getBrowseWindow(); }
           // If the current edit page was opened by a corresponding browse page
           else if (window.opener && opener !== window) { buddyWin = opener; }
           else { buddyWin = null; }
-          
+
           if (buddyWin)
           {
             var url = buddyWin.location.href;
             var pagename = pageCommand.parsePagenameAction(url)[2].toUpperCase();
             if (pagename === AS.pagenameU)
-            { buddyWin.location = location.href.replace(/[\?&]action=edit/i,""); }
+            { buddyWin.location = location.href.replace(/[\?&]action=edit|\/edit\/?/i,""); }
           }
         }
         catch(e) {}
