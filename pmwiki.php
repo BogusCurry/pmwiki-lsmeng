@@ -109,14 +109,15 @@ $UrlScheme = (@$_SERVER['HTTPS']=='on' || @$_SERVER['SERVER_PORT']==443)
 $ScriptUrl = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].$_SERVER['SCRIPT_NAME'];
 $PubDirUrl = preg_replace('#/[^/]*$#', '/pub', $ScriptUrl, 1);
 
-// Meng. If "pmwiki.php" does not appear in the requested URI, the server is not doing
-// mod_rewrite. Use the default method to determine $ScriptUrl. Otherwise, determine it
-// as the host name followed by the first dir in $_SERVER['REQUEST_URI']
-if (!preg_match("/pmwiki\.php/i", $_SERVER['REQUEST_URI']))
-{
-  preg_match("/^\/(\w+)\/?/", $_SERVER['REQUEST_URI'], $match);
-  $ScriptUrl = $UrlScheme.'://'.$_SERVER['HTTP_HOST']."/".$match[1];
-}
+// Meng. This is to account for the url rewrite rule specified locally inside the wiki
+// directory. Basically it determines the $ScriptUrl by removing the last occurrence of 
+// the pagename string and everything following it from $_SERVER['REQUEST_URI']
+// Remove the ending slash
+if ($_GET["n"]) { $pos = strripos($_SERVER["REQUEST_URI"], $_GET["n"]); }
+else { $pos = strlen($_SERVER["REQUEST_URI"]); }
+$ScriptUrl_URI = substr($_SERVER["REQUEST_URI"], 0, $pos);
+$ScriptUrl_URI = preg_replace("/\/$/", "", $ScriptUrl_URI);
+$ScriptUrl = $UrlScheme.'://'.$_SERVER['HTTP_HOST'].$ScriptUrl_URI;
 
 $HTMLVSpace = "<vspace>";
 $HTMLPNewline = '';
@@ -2853,7 +2854,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
     global $action;
 
     if (!preg_match("/Main[\.\/]ChangePassword/i", $pagename) ||
-    (preg_match("/Main[\.\/]ChangePassword/i", $pagename) && $action === "browse"))
+    (preg_match("/Main[\.\/]ChangePassword/i", $pagename) && $action !== "browse"))
     {
       // For clicking the logout button
       if (substr($pagename,0,strlen("CLICKLOGOUT")) == "CLICKLOGOUT")
