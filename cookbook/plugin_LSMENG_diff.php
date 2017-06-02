@@ -28,7 +28,7 @@ function updatePageHistory()
       PostPage($pagename, $page, $new);
     }
 
-    Redirect($pagename.'?action=diff');
+    Redirect($pagename.'/diff');
   }
   else
   { return "[[".$pagename."?action=diff&updateHistoryNow|"."Update]]"; }

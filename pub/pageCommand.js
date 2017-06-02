@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170601
+ * Version 20170602
  */
 
 "use strict";
@@ -92,16 +92,14 @@ var pageCommand = pageCommand || (function()
     var match = link.match(/#.*$/);
     if (match) { link = link.replace(match[0],""); }
 
-    var pagename, action;
-    [pagename, action] = parsePagenameAction(link);
+    var pagename, action, pagenameAsInURL;
+    [pagename, action, pagenameAsInURL] = parsePagenameAction(link);
 
     // If it's already edit, return it directly
     if (action === "edit") { return link; }
 
-    // If action is present
-    if (/[\?&]action=/i.test(link)) { return link.replace(action, "edit"); }
-    // Else no action specified
-    else { return link + '?action=edit'; }
+    var pos = link.indexOf(pagenameAsInURL);
+    return link.slice(0, pos + pagenameAsInURL.length) + "/edit";
   }
 
   // Parse the pagename and action from the given URL
@@ -115,7 +113,7 @@ var pageCommand = pageCommand || (function()
     var match = url.match(/pmwiki\.php(\?n=|\/)?((\w+)[\.\/](\w+))?([\?&]action=(\w+))?/i);
     if (match)
     {
-      if (!match[1]) { var pagename = "Main.HomePage"; }
+      if (!match[1]) { var pagename = "Main/HomePage"; }
       else
       {
         pagename = match[3] + "." + match[4];
@@ -126,18 +124,20 @@ var pageCommand = pageCommand || (function()
     }
     // Url mapping using mod_rewrite in Apache
     // pmwiki/group/page?action=xxxx
+    // pmwiki/group/page/action
     else
     {
-      match = url.match(/pmwiki\/((\w+)\/(\w+))?(\?action=(\w+))?$/i);
-      if (!match[1]) { var pagename = "Main.HomePage"; }
+      match = url.match(/pmwiki\/((\w+)\/(\w+))?(\?action=(\w+)|\/(\w+)\/?$|\/(\w+)[\?&])?/i);
+      if (!match[1]) { var pagename = "Main/HomePage"; }
       else
       {
         pagename = match[2] + "/" + match[3];
         pagenameAsInURL = match[1];
       }
       if (!match[4]) { var action = "browse"; }
-      else { action = match[5]; }
+      else { action = match[5] ||  match[6] || match[7]; }
     }
+
     return [pagename, action, pagenameAsInURL];
   }
 
@@ -176,16 +176,10 @@ var pageCommand = pageCommand || (function()
     else if ((event.keyCode == 70||event.code=="KeyF") && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      var redirectPagename = "Site/SearchE";
-      var url = _url.replace(/[\?&]action=(.*)$/, "");
-      var pagenameAsInURL = parsePagenameAction(url)[2];
-      if (!pagenameAsInURL)
-      {
-        if (url.slice(-1) !== "/") { url += "/"; }
-        url += redirectPagename;
-      }
-      else { url = url.replace(pagenameAsInURL, redirectPagename); }
-      window.open(url, '_blank');
+      var pagenameAsInURL = parsePagenameAction(_url)[2];
+      var pos = _url.indexOf(pagenameAsInURL);
+      var url = _url.slice(0, pos);
+      window.open(url + "Site/SearchE");
     }
 
     // Ctrl+cmd+r to open all recent changes
@@ -193,59 +187,48 @@ var pageCommand = pageCommand || (function()
     else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && event.metaKey)
     {
       event.preventDefault();
-      var redirectPagename = "Site/Allrecentchanges";
-      var url = _url.replace(/[\?&]action=(.*)$/, "");
-      var pagenameAsInURL = parsePagenameAction(url)[2];
-      if (!pagenameAsInURL)
-      {
-        if (url.slice(-1) !== "/") { url += "/"; }
-        url += redirectPagename;
-      }
-      else { url = url.replace(pagenameAsInURL, redirectPagename); }
-      window.open(url, '_blank');
+      var pagenameAsInURL = parsePagenameAction(_url)[2];
+      var pos = _url.indexOf(pagenameAsInURL);
+      var url = _url.slice(0, pos);
+      window.open(url + "Site/Allrecentchanges");
     }
 
     // Ctrl+cmd+u to open the upload page
     else if ((event.keyCode == 85||event.code=='KeyU') && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      var pos = _url.indexOf('?action=');
-      if (pos != -1) { window.open(_url.slice(0,pos+8) + 'upload', '_blank'); }
-      else { window.open(_url + '?action=upload', '_blank'); }
+      var pagenameAsInURL = parsePagenameAction(_url)[2];
+      var pos = _url.indexOf(pagenameAsInURL);
+      var url = _url.slice(0, pos + pagenameAsInURL.length);
+      window.open(url + "/upload");
     }
 
     // Ctrl+cmd+h to open the history
     else if ((event.keyCode == 72||event.code=='KeyH') && event.ctrlKey && (event.metaKey||event.altKey))
     {
-      event.preventDefault();
-      var pos = _url.indexOf('?action=');
-      if (pos != -1) { window.open(_url.slice(0,pos+8) + 'diff', '_blank'); }
-      else { window.open(_url + '?action=diff', '_blank'); }
+      var pagenameAsInURL = parsePagenameAction(_url)[2];
+      var pos = _url.indexOf(pagenameAsInURL);
+      var url = _url.slice(0, pos + pagenameAsInURL.length);
+      window.open(url + "/diff");
     }
 
     // Ctrl+cmd+b to open the backlink
     else if ((event.keyCode == 66||event.code=='KeyB') && event.ctrlKey && (event.metaKey||event.altKey))
     {
       event.preventDefault();
-      var redirectPagename = "Site/Search?action=search&q=link=" + _pagename;
-      var url = _url.replace(/[\?&]action=(.*)$/, "");
-      var pagenameAsInURL = parsePagenameAction(url)[2];
-      if (!pagenameAsInURL)
-      {
-        if (url.slice(-1) !== "/") { url += "/"; }
-        url += redirectPagename;
-      }
-      else { url = url.replace(pagenameAsInURL, redirectPagename); }
-      window.location = url;
+      var pagenameAsInURL = parsePagenameAction(_url)[2];
+      var pos = _url.indexOf(pagenameAsInURL);
+      var url = _url.slice(0, pos);
+      window.open(url + "Site/Search?action=search&q=link=" + _pagename);
     }
 
     // Ctrl+cmd+a to open the attribute
     else if ((event.keyCode == 65||event.code=='KeyA') && event.ctrlKey && (event.metaKey||event.altKey))
     {
-      event.preventDefault();
-      var pos = _url.indexOf('?action=');
-      if (pos != -1) { window.open(_url.slice(0,pos+8) + 'attr', '_blank'); }
-      else { window.open(_url + '?action=attr', '_blank'); }
+      var pagenameAsInURL = parsePagenameAction(_url)[2];
+      var pos = _url.indexOf(pagenameAsInURL);
+      var url = _url.slice(0, pos + pagenameAsInURL.length);
+      window.open(url + "/attr");
     }
 
     // Tab/~ to traverse the hyperlinks in the wikitext element
@@ -307,13 +290,8 @@ var pageCommand = pageCommand || (function()
     {
       event.preventDefault();
 
-      // judge from the url to tell whether this is edit or browse
-      var url = window.location.href;
-      var action = "browse";
-      if (/[\?&]action=edit/i.test(url)) { action = "edit"; }
-
       // If the current action is edit
-      if (action === "edit")
+      if (_action === "edit")
       {
         // Leave if textElement is not the focused element
         if (document.getElementById("text") !== document.activeElement) { return; }
@@ -321,19 +299,20 @@ var pageCommand = pageCommand || (function()
         // Declare a global property to keep track of whether the associated view page has
         // been opened. This is to work with autosave.js to auto refresh the view page.
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
-        { _browseWindow = window.open(url.replace(/[\?&]action=edit/i,''), '_blank'); }
-        else { window.location = url.replace(/[\?&]action=edit/i,''); }
+        { _browseWindow = window.open(_url.replace(/[\?&]action=edit|\/edit\/?$/i,''), '_blank'); }
+        else { window.location = _url.replace(/[\?&]action=edit|\/edit\/?$/i, ''); }
       }
       // The current action is browse
-      else
+      else if (_action === "browse")
       {
         // Leave if document body is not focused
         if (document.body !== document.activeElement) { return; }
 
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
-        { _browseWindow = window.open(url + '?action=edit', '_blank'); }
-        else { window.location = url + '?action=edit'; }
+        { _browseWindow = window.open(_url + '/edit', '_blank'); }
+        else { window.location = _url + '/edit'; }
       }
+      else {}
     }
 
     // Handle the enter key press when a link is selected; simply call the onmouseup routine
