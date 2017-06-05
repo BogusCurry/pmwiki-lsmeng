@@ -183,8 +183,8 @@ var pageCommand = pageCommand || (function()
     }
 
     // Ctrl+cmd+r to open all recent changes
-//   else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && (event.metaKey||event.altKey))
-    else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && event.metaKey)
+    else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && (event.metaKey||event.altKey))
+//     else if ((event.keyCode == 82||event.code=="KeyR") && event.ctrlKey && event.metaKey)
     {
       event.preventDefault();
       var pagenameAsInURL = parsePagenameAction(_url)[2];
