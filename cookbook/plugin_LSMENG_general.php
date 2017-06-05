@@ -86,8 +86,8 @@ function checkTimeStamp()
   // It appears that session_start() has to be called first even for reading operation.
   // checkTimeStamp() can be the 1st function to call $_SESSION, therefore session_start()
   // has to be called at the outset.
-  @session_start();
-  @session_write_close();
+//   @session_start();
+//   @session_write_close();
   if (isset($_SESSION['MASTER_KEY']))
   {
     $hasSuccAuthCookie = true;
@@ -103,9 +103,9 @@ function checkTimeStamp()
       $currentTime = time();
       $lastTime = isset($_SESSION['timeStamp']) ? $_SESSION['timeStamp'] : $currentTime;
       $timeDiff = $currentTime - $lastTime;
-      @session_start();
+//       @session_start();
       $_SESSION['timeStamp'] = $currentTime;
-      @session_write_close();
+//       @session_write_close();
 
       // Timer expires
       if ($timeDiff >= $pageLockIdleDuration)
@@ -133,10 +133,10 @@ function checkTimeStamp()
 
           file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",  FILE_APPEND);
 
-          @session_start();
+//           @session_start();
           unset($_SESSION['authpw']);
           $_SESSION['passwordCount'] = 0;
-          @session_write_close();
+//           @session_write_close();
         }
       }
     }
@@ -410,7 +410,7 @@ function isPasswdCorrect($passwd)
     global $sysLogFile;
     file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Login\n", FILE_APPEND);
 
-    @session_start();
+//     @session_start();
 //     $_SESSION['MASTER_KEY'] = [$MASTER_KEY, $passwd];
 
     $Now = time();
@@ -424,7 +424,7 @@ function isPasswdCorrect($passwd)
     // This has to work with IsAuthorized() in pmwiki.php
     $_SESSION['authpw'][base64_encode($passwd)] = 1;
 
-    @session_write_close();
+//     @session_write_close();
     return true;
   }
   else
