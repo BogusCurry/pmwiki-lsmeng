@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170602
+ * Version 20170606
  */
 
 "use strict";
@@ -28,7 +28,6 @@ var pageCommand = pageCommand || (function()
   var _selectLink;
   var _tabCount;
   var _hyperLinkElementWikiText;
-  var _browseWindow;
 
   // Since the box element shadows the original hyperlink, the clicking behavior
   // has to be defined again. Somehow "onclick" cannot detect a click when ctrl is
@@ -299,7 +298,10 @@ var pageCommand = pageCommand || (function()
         // Declare a global property to keep track of whether the associated view page has
         // been opened. This is to work with autosave.js to auto refresh the view page.
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
-        { _browseWindow = window.open(_url.replace(/[\?&]action=edit|\/edit\/?$/i,''), '_blank'); }
+        {
+          window.buddyWin = window.open(_url.replace(/[\?&]action=edit|\/edit\/?$/i,''), '_blank');
+          setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
+        }
         else { window.location = _url.replace(/[\?&]action=edit|\/edit\/?$/i, ''); }
       }
       // The current action is browse
@@ -309,7 +311,19 @@ var pageCommand = pageCommand || (function()
         if (document.body !== document.activeElement) { return; }
 
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
-        { _browseWindow = window.open(_url + '/edit', '_blank'); }
+        {
+          if (window.buddyWin && !buddyWin.closed)
+          {
+            buddyWin.location = buddyWin.location.href;
+            buddyWin.focus();
+            setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
+          }
+          else
+          {
+            window.buddyWin = window.open(_url + '/edit', '_blank');
+            setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
+          }
+        }
         else { window.location = _url + '/edit'; }
       }
       else {}
@@ -321,14 +335,5 @@ var pageCommand = pageCommand || (function()
     { handleGoToLink(event); }
   });
 
-  // Return the window object of the corresponding browse page if opened
-  function getBrowseWindow() { return _browseWindow; }
-
-  // Reveal public API
-  var returnObj =
-  {
-    parsePagenameAction: parsePagenameAction,
-    getBrowseWindow: getBrowseWindow
-  };
-  return returnObj;
+  return {};
 })();

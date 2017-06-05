@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170602
+ * Version 20170606
  */
 
 var AS =
@@ -99,29 +99,10 @@ var AS =
       if (AS.basetime != as_time) { AS.setLastModLS(); }
       AS.basetime = as_time;
 
-      // If a corresponding browse page exists, refresh it upon saving.
-      if (window.pageCommand && pageCommand.getBrowseWindow)
+      if (window.buddyWin && !buddyWin.closed)
       {
-        // If the browsing page is suspended by a browser plugin and the url has been
-        // replaced, security error might result due to same-origin policy
-        try
-        {
-          // If there was a corresponding browse page opened by the current edit page
-          if (window.pageCommand && pageCommand.getBrowseWindow())
-          { var buddyWin = pageCommand.getBrowseWindow(); }
-          // If the current edit page was opened by a corresponding browse page
-          else if (window.opener && opener !== window) { buddyWin = opener; }
-          else { buddyWin = null; }
-
-          if (buddyWin)
-          {
-            var url = buddyWin.location.href;
-            var pagename = pageCommand.parsePagenameAction(url)[2].toUpperCase();
-            if (pagename === AS.pagenameU)
-            { buddyWin.location = location.href.replace(/[\?&]action=edit|\/edit\/?/i,""); }
-          }
-        }
-        catch(e) {}
+        buddyWin.location = buddyWin.location.href;
+				setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
       }
 
       // Saved event is open for registering callback

@@ -28,14 +28,14 @@ var autoRefresher =
   reloadIfUpdate: function()
   {
     // Get cookie to obtain the lastModTime;
-    var lastModTime = autoRefresher.getStorageByKey('LastMod', autoRefresher.pagename);
+    var lastModTime = autoRefresher.getStorageByKey('LastMod', autoRefresher.pagenameU);
     if (lastModTime > autoRefresher.basetime) { window.location = location.href; }
   },
 
   init: function()
   {
   	var _url = window.location.href;
-		autoRefresher.pagename = window.pmwiki.pagename;
+		autoRefresher.pagenameU = window.pmwiki.pagename.toUpperCase();
   
     // On load, record the current time.
     var clock = new Date();
