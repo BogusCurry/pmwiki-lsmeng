@@ -66,7 +66,7 @@ function getRecentPageAESKey($arrayIndex)
 // it to the top of the cache. Otherwise insert it at the top of the cache.
 function cacheRecentPageAESKey($AES_KEY, $arrayIndex)
 {
-  @session_start();
+//   @session_start();
   if (@array_key_exists($arrayIndex, $_SESSION['recentPageAESKey']))
   {
     // Move the key to the top
@@ -81,7 +81,7 @@ function cacheRecentPageAESKey($AES_KEY, $arrayIndex)
     if (count($_SESSION['recentPageAESKey']) > $NUM_RECENTPAGEAESKEY)
     { array_pop($_SESSION['recentPageAESKey']); }
   }
-  @session_write_close();
+//   @session_write_close();
 }
 
 // Get recently decrypted text by checking the corresponding cache. Return
@@ -108,7 +108,7 @@ function cacheRecentDecryptText($decryptText, $arrayIndex)
   {
     if (stripos($decryptText, $sitePagename[$i]) !== false)
     {
-      @session_start();
+//       @session_start();
 
       // Run through the cache to see if the keyword has been registered already, if yes
       // remove the entry
@@ -124,7 +124,7 @@ function cacheRecentDecryptText($decryptText, $arrayIndex)
       array($arrayIndex => $decryptText) : array($arrayIndex => $decryptText) + $_SESSION['recentDecryptText'];
       if (count($_SESSION['recentDecryptText']) > $NUM_SITEPAGE)
       { array_pop($_SESSION['recentDecryptText']); }
-      @session_write_close();
+//       @session_write_close();
 
       return true;
     }

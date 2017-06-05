@@ -164,6 +164,12 @@ include_once("$FarmD/scripts/xlpage-utf-8.php");
 /****************************************************************************************/
 // Meng. PHP related configurations/functions.
 
+// Start the session early as encryption & timeStamp check all need to use sessions.
+// Also, start the session once only; refrain from starting/closing it multiple times as
+// multiple set-cookie headers will be sent from the server, and it seems that there is 
+// a performance hit by manipulating session like this.
+session_start();
+
 // Set the station name and path for public wiki.d
 // On MAC, it appears the environment variable is not working.
 $AuthorLink = getenv('COMPUTERNAME');

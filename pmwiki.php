@@ -23,7 +23,7 @@
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
  */
-// var_dump($_SERVER);
+
 /****************************************************************************************/
 // Meng: Set the timezone to match that of the station; disable deprecated messages
 date_default_timezone_set('Asia/Taipei');
@@ -3067,9 +3067,9 @@ function IsAuthorized($chal, $source, &$from)
       if ($auth != 1)
       {
         // Keep track of the wrong passwords the user has entered
-        @session_start();
+//         @session_start();
         $_SESSION['passwordCount'] = $nPwAttempt;
-        @session_write_close();
+//         @session_write_close();
 
         global $sysLogFile;
         file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Wrong password typed\n", FILE_APPEND);
@@ -3078,9 +3078,9 @@ function IsAuthorized($chal, $source, &$from)
       }
       else
       {
-        @session_start();
+//         @session_start();
         $_SESSION['passwordCount'] = $nPwAttempt;
-        @session_write_close();
+//         @session_write_close();
 
         global $sysLogFile;
         if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
