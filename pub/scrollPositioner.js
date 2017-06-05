@@ -110,7 +110,8 @@ var scrollPositioner = scrollPositioner || (function()
   }
 
   // Set a cookie with the given name/value.
-  function setCookie(name, value) { document.cookie = name + "=" + escape(value); }
+  function setCookie(name, value)
+  { document.cookie = name + "=" + escape(value) + "; path=/"; }
 
   // Delete the cookie "name"
   function delCookie(name)

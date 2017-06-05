@@ -438,8 +438,12 @@ SDV($LinkPageCreateSpaceFmt,$LinkPageCreateFmt);
 // Meng. Show "PmWiki" in page title for easy identification
 $ActionTitle = FmtPageName(@$ActionTitleFmt[$action]." [PmWiki]", $pagename);
 
+// Meng. In case of an undefined action, instead of setting action to browse, redirect
+// the user to browse the page
 if (!@$HandleActions[$action] || !function_exists($HandleActions[$action]))
-$action='browse';
+// $action='browse';
+{ redirect($pagename); }
+
 if (IsEnabled($EnableActions, 1)) HandleDispatch($pagename, $action);
 Lock(0);
 return;
