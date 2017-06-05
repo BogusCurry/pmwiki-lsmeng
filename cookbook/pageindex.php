@@ -146,15 +146,9 @@ function syncPageindex($flag = false)
 
   // Since the handlePageindex procedure is embedded in the builtin browsing/editing
   // procedure, we have to come up with a pagename that does not belong to the
-  // "sensitive" pages which quickly get password locked. A newly generated page group
-  // by default is not a sensitive page. That's why we have the RandomPwdWord() part.
-//   $url = "http://localhost".$_SERVER['SCRIPT_NAME']."?n=".RandomPwdWord(10)."&updatePageIndex=$pagelistStr";
-
-  // On 2nd thought, now we update sync timeStamp after the sync has actually been done.
-  // We simply use the currently visited page as the request pagename since even if it's
-  // locked, it will be unlocked very soon as it is being visited.
-  global $pagename;
-  $url = "http://localhost".$_SERVER['SCRIPT_NAME']."?updatePageIndex=$pagelistStr";
+  // "sensitive" pages which quickly get password locked. Use Site/Editform
+  global $ScriptUrl;
+	$url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagelistStr";
 
   // Update pageindex. Note that there is a 2048 char limit to the url length
   if (strlen($url) > 2000)
