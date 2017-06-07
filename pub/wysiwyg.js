@@ -21,11 +21,6 @@ var wysiwyg = wysiwyg || (function()
 
   function handleInput()
   {
-    // Get the edited element
-    // Get its text
-//     var text = event.newValue.toString();
-
-// Dont forget to warn    
     var bulletElement = get1stLIElement(event.srcElement);
     var allBullet = _wikitextElement.getElementsByTagName("LI");
     var bulletIdx = Array.prototype.indexOf.call(allBullet, bulletElement);
@@ -45,7 +40,6 @@ var wysiwyg = wysiwyg || (function()
     console.log(postMsg);
     var req = new XMLHttpRequest();
     req.open('POST', _saveUrl, true);
-//     console.log(_saveUrl);
 		req.setRequestHeader("BASETIME", _basetime);
 		req.setRequestHeader("WYSIWYG", true);
     req.send(postMsg);
@@ -56,18 +50,6 @@ var wysiwyg = wysiwyg || (function()
       	console.log("saved");
       }
     };
-
-
-// On 2nd thought, there is no way to tell, leave it to the server
-/*
-    // if the preValue is UNIQUE in the bullet element's textContent, it's safe
-    // Else, including the case it can't be found, it's unsafe
-    var query = new RegExp(prevValue, "g");
-    var numMatch = (bulletElement.textContent.match(query) || []).length;
-    if (numMatch === 1) { console.log("post"); }
-    else if (numMatch === 0) { console.log("no match"); }
-    else { console.log("multi match"); }
-*/
   }
 
   function init()

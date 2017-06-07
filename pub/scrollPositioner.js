@@ -644,9 +644,6 @@ var scrollPositioner = scrollPositioner || (function()
   // Reveal public API
   var returnObj =
   {
-    // Properties
-    isDiaryPage: 0,
-
     // Methods
     isInit: isInit,
     subscribe: subscribe,
