@@ -78,7 +78,7 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
   $_POST['action'] = 'edit';
   $_POST['n'] = $pagename;
   $_POST['basetime'] = $_SERVER['HTTP_BASETIME'];
-  $_POST['text'] =  file_get_contents('php://input');
+  $postMsg = $_POST['text'] =  file_get_contents('php://input');
 
   Lock(2);
   $page = RetrieveAuthPage($pagename, $auth, false);
@@ -89,6 +89,48 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
   {
     echo 'Simultaneous editing';
     return;
+  }
+
+  // If "WYSIWYG" request header is present, this is from wysiwyg.js
+  if (isset($_SERVER["HTTP_WYSIWYG"]))
+  {
+    // Parse msg
+    $postMsg = json_decode($postMsg);
+    $bulletIdx = $postMsg -> {"bulletIdx"};
+    $prevValue = $postMsg -> {"prevValue"};
+    $newValue = $postMsg -> {"newValue"};
+
+    // Get the bullet's text
+    $numBullet = $bulletIdx + 1;
+    $charOffset = computeCharOffsetForBullet($page["text"], $numBullet);
+    $charOffset2 = computeCharOffsetForBullet($page["text"], $numBullet + 1);
+    if ($charOffset2 === -1) { $charOffset2 = strlen($page["text"]); }
+		$length = $charOffset2 - $charOffset - 1;
+    $bulletText = substr($page["text"], $charOffset, $length);
+
+    // if the preValue is UNIQUE in the bullet element's textContent, it's safe
+    // Else, including the case it can't be found, it's unsafe
+    $pos = strpos($bulletText, $prevValue);
+    file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$pos);
+    // The text can't even be found
+    if ($pos === false)
+    {
+      return;
+    }
+    // The text is not unique
+    else if (strpos($bulletText, $prevValue, $pos + 1) !== false)
+    {
+      return;
+    }
+    else { $newBulletText = str_replace($prevValue, $newValue, $bulletText); }
+
+//     file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$testStr."\nend");
+//     file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$numBullet."\n".$charOffset2);
+
+		$_POST['text'] = substr_replace($page["text"], $newBulletText, $charOffset, $length);
+		
+// 		    file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$_POST['text']."\nend");
+//     return;
   }
 
   PCache($pagename,$page);
@@ -111,4 +153,54 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
     echo 'Saved';
   }
   else { echo 'Autosave write error'; }
+}
+
+// Get the indexOf the nth occurrence of either "pat1" or "pat2"
+function nthIndex($str, $pat1, $pat2, $n)
+{
+  $L = strlen($str);
+  $i = -1;
+  while ($n-- && $i++ < $L)
+  {
+    $pos1 = strpos($str, $pat1, $i);
+    $pos2 = strpos($str, $pat2, $i);
+
+    // If i j both found, take the smaller one
+    if ($pos1 !== false && $pos2 !== false) { $i = min($pos1, $pos2); }
+
+    // if only i found, work with i
+    else if ($pos1 !== false && $pos2 === false) { $i = $pos1; }
+
+    // if only j found, work with j
+    else if ($pos1 === false && $pos2 !== false) { $i = $pos2; }
+
+    // nothing, break
+    else
+    {
+      if ($n === 0) { return -1; }
+      break;
+    }
+  }
+
+  return $i;
+}
+
+function computeCharOffsetForBullet($text, $numBullet)
+{
+  $isFirstLineBullet = false;
+  if ($text[0] === "*" || $text[0] === "#") { $isFirstLineBullet = true; }
+
+  if ($numBullet === 1)
+  {
+    if ($isFirstLineBullet) { $charOffset = 0; }
+    else { $charOffset = nthIndex($text, "\n*", "\n#", 1); }
+  }
+  else
+  {
+    if ($isFirstLineBullet) { $numBullet--; }
+    $charOffset = nthIndex($text, "\n*", "\n#", $numBullet);
+  }
+
+  if ($charOffset === -1) { return -1; }
+  else { return $charOffset + 1; }
 }

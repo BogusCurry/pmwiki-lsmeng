@@ -336,7 +336,7 @@ var scrollPositioner = scrollPositioner || (function()
   // Get the indexOf the nth occurrence of either "pat1" or "pat2"
   function nthIndex(str, pat1, pat2, n)
   {
-    var L= str.length, i= -1;
+    var L = str.length, i = -1;
     while(n-- && i++<L)
     {
       var pos1 = str.indexOf(pat1, i);
@@ -355,7 +355,11 @@ var scrollPositioner = scrollPositioner || (function()
       { i = pos2; }
 
       // nothing, break
-      else { break; }
+      else
+      {
+        if (n === 0) { return -1; }
+        break;
+      }
     }
 
     return i;
