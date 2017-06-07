@@ -20,7 +20,7 @@ var AS = AS || (function()
   /* Dependencies */
 
   /* Private properties */
-	var _autosaveElement;
+  var _autosaveElement;
   var _status = '';
   var _savedStatusHtml = "<span class='savedStatus'></span>";
   var _disableStatusHtml = "<span class='disabledStatus'></span>";
@@ -29,6 +29,7 @@ var AS = AS || (function()
   var _typingStatusHtml = '<span class="autosaveStatus"><span class="typingStatus-outer"><span class="typingStatus-inner"></span></span></span>';
   var _savingStatusHtml = '<span class="autosaveStatus"><span class="savingStatus-outer"><span class="savingStatus-inner"></span></span></span>';
 
+  var _action;
   var _lastInputTime = 0;
   var _inputBurstStartTime = 0;
   var _id1 = null;
@@ -38,11 +39,14 @@ var AS = AS || (function()
   var _pagenameU = '';
   var _post_str = '';
   var _busy = false;
-  var _txt = null; //lbl = null,
   var _req = null;
   var _id = null;
-	var _textElement;
+  var _textElement;
   var _basetime = 0;
+
+  var _wikitextElement;
+  var _lastBulletIdx;
+  var _event;
 
   var _eventCallback = {"saved": []}; // queue for callback functions on saved event
 
@@ -98,7 +102,7 @@ var AS = AS || (function()
     switch(str)
     {
       case "Saved":
-      _txt.innerHTML = _savedStatusHtml;
+      _autosaveElement.innerHTML = _savedStatusHtml;
       var as_time = _req.getResponseHeader("X-AutoSaveTime");
       if (_basetime != as_time) { setLastModLS(); }
       _basetime = as_time;
@@ -117,16 +121,16 @@ var AS = AS || (function()
       break;
 
       case "Autosaving":
-      _txt.innerHTML = _savingStatusHtml;
+      _autosaveElement.innerHTML = _savingStatusHtml;
       break;
 
       case "Typing":
-      _txt.innerHTML = _typingStatusHtml;
+      _autosaveElement.innerHTML = _typingStatusHtml;
       break;
 
       default: // some error
       _status = 'Disabled';
-      _txt.innerHTML = _errStatusHtml;// + "<span style='margin-left:25px; color: red;'>"+str+"</span>";
+      _autosaveElement.innerHTML = _errStatusHtml;// + "<span style='margin-left:25px; color: red;'>"+str+"</span>";
       var div = document.createElement("div");
       div.innerHTML = str;
       console.log("Autosave error:\n"+div.textContent);
@@ -150,7 +154,7 @@ var AS = AS || (function()
     else
     {
       _status = 'Disabled';
-      _txt.innerHTML = _errStatusHtml;
+      _autosaveElement.innerHTML = _errStatusHtml;
       console.log("Autosave error:\n"+"HTTP status: "+_req.status);
       alert("Autosave error:\n"+"HTTP status: "+_req.status);
 
@@ -169,7 +173,8 @@ var AS = AS || (function()
   // working with.
   function getTextContent()
   {
-    return _textElement.value;
+    if (_textElement) { return _textElement.value; }
+    else if (_wikitextElement) { return _wikitextElement.textContent; }
   }
 
   // See if the content of the text field has been changed since the last time
@@ -179,10 +184,7 @@ var AS = AS || (function()
   function ifTextChange()
   {
     var textContent = getTextContent();
-    if (textContent != _lastTextContent)
-    {
-      return textContent;
-    }
+    if (textContent != _lastTextContent) { return textContent; }
     else { return null; }
   }
 
@@ -238,12 +240,16 @@ var AS = AS || (function()
   // Perform an async saving. If there is already an ongoing async saving, wait a short
   // period (100 ms) and check again. The saving is performed only if the text field
   // has been changed since make_new_post_str() was last called.
-  function keydownSave()
+  function keydownSave(event)
   {
     if (_status === 'Disabled') { return; }
 
     _id1 = null;
 
+if (event === undefined)
+{
+  event = _event;
+}
     // If saving is not in progress, perform the saving procedures.
     if (!_busy)
     {
@@ -252,45 +258,86 @@ var AS = AS || (function()
       var hasNewInput = make_new_post_str();
       if (hasNewInput == true)
       {
+        if (_textElement) { var postMsg = _post_str; }
+        else if (_wikitextElement)
+        {
+          var bulletIdx = getEditBulletIdx(event);
+          var prevValue = event.prevValue.toString();
+          var newValue = event.newValue.toString();
+
+          // The last line in a bullet will be appended by a newline char
+          if (prevValue.slice(-1) === "\n") { prevValue = prevValue.slice(0, -1); }
+          if (newValue.slice(-1) === "\n") { newValue = newValue.slice(0, -1); }
+
+          // Send a post msg to the server
+          var postMsg = {};
+          postMsg.bulletIdx = bulletIdx;
+          postMsg.prevValue = prevValue;
+          postMsg.newValue = newValue;
+          postMsg = JSON.stringify(postMsg);
+        }
+
         // Use AJAX xml request to save the string
         set_status("Autosaving");
         _busy = true;
         _req.open("POST",AS.url,true);
         _req.setRequestHeader( "BASETIME", _basetime );
+if (_wikitextElement) { _req.setRequestHeader("WYSIWYG", true); }
 
         // Show saving progress
 // 				_req.upload.onprogress = function(e)
 // 				{ console.log("Saving... " + Math.round(e.loaded/e.total*100) + "%"); };
 
         _req.onreadystatechange = reply;
-        _req.send(_post_str);
-        countBulletWriteCookie();
+        _req.send(postMsg);
+        if (_textElement) { countBulletWriteCookie(); }
       }
-      else if (_status != 'Init')
-      { set_status("Saved"); }
+      else if (_status != 'Init') { set_status("Saved"); }
     }
     else
     {
       // If saving is in progress, wait a short period of time and check again.
-      if (_id2 == null)
-      { _id2 = setTimeout( keydownSave, 100); }
+      if (_id2 == null) { _id2 = setTimeout(function() { keydownSave(event); }, 100); }
     }
   }
 
+/*
   // If new input has already been detected and the user is currently typing
   // any new keystroke counts as a new input
   function onKeydown()
   {
     if (_status == 'Typing') { onNewInput(); }
   }
+*/
 
   // On receiving new input, activate a timer for triggering the saving process
   // (keydownSave). Any new keystrokes resets this timer.
   // To handle the case that the saving time is long (a few seconds), this function gets
   // a bit complicated.
-  function onNewInput()
+  function onNewInput(event)
   {
     if (_status === 'Disabled') { return; }
+
+var event = event;
+
+    if (_wikitextElement)
+    {
+      // Get the idx of the currently edited bullet
+      // If the currently edited bullet changes, perform a saving right away
+      var bulletIdx = getEditBulletIdx(event);
+      if (_lastBulletIdx === undefined)
+      {
+        _lastBulletIdx = bulletIdx;
+      }
+      else if (bulletIdx !== _lastBulletIdx)
+      {
+        clearTimeout(_id1);
+        keydownSave(_event);
+      }
+    }
+
+//
+    if (_wikitextElement) { _event = event; }
 
     // If new input hadn't been detected.
     if (_id1 == null)
@@ -308,7 +355,9 @@ var AS = AS || (function()
       _inputBurstStartTime = clock.getTime();
 
       // Set a timeout for triggering the saving process.
-      _id1 = setTimeout( keydownSave, AS.delay );
+      _id1 = setTimeout(function(){ keydownSave(event); }, AS.delay );
+
+//       if (_wikitextElement) { _event = event; }
     }
     // New input had been detected.
     else
@@ -332,7 +381,7 @@ var AS = AS || (function()
         {
           // Reset the timeout for triggering the saving process.
           clearTimeout(_id1);
-          _id1 = setTimeout( keydownSave, AS.delay );
+          _id1 = setTimeout(function(){ keydownSave(event); }, AS.delay );
         }
       }
     }
@@ -362,7 +411,8 @@ var AS = AS || (function()
   {
     // Move the saving status to the bottom left of the textarea, ASSUMING the textarea
     // height fills the browser area
-    var rectObject = _textElement.getBoundingClientRect();
+    var container = _textElement || _wikitextElement;
+    var rectObject = container.getBoundingClientRect();
     var top = _autosaveElement.style.top = window.innerHeight-30+'px';
     var left = _autosaveElement.style.left = rectObject.left+'px';
 
@@ -384,6 +434,53 @@ var AS = AS || (function()
     else { throw "Unexpected event: " + event; return; }
   }
 
+  function get1stLIElement(element)
+  {
+    if (element.tagName === "LI") { return element; }
+    else if (element === document.body) { return null; }
+    else { return get1stLIElement(element.parentElement); }
+  }
+
+  function getEditBulletIdx(event)
+  {
+    var bulletElement = get1stLIElement(event.srcElement);
+    var allBullet = _wikitextElement.getElementsByTagName("LI");
+    var bulletIdx = Array.prototype.indexOf.call(allBullet, bulletElement);
+    return bulletIdx;
+  }
+
+/*
+  function handleInput()
+  {
+    var bulletIdx = getEditBulletIdx(event);
+    var prevValue = event.prevValue.toString();
+    var newValue = event.newValue.toString();
+
+    // The last line in a bullet will be appended by a newline char
+    if (prevValue.slice(-1) === "\n") { prevValue = prevValue.slice(0, -1); }
+    if (newValue.slice(-1) === "\n") { newValue = newValue.slice(0, -1); }
+
+    // Send a post msg to the server
+    var postMsg = {};
+    postMsg.bulletIdx = bulletIdx;
+    postMsg.prevValue = prevValue;
+    postMsg.newValue = newValue;
+    postMsg = JSON.stringify(postMsg);
+    console.log(postMsg);
+    _req.open('POST', AS.url, true);
+    _req.setRequestHeader("BASETIME", _basetime);
+    _req.setRequestHeader("WYSIWYG", true);
+    _req.send(postMsg);
+    _req.onreadystatechange = function()
+    {
+      if (this.readyState === 4 && this.status === 200)
+      {
+        console.log("saved");
+      }
+    };
+  }
+*/
+
   function init()
   {
     if (!AS.url || !AS.delay) return;
@@ -393,17 +490,24 @@ var AS = AS || (function()
     // consequences. Fortunately the "true" text content can be obtained by calling
     // textContent, which is then compared with the current text in the textarea field
     // to see if the current text is outdated/buffered.
-    if (document.getElementById('text').textContent != document.getElementById('text').value)
-    { location.reload(); }
+    _action = window.pmwiki.action;
+    if (_action === "edit")
+    {
+      if (document.getElementById('text').textContent != document.getElementById('text').value)
+      { location.reload(); }
+      _textElement = document.getElementById('text');
+    }
+    else if (_action === "browse")
+    {
+      _wikitextElement = document.getElementById("wikitext");
+      _wikitextElement.contentEditable = true;
+    }
 
     _pagenameU = window.pmwiki.pagename.toUpperCase();
-
-    _textElement = document.getElementById('text');
     _autosaveElement = document.getElementById('autosaveStatus');
 
     // Set cursor to move it drag is enabled.
-    if (AS.enableDrag)
-    { _autosaveElement.style.cursor = 'move'; }
+    if (AS.enableDrag) { _autosaveElement.style.cursor = 'move'; }
 
     // Read from local storage to set the saving status position
     // If not set, or the position goes out the visible area,
@@ -417,38 +521,39 @@ var AS = AS || (function()
       _autosaveElement.style.top = top;
       _autosaveElement.style.left = left;
     }
-    else
-    { fixASStatusPos(); }
+    else { fixASStatusPos(); }
 
     // If drag is not enabled, auto re-position the AS status ball on
     // resizing window
-    if (!AS.enableDrag)
-    { window.addEventListener('resize', fixASStatusPos, false); }
+    if (!AS.enableDrag) { window.addEventListener('resize', fixASStatusPos, false); }
 
     var clock = new Date();
     _basetime = Math.floor(clock.getTime()/1000);
 
-    make_new_post_str();
-    _req = new XMLHttpRequest();
+    if (_textElement) { make_new_post_str(); }
 
+    _req = new XMLHttpRequest();
     if (!_req) return;
-    _txt = _autosaveElement;
 
     _status = 'Init';
-    _txt.innerHTML = _initStatusHtml;
+    _autosaveElement.innerHTML = _initStatusHtml;
 
     // Set the default on/off of autosaving
-    var pageLastModTime = document.getElementsByName("lastmodtime")[0].value;
-    var autosaveSwitch = getStorageByKey('Autosave', _pagenameU);
-    var noWriteLongTime = (_basetime - pageLastModTime)/86400 > AS.saveOffDay ? true : false;
-    if (noWriteLongTime || autosaveSwitch === 'off')
+// fix this
+    if (_textElement)
     {
-      // If the page hasn't been updated for a long time, delete the local storage entry
-      // if it's present
-      if (noWriteLongTime && autosaveSwitch)
-      { setStorageByKey('Autosave', _pagenameU, null); }
-      _status = 'Disabled';
-      _txt.innerHTML = _disableStatusHtml;
+      var pageLastModTime = document.getElementsByName("lastmodtime")[0].value;
+      var autosaveSwitch = getStorageByKey('Autosave', _pagenameU);
+      var noWriteLongTime = (_basetime - pageLastModTime)/86400 > AS.saveOffDay ? true : false;
+      if (noWriteLongTime || autosaveSwitch === 'off')
+      {
+        // If the page hasn't been updated for a long time, delete the local storage entry
+        // if it's present
+        if (noWriteLongTime && autosaveSwitch)
+        { setStorageByKey('Autosave', _pagenameU, null); }
+        _status = 'Disabled';
+        _autosaveElement.innerHTML = _disableStatusHtml;
+      }
     }
 
     // Implement drag and move of the autosaving status
@@ -480,7 +585,10 @@ var AS = AS || (function()
       }
     }
 
-    _textElement.addEventListener("input", onNewInput, false);
+    if (_textElement) { _textElement.addEventListener("input", onNewInput); }
+    else if (_wikitextElement)
+    { _wikitextElement.addEventListener("DOMCharacterDataModified", onNewInput); }
+//     { _wikitextElement.addEventListener("DOMCharacterDataModified", handleInput); }
   }
 
   document.addEventListener('DOMContentLoaded', init);
@@ -491,7 +599,7 @@ var AS = AS || (function()
 // Perform a synchronous saving if there are unsaved changes before the the page is closed
   window.addEventListener("beforeunload", function(event)
   {
-    if (_status !== 'Disabled')// && _txt.innerHTML != "")
+    if (_status !== 'Disabled')// && _autosaveElement.innerHTML != "")
     {
       // If there is an on going saving process.
       if (_busy)
@@ -549,13 +657,13 @@ var AS = AS || (function()
       {
         setStorageByKey('Autosave', _pagenameU, 'off');
         _status = 'Disabled';
-        _txt.innerHTML = _disableStatusHtml;
+        _autosaveElement.innerHTML = _disableStatusHtml;
       }
       else
       {
         setStorageByKey('Autosave', _pagenameU, null);
         _status = 'Init';
-        _txt.innerHTML = _initStatusHtml;
+        _autosaveElement.innerHTML = _initStatusHtml;
         keydownSave();
       }
     }
