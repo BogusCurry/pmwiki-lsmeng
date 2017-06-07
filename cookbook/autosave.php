@@ -30,7 +30,8 @@ SDVA( $HandleAuth, array(
 SDVA( $HandleActions, array(
 'autosave' => 'HandleAutoSave' ));
 
-if($action == "edit")
+// if ($action === "edit")
+if ($action === "browse" || $action === "edit")
 {
   global $PubDirUrl, $AutoSaveFmt, $AutoSavePubDirUrl, $AutoSaveDelay;
 
@@ -111,7 +112,8 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
     // if the preValue is UNIQUE in the bullet element's textContent, it's safe
     // Else, including the case it can't be found, it's unsafe
     $pos = strpos($bulletText, $prevValue);
-    file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$pos);
+//     file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$pos);
+
     // The text can't even be found
     if ($pos === false)
     {

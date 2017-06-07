@@ -407,6 +407,7 @@ if ($isEdit || isset($_GET["updatePageIndex"]))
   "<script type='text/javascript' src='$PubDirUrl/pageindexUpdate.js'></script>";
 }
 
+// if ($isBrowse || $isEdit || $action === "autosave")
 if ($isEdit || $action === "autosave")
 {
   # For autosave. Delay is in milliseconds.
@@ -454,10 +455,10 @@ if ($action == 'upload')
   <script src='$PubDirUrl/uploadAux.js'></script>";
 }
 
-if ($isBrowse)
-{
-  $HTMLHeaderFmt['wysiwyg'] = "<script src='$PubDirUrl/wysiwyg.js'></script>";
-}
+// if ($isBrowse)
+// {
+//   $HTMLHeaderFmt['wysiwyg'] = "<script src='$PubDirUrl/wysiwyg.js'></script>";
+// }
 
 /*
 // For debugging
