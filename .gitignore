@@ -1,9 +1,8 @@
 .DS_Store
-favicon.ico
 uploads
 wiki.d
+photo
 .credentials
-readme.txt
 pub/runCode/a.out
 pub/runCode/output.txt
 pub/dictionary
@@ -11,4 +10,3 @@ pub/searchReplace
 pub/editViewEnhance
 pub/html5avctrl
 cookbook/google-api-php-client-2.1.1/client_secret.json
-photo

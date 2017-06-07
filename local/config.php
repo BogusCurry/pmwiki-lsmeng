@@ -415,6 +415,7 @@ if ($isEdit || $action === "autosave")
   // Autosave defaults to off if the last modification time of the page is older than
   // $autoSaveOffDay days
   $autoSaveOffDay = 30;
+  
   include_once("$FarmD/cookbook/autosave.php");
 }
 
@@ -453,9 +454,14 @@ if ($action == 'upload')
   <script src='$PubDirUrl/uploadAux.js'></script>";
 }
 
+if ($isBrowse)
+{
+  $HTMLHeaderFmt['wysiwyg'] = "<script src='$PubDirUrl/wysiwyg.js'></script>";
+}
+
 /*
 // For debugging
-file_put_contents('/Volumes/wiki/www/pmWiki/pmwiki/untitled.txt', "called\n".$fileName.' '.$fileType.' '.$fileContent);
+file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n");
 file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent);
 */
 

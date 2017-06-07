@@ -168,8 +168,14 @@ h6 { font-size:1.0em; }
 #pagegroup a:hover { text-decoration:underline; color:rgb(88,173,227); }
 
 .wikiaction { margin-top:4px; margin-bottom:4px; }
-#wikitext { margin-top:40px; line-height:1.33em; }
+#wikitext
+{
+  margin-top:40px;
+  line-height:1.33em;
+/*   border:none; */
+}
 #wikitext table { font-size:100%; line-height:1.33em; } /* For MSIE 5.5 */
+#wikitext:focus { outline: none; }
 
 /* Meng. NOTE that the height of the textarea is configured in the PHP main program to
  * speed up rendering of text box with lots of content.
