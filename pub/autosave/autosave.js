@@ -673,7 +673,8 @@ var event = event;
   var returnObj =
   {
     // Methods
-    subscribe: subscribe
+    subscribe: subscribe,
+    onNewInput: onNewInput
   };
   return returnObj;
 })();
