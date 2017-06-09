@@ -83,74 +83,41 @@ function filePutContentsWait($file, $content, $N_TRY=3)
 // are cleared depending on the time duration that the user has been idle.
 function checkTimeStamp()
 {
-  // It appears that session_start() has to be called first even for reading operation.
-  // checkTimeStamp() can be the 1st function to call $_SESSION, therefore session_start()
-  // has to be called at the outset.
-//   @session_start();
-//   @session_write_close();
-  if (isset($_SESSION['MASTER_KEY']))
+  if (!isset($_SESSION['MASTER_KEY'])) { return; }
+
+  global $siteLogoutIdleDuration, $pageLockIdleDuration;
+  $currentTime = time();
+  $lastTime = isset($_SESSION['timeStamp']) ? $_SESSION['timeStamp'] : $currentTime;
+  $timeDiff = $currentTime - $lastTime;
+  $_SESSION['timeStamp'] = $currentTime;
+
+  if ($timeDiff < $pageLockIdleDuration) { return; }
+
+  // Timer expires
+  global $pagename, $actionStr;
+
+  // Long timer expires, log out the user and shut down the site.
+  if ($timeDiff >= $siteLogoutIdleDuration)
   {
-    $hasSuccAuthCookie = true;
-    $hasReqAuthCookie = false;
-    if (!$hasSuccAuthCookie && $hasReqAuthCookie)
-    {
-//      promote to auth
-//      write timeStamp
-    }
-    else if ($hasSuccAuthCookie && !$hasReqAuthCookie)
-    {
-      global $siteLogoutIdleDuration, $pageLockIdleDuration;
-      $currentTime = time();
-      $lastTime = isset($_SESSION['timeStamp']) ? $_SESSION['timeStamp'] : $currentTime;
-      $timeDiff = $currentTime - $lastTime;
-//       @session_start();
-      $_SESSION['timeStamp'] = $currentTime;
-//       @session_write_close();
+    global $sysLogFile;
+    file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Long timer expired while accessing $pagename. Site shut down\n",  FILE_APPEND);
+    file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",  FILE_APPEND);
 
-      // Timer expires
-      if ($timeDiff >= $pageLockIdleDuration)
-      {
-        global $pagename, $actionStr;
-
-        // Long timer expires, log out the user and shut down the site.
-        if ($timeDiff >= $siteLogoutIdleDuration)
-        {
-          global $sysLogFile;
-          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Long timer expired while accessing $pagename. Site shut down\n",  FILE_APPEND);
-          file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",  FILE_APPEND);
-
-//          write temp cookie
-
-          HandleLogoutA($pagename.$actionStr);
-        }
-
-        // Short timer expires, redirect to a special page which purges all the page
-        // reading passwords.
-        else
-        {
-          global $sysLogFile;
-          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Short timer expired while accessing $pagename. Pages locked\n",  FILE_APPEND);
-
-          file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",  FILE_APPEND);
-
-//           @session_start();
-          unset($_SESSION['authpw']);
-          $_SESSION['passwordCount'] = 0;
-//           @session_write_close();
-        }
-      }
-    }
-    else { Abort("Unexpected case in checkTimeStamp()!"); }
+    HandleLogoutA($pagename.$actionStr);
   }
-  else
+
+  // Short timer expires, redirect to a special page which purges all the page
+  // reading passwords. Use a flag to prevent entering this condition a second time
+  // before the user types a correct passwd.
+  else if (isset($_SESSION['isPageUnlock']))
   {
-/*
-    if (there is no authenticated record or temp record by cookie)
-    {
-      write a temp cookie
-      email notification
-    }
-*/
+    global $sysLogFile;
+    file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Short timer expired while accessing $pagename. Pages locked\n",  FILE_APPEND);
+    file_put_contents($sysLogFile, "Dumping variables: $siteLogoutIdleDuration $pageLockIdleDuration $currentTime $lastTime $timeDiff ".$_SESSION['timeStamp']."\n",  FILE_APPEND);
+
+    unset($_SESSION['authpw']);
+    $_SESSION['passwordCount'] = 0;
+    unset($_SESSION['isPageUnlock']);
   }
 }
 
@@ -161,7 +128,7 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
   global $emailAddress2;
   $formatTime = getFormatTime();
 
-  // Get browser and OS info.
+// Get browser and OS info.
   $obj = new OS_BR();
   $browser = $obj->showInfo('browser');
   $browserVersion = $obj->showInfo('version');
@@ -172,7 +139,7 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
   $country = @file_get_contents('http://ip-api.com/line/'.$IP);
   $str .= "\n\nLocation details: \n".$country."\n".$content;
 
-  // Call shell script to send an email with the above info.
+// Call shell script to send an email with the above info.
   shell_exec("echo \"".$str."\" | mail -s \"".$subject."\" ".$emailAddress1." ".$emailAddress2." -f donotreply");
 }
 
@@ -353,7 +320,7 @@ function addpageTimerJs($countdownTimer)
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action,
   $standbyLogoutDuration;
 
-  // Determine the dummy pagename to redirect upon timer expiration
+// Determine the dummy pagename to redirect upon timer expiration
   preg_match("/[\.\/](\w+)$/", $pagename, $match); $_pagename = $match[1];
   preg_match("/^(\w+)[\.\/]/", $pagename, $match); $groupname = $match[1];
   $closeRedirectName = $_pagename.'/'.$groupname;
@@ -385,26 +352,26 @@ function isPasswdCorrect($passwd)
     else { return false; }
   }
 
-  // Derive MASTER_KEY using pbkdf2
+// Derive MASTER_KEY using pbkdf2
   $MASTER_KEY = deriveMasterKey($passwd);
 
-  // if ($HMAC_AUTH === true)
-  // {
-  // Derive the HMAC key
-  // Read file as $text from the encrypted HMAC key file
-  // $HMAC_KEY = decryptStr($text, $MASTER_KEY);
+// if ($HMAC_AUTH === true)
+// {
+// Derive the HMAC key
+// Read file as $text from the encrypted HMAC key file
+// $HMAC_KEY = decryptStr($text, $MASTER_KEY);
 
-  // Use $HMAC_key to check authenticity
-  // Read file as $text from Main.HomePage
-  // if (passMAC($text, $HMAC_KEY) === false) { Abort("Content tampered!"); }
-  // }
+// Use $HMAC_key to check authenticity
+// Read file as $text from Main.HomePage
+// if (passMAC($text, $HMAC_KEY) === false) { Abort("Content tampered!"); }
+// }
 
   global $WorkDir;
   $file = "$WorkDir/Main.HomePage";
   $text = file_get_contents($file);
   $decryptText = decryptStr($text, $MASTER_KEY);
-  // If decryption is successful, or the homepage does not exist. The latter case should
-  // only happen when initializing.
+// If decryption is successful, or the homepage does not exist. The latter case should
+// only happen when initializing.
   if (stripos($decryptText, "version=pmwiki") !== false || $text === false)
   {
     global $sysLogFile;
@@ -429,9 +396,6 @@ function isPasswdCorrect($passwd)
   }
   else
   {
-    global $sysLogFile;
-    file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Wrong decrypt key\n", FILE_APPEND);
-
 //$firstFewWord = substr($text,0,50);
 //echo "Wrong passwd. First few words: $firstFewWord<br>";
     echo "<span style='color:red; font-weight:bold;'>Password incorrect!</span>";
@@ -483,12 +447,12 @@ function httpAuth()
 // .htaccess to avoid providing username/password.
 function post_async($url)
 {
-  // Parse the given url into host, path, etc.
+// Parse the given url into host, path, etc.
   $parts = parse_url($url);
   $port = isset($parts['port']) ? $parts['port'] : (($parts['scheme']=='http') ? 80 : 443);
   $fp = fsockopen($parts['host'], $port);//, $errno, $errstr, 30);
 
-  // Composing the message
+// Composing the message
   $out = "POST ".$parts['path'].'?'.$parts['query']." HTTP/1.1\r\n";
   $out.= "Host: ".$parts['host']."\r\n";
   $out.= "Cookie: ".urlencode('PHPSESSID') .'='. urlencode($_COOKIE['PHPSESSID'])."; \r\n";
@@ -516,15 +480,15 @@ function getImgFileContent($file, $mime='image/png')
   if ($contents === false) { return ''; }
   $base64 = base64_encode($contents);
 
-  // Parse the filename from the complete file path
+// Parse the filename from the complete file path
   global $PhotoPub, $pagename;
   $groupname = substr($pagename,0,strpos($pagename,'.'));
   $pos = strrpos($file,'/');
   if ($pos !== false) { $filename = substr($file, $pos+1); }
   else { $filename = $file; }
 
-  // Also insert the filename into the image data content. This serves a way to signify
-  // the file name to the client side JS. Although it works, this is not a legal field.
+// Also insert the filename into the image data content. This serves a way to signify
+// the file name to the client side JS. Although it works, this is not a legal field.
   return ('data:' . $mime . ';filename='.$filename.';base64,' . $base64);
 }
 
@@ -533,12 +497,12 @@ function syncFile($fromPath, $toPath)
 {
   if (!file_exists($fromPath)) { return; }
 
-  // For syncing a folder
+// For syncing a folder
   if (!file_exists($toPath)) { mkdir($toPath, 0770); }
 
   $ignored = array('.', '..', '.htaccess');
 
-  // for each file in from path
+// for each file in from path
   foreach (scandir($fromPath) as $filename)
   {
     if (in_array($filename, $ignored)) { continue; }
