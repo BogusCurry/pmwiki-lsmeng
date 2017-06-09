@@ -391,6 +391,11 @@ if (IsEnabled($EnableLocalConfig,1))
   include_once('config.php');
 }
 
+// On access, if the user is authenticated, and pmwiki hasn't been accessed for a
+// duration longer than a prespecified value, passwords are cleared or a full logout is
+// called on the next access, depending on the time duration that the user has been idle.
+checkTimeStamp();
+
 if (IsEnabled($EnableStdConfig,1))
 include_once("$FarmD/scripts/stdconfig.php");
 
@@ -2246,19 +2251,24 @@ function HandleBrowse($pagename, $auth = 'read')
     {
       // If this is the special page "OnThisDay", replace the page text with a string containing
       // past diary corresponding to today's date.
-      $pageType = isDiaryPage();
-      if ($pageType == 3) { $text = printOnThisDay(); }
-
-      // Read in the diary photo directory to find all the diary images and videos, and then
-      // paste their full URL to the diary pages
-      global $UrlScheme;
-      if ($UrlScheme == 'http' && ($pageType == 2 || $pageType == 3))
+      // Use the existence of a diary page related function to determine whether diary 
+      // related stuff should be loaded or not.
+      if (function_exists(pasteImgURLToDiary))
       {
-        $text = pasteImgURLToDiary($text);
-        global $diaryImgDirURL;
-        $text = str_replace('{$Photo}',$diaryImgDirURL,$text);
-      }
+        $pageType = isDiaryPage();
+        if ($pageType == 3) { $text = printOnThisDay(); }
 
+        // Read in the diary photo directory to find all the diary images and videos, and then
+        // paste their full URL to the diary pages
+        global $UrlScheme;
+        if ($UrlScheme == 'http' && ($pageType == 2 || $pageType == 3))
+        {
+          $text = pasteImgURLToDiary($text);
+          global $diaryImgDirURL;
+          $text = str_replace('{$Photo}',$diaryImgDirURL,$text);
+        }
+      }
+      
       $text = str_replace('{$PhotoPub}',"http://replaceWithImgData/",$text);
 
       // Copy files except for images from Dropbox to local folder for http URL referencing
@@ -2767,11 +2777,6 @@ function HandleSource($pagename, $auth = 'read')
 function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
 {
   /**************************************************************************************/
-  // On access, if the user is authenticated, and pmwiki hasn't been accessed for a
-  // duration longer than a prespecified value, passwords are cleared or a full logout is
-  // called on the next access, depending on the time duration that the user has been idle.
-  checkTimeStamp();
-
   // Meng. If the pagename is preceded by the keyword LOCK, set a flag and remove the
   // keyword for later pmwiki normal processing.
   if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0)
@@ -2985,6 +2990,7 @@ function abortOnPasswdRetryLimit()
 {
   global $pwRetryLimit, $AuthPw;
   $nPwAttempt = sizeof($AuthPw);
+
   if ($nPwAttempt >= $pwRetryLimit)
   {
     $wrongPasswd = "";
@@ -3012,8 +3018,12 @@ function IsAuthorized($chal, $source, &$from)
     // If the passphrase just entered is correct. Redirect.
     if (isPasswdCorrect($AuthPw[$nPwAttempt - 1]))
     { global $pagename, $actionStr; redirect($pagename.$actionStr); }
+
     else
     {
+      global $sysLogFile;
+      file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Wrong decrypt key\n", FILE_APPEND);
+
       abortOnPasswdRetryLimit();
       return $from;
     }
@@ -3062,19 +3072,19 @@ function IsAuthorized($chal, $source, &$from)
 /****************************************************************************************/
   // Meng. Prevent password guessing
   // See if we are indeed checking a password hash
+
   if (substr($chal,0,2) === "$1" || substr($chal,0,2) === "$2")
   {
     // $_SESSION['passwordCount'] is used to keep track of the number of passwords typed
     $nPwAttempt = sizeof($AuthPw);
+    if (!isset($_SESSION['passwordCount'])) { $_SESSION['passwordCount'] = 0; }
     if ($nPwAttempt > $_SESSION['passwordCount'])
     {
+      // Keep track of the wrong passwords the user has entered
+      $_SESSION['passwordCount'] = $nPwAttempt;
+
       if ($auth != 1)
       {
-        // Keep track of the wrong passwords the user has entered
-//         @session_start();
-        $_SESSION['passwordCount'] = $nPwAttempt;
-//         @session_write_close();
-
         global $sysLogFile;
         file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Wrong password typed\n", FILE_APPEND);
 
@@ -3082,15 +3092,14 @@ function IsAuthorized($chal, $source, &$from)
       }
       else
       {
-//         @session_start();
-        $_SESSION['passwordCount'] = $nPwAttempt;
-//         @session_write_close();
-
         global $sysLogFile;
         if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
-        { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Decrypt key typed\n", FILE_APPEND); }
+        { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Unlock using decrypt key\n", FILE_APPEND); }
         else
-        { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Correct password typed\n", FILE_APPEND); }
+        { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Unlock using correct password\n", FILE_APPEND); }
+
+        // Set a flag to signify that the page is now unlocked.
+        $_SESSION['isPageUnlock'] = true;
       }
     }
   }

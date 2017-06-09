@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170607
+ * Version 20170611
  */
 
 "use strict";
@@ -109,7 +109,7 @@ var AS = AS || (function()
 
       if (window.buddyWin && !buddyWin.closed)
       {
-        buddyWin.location = buddyWin.location.href;
+        buddyWin.location = buddyWin.location.href.replace(/#.*$/, "");
         setTimeout(function() { buddyWin.buddyWin = window; }, 1000);
       }
 

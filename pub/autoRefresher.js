@@ -29,7 +29,8 @@ var autoRefresher =
   {
     // Get cookie to obtain the lastModTime;
     var lastModTime = autoRefresher.getStorageByKey('LastMod', autoRefresher.pagenameU);
-    if (lastModTime > autoRefresher.basetime) { window.location = location.href; }
+    if (lastModTime > autoRefresher.basetime)
+    { window.location = location.href.replace(/#.*$/, "");; }
   },
 
   init: function()

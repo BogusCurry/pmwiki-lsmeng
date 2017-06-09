@@ -143,7 +143,7 @@ function getClient($authCode = "") {
   $client->setAuthConfig(CLIENT_SECRET_PATH);
   $client->setAccessType('offline');
 
-  @session_start();
+//   @session_start();
   
   // Load previously authorized credentials from a file.
   $credentialsPath = CREDENTIALS_PATH;
@@ -153,7 +153,7 @@ function getClient($authCode = "") {
   {
     if ($authCode == "")
     {
-    	@session_write_close();
+//     	@session_write_close();
 			// Provide the client with the link to generate the authrization code
 			$authUrl = $client->createAuthUrl();
 			echo $authUrl; exit;  
@@ -177,7 +177,7 @@ function getClient($authCode = "") {
     file_put_contents($credentialsPath, encryptStr(json_encode($client->getAccessToken())));
   }
   
-  @session_write_close();
+//   @session_write_close();
   return $client;
 }
 
@@ -206,10 +206,10 @@ function getGCByMon($authCode = "")
 			array_push($calendarID, $id);
 			array_push($calendarSummary, $calendarList->items[$i]->summary);
 		}
-		@session_start();
+// 		@session_start();
 		$_SESSION['CALENDAR_ID'] = $calendarID;
 		$_SESSION['CALENDAR_SUMMARY'] = $calendarSummary;
-		@session_write_close();
+// 		@session_write_close();
 	}
 	else
 	{
