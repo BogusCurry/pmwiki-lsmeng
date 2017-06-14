@@ -300,7 +300,7 @@ var pageCommand = pageCommand || (function()
         if ((event.ctrlKey && event.metaKey) || (event.ctrlKey && event.altKey))
         {
           window.buddyWin = window.open(_url.replace(/[\?&]action=edit|\/edit\/?$/i,''), '_blank');
-          setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
+          setBuddyWinStupid(buddyWin);
         }
         else { window.location = _url.replace(/[\?&]action=edit|\/edit\/?$/i, ''); }
       }
@@ -316,12 +316,12 @@ var pageCommand = pageCommand || (function()
           {
             buddyWin.location = buddyWin.location.href;
             buddyWin.focus();
-            setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
+            setBuddyWinStupid(buddyWin);
           }
           else
           {
             window.buddyWin = window.open(_url + '/edit', '_blank');
-            setTimeout(function(){ buddyWin.buddyWin = window; }, 1000);
+            setBuddyWinStupid(buddyWin);
           }
         }
         else { window.location = _url + '/edit'; }
@@ -334,6 +334,15 @@ var pageCommand = pageCommand || (function()
     else if (_action != 'edit' && event.keyCode == 13 && !event.altKey && _selectLink)
     { handleGoToLink(event); }
   });
+
+  // This is really stupid. Appending a custom property to a given "buddyWin" window
+  // object only works after that window has been loaded. But I can't find a way to know
+  // when the load event of buddyWin fires.
+  function setBuddyWinStupid(buddyWin)
+  {
+    for (let i = 0; i < 10; i++)
+    { setTimeout(function() { buddyWin.buddyWin = window; }, 500 * i + 1000); }
+  }
 
   return {};
 })();
