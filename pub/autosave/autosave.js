@@ -110,7 +110,7 @@ var AS = AS || (function()
       if (window.buddyWin && !buddyWin.closed)
       {
         buddyWin.location = buddyWin.location.href.replace(/#.*$/, "");
-        setTimeout(function() { buddyWin.buddyWin = window; }, 1000);
+        setBuddyWinStupid(buddyWin);
       }
 
       // Saved event is open for registering callback
@@ -246,10 +246,10 @@ var AS = AS || (function()
 
     _id1 = null;
 
-if (event === undefined)
-{
-  event = _event;
-}
+    if (event === undefined)
+    {
+      event = _event;
+    }
     // If saving is not in progress, perform the saving procedures.
     if (!_busy)
     {
@@ -282,7 +282,7 @@ if (event === undefined)
         _busy = true;
         _req.open("POST",AS.url,true);
         _req.setRequestHeader( "BASETIME", _basetime );
-if (_wikitextElement) { _req.setRequestHeader("WYSIWYG", true); }
+        if (_wikitextElement) { _req.setRequestHeader("WYSIWYG", true); }
 
         // Show saving progress
 // 				_req.upload.onprogress = function(e)
@@ -318,7 +318,7 @@ if (_wikitextElement) { _req.setRequestHeader("WYSIWYG", true); }
   {
     if (_status === 'Disabled') { return; }
 
-var event = event;
+    var event = event;
 
     if (_wikitextElement)
     {
@@ -668,6 +668,15 @@ var event = event;
       }
     }
   });
+
+  // This is really stupid. Appending a custom property to a given "buddyWin" window
+  // object only works after that window has been loaded. But I can't find a way to know
+  // when the load event of buddyWin fires.
+  function setBuddyWinStupid(buddyWin)
+  {
+    for (let i = 0; i < 10; i++)
+    { setTimeout(function() { buddyWin.buddyWin = window; }, 500 * i + 1000); }
+  }
 
   // Reveal public API
   var returnObj =
