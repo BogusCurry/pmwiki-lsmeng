@@ -130,7 +130,7 @@ var scrollPositioner = scrollPositioner || (function()
   function setScrollPos(y)
   {
     if (_action == 'edit') { _textElement.scrollTop = y; }
-    else { setTimeout(function(){ document.body.scrollTop = y; }, 0); }
+    else { setTimeout(function() { document.body.scrollTop = y; }, 0); }
   }
 
   // Get the scroll position. Depending on the current pmwiki action (browsing, editing,
@@ -533,23 +533,6 @@ var scrollPositioner = scrollPositioner || (function()
           var numBullet = (HTML.match(/<li/g) || []).length;
 
           setStorageByKey('EDIT-ScrollY', _pagename, 'n'+numBullet)
-        }
-
-        else
-        {
-          var pos = getScrollPos();
-
-          // Fix for the page up/dn behavior on MAC
-          // 30 seems to be the line height
-          // Also, skip the fix is "imgfocus" recipe is currently active
-          if (event.keyCode == 33 && event.altKey && !(window.imgfocus && imgfocus.popupImgElement))
-          { setScrollPos(pos - window.innerHeight + 30); }
-          else if (event.keyCode == 34 && event.altKey && !(window.imgfocus && imgfocus.popupImgElement))
-          { setScrollPos(pos + window.innerHeight - 30); }
-
-          // Ctrl+Alt up/dn: scroll up/dn short
-          else if ((event.keyCode == 38 || event.keyCode == 40) && event.ctrlKey && event.altKey)
-          { setScrollPos(pos + (event.keyCode - 39)*(30<<2)); }
         }
       });
     }

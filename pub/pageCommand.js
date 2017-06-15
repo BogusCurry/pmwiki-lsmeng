@@ -23,6 +23,7 @@ var pageCommand = pageCommand || (function()
   var _url;
   var _pagename;
   var _action;
+  var _textElement;
   var _inputElementLen;
   var _hyperLinkElement;
   var _selectLink;
@@ -149,6 +150,8 @@ var pageCommand = pageCommand || (function()
     _action = window.pmwiki.action.toLowerCase();
 
     _inputElementLen = document.getElementsByTagName("input").length;
+
+    _textElement = document.getElementById('text');
 
     _hyperLinkElement = document.links;
     var hyperLinkElementLen = _hyperLinkElement.length;
@@ -333,7 +336,35 @@ var pageCommand = pageCommand || (function()
     // since the procedure is completely the same
     else if (_action != 'edit' && event.keyCode == 13 && !event.altKey && _selectLink)
     { handleGoToLink(event); }
+
+    // Fix for the page up/dn behavior on MAC
+    // 30 seems to be the line height
+    // Also, skip the fix is "imgfocus" recipe is currently active
+    else if (event.keyCode == 33 && event.altKey && !(window.imgfocus && imgfocus.popupImgElement))
+    { setScrollPos(getScrollPos() - window.innerHeight + 30); }
+    else if (event.keyCode == 34 && event.altKey && !(window.imgfocus && imgfocus.popupImgElement))
+    { setScrollPos(getScrollPos() + window.innerHeight - 30); }
+
+    // Ctrl+Alt up/dn: scroll up/dn short
+    else if ((event.keyCode == 38 || event.keyCode == 40) && event.ctrlKey && event.altKey)
+    { setScrollPos(getScrollPos() + (event.keyCode - 39)*(30<<2)); }
   });
+
+  // Get the scroll position. Depending on the current pmwiki action (browsing, editing,
+  // etc), the method could be different. Currently they are the same.
+  function getScrollPos()
+  {
+    if (_action == 'edit') { return _textElement.scrollTop; }
+    else { return document.body.scrollTop; }
+  }
+
+  // Set the scroll position. Depending on the current pmwiki action (browsing, editing,
+  // etc), the method could be different
+  function setScrollPos(y)
+  {
+    if (_action == 'edit') { _textElement.scrollTop = y; }
+    else { document.body.scrollTop = y; }
+  }
 
   // This is really stupid. Appending a custom property to a given "buddyWin" window
   // object only works after that window has been loaded. But I can't find a way to know
