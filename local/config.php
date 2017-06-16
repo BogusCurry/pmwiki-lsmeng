@@ -280,7 +280,7 @@ $PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads/", $WorkDir);
 $Photo = 'photo/';
 
 // Functions related to the diary pages.
-if (isDiaryPage() !== 0 && file_exists($Photo))
+if (isDiaryPage() !== 0)
 {
   global $PubDirUrl;
   $diaryImgDirURL = preg_replace("/\/pub$/i", '/photo/', $PubDirUrl);
