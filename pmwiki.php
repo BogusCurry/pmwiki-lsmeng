@@ -2174,8 +2174,7 @@ function HandleBrowse($pagename, $auth = 'read')
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
-// $url = "http://localhost".$_SERVER['SCRIPT_NAME']
-// echo $_SERVER['SCRIPT_NAME'];
+// var_dump((new \Exception)->getTraceAsString());
 
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
@@ -2251,9 +2250,10 @@ function HandleBrowse($pagename, $auth = 'read')
     {
       // If this is the special page "OnThisDay", replace the page text with a string containing
       // past diary corresponding to today's date.
-      // Use the existence of a diary page related function to determine whether diary 
-      // related stuff should be loaded or not.
-      if (function_exists(pasteImgURLToDiary))
+      // Use the existence of a local photo directory to determine whether diary related
+      // stuff should be loaded or not.
+      global $Photo;
+      if (file_exists($Photo))
       {
         $pageType = isDiaryPage();
         if ($pageType == 3) { $text = printOnThisDay(); }
@@ -2268,7 +2268,7 @@ function HandleBrowse($pagename, $auth = 'read')
           $text = str_replace('{$Photo}',$diaryImgDirURL,$text);
         }
       }
-      
+
       $text = str_replace('{$PhotoPub}',"http://replaceWithImgData/",$text);
 
       // Copy files except for images from Dropbox to local folder for http URL referencing
