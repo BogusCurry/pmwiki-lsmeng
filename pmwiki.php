@@ -2870,7 +2870,10 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
       {
         global $sysLogFile;
         if (isset($_GET["pageTimer"]))
-        { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Logout due to standby\n", FILE_APPEND); }
+        {
+          $msg = $_GET["msg"];
+          file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Logout due to standby with msg: $msg\n", FILE_APPEND);
+        }
         else
         { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Logout clicked\n",	FILE_APPEND); }
 
