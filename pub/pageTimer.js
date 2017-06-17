@@ -12,60 +12,58 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170530
+ * Version 20170617
  */
 
-var pageTimer =
+"use strict";
+
+var pageTimer = pageTimer || (function()
 {
-  TIMER_EXP_DURATION: 0,
-  STANDBY_LOGOUT_DURATION: 0,
-  logoutUrl: '',
-  timer: 0,
-  timerID: 0,
-  lastDiff: 0,
-  hourInit: 0,
-  minutesInit: 0,
-  secondsInit: 0,
+  /* Dependencies */
+  // window.AS;
+  // window.pageindexUpdater;
+
+  /* Private properties */
+
+  var _TIMER_EXP_DURATION = 0;
+  var _timer = 0;
+  var _timerID = 0;
+  var _lastDiff = 0;
+  var _hourInit = 0;
+  var _minutesInit = 0;
+  var _secondsInit = 0;
 
   // Counting down the timer by comparing the system clock and the last recorded time
   // instant.
-  updateClock: function()
+  function updateClock()
   {
-    // In case that the initialization is not completed, return immediately.
-    if (pageTimer.timer == 0) { return; }
-
     var clock = new Date();
-    var diff = pageTimer.timer - clock.getTime()/1000;
+    var diff = _timer - clock.getTime()/1000;
 
     // Check computer standby and logout
-    var timeDiff = pageTimer.lastDiff - diff;
+    var timeDiff = _lastDiff - diff;
     if (timeDiff >= pageTimer.STANDBY_LOGOUT_DURATION)
     {
       // For debugging
+      timeDiff = Math.round(timeDiff);
       var clock = new Date();
       var year = clock.getFullYear(), mon = clock.getMonth()+1, date = clock.getDate(),
       hour = clock.getHours(), min = clock.getMinutes(), sec = clock.getSeconds();
       var timeStr = year.toString()+(mon<10?'0'+mon:mon)+(date<10?'0'+date:date)+'_'+
       (hour<10?'0'+hour:hour)+(min<10?'0'+min:min)+(sec<10?'0'+sec:sec);
-      var msg = 'Standby for '+Math.round(timeDiff)+' seconds @ '+timeStr+" on "+window.pmwiki.pagename+" while "+window.pmwiki.action;
+      var msg = 'Standby for '+timeDiff+' seconds @ '+timeStr+" on "+window.pmwiki.pagename+" while "+window.pmwiki.action;
       localStorage.setItem('StandbyLogout', msg);
 
-      window.location = pageTimer.logoutUrl + '?pageTimer';
+      window.location = pageTimer.logoutUrl + '?pageTimer=true&msg=' + msg;
       return;
     }
 
     // Timer expires
     if (Math.round(diff) < 0)
-    {
-      // Send an explicit request to lock down the page
-//       window.location = location.href + "&lockPage";
-//       clearInterval(pageTimer.timerID);
-
-      window.location = 'http://' + pageTimer.closePagename;
-    }
+    { window.location = 'http://' + pageTimer.closePagename; }
     else
     {
-      pageTimer.lastDiff = diff;
+      _lastDiff = diff;
 
       diff = Math.round(diff);
       var hour = Math.floor(diff / 3600);
@@ -80,70 +78,74 @@ var pageTimer =
 
       document.querySelector('#ID_LOGOUTTIMER').textContent = hour +":" + minutes + ":" + seconds;
     }
-  },
+  }
 
   // Reset the timer.
-  resetTimer: function()
+  function resetTimer()
   {
     if (document.querySelector('#ID_LOGOUTTIMER'))
-    { document.querySelector('#ID_LOGOUTTIMER').textContent = pageTimer.hourInit + ":" + pageTimer.minutesInit + ":" + pageTimer.secondsInit; }
+    { document.querySelector('#ID_LOGOUTTIMER').textContent = _hourInit + ":" + _minutesInit + ":" + _secondsInit; }
 
     var clock = new Date();
-    pageTimer.timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
-  },
+    _timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
+  }
 
-  init: function()
+  function init()
   {
+// DEBUG
+    if (pageTimer.TIMER_EXP_DURATION == 0 || pageTimer.STANDBY_LOGOUT_DURATION == 0)
+    { alert("TIMER BUG"); }
+
     var hour = parseInt(pageTimer.TIMER_EXP_DURATION / 3600, 10);
     var minutes = parseInt((pageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
     var seconds = parseInt(pageTimer.TIMER_EXP_DURATION % 60, 10);
 
-    pageTimer.hourInit = hour < 10 ? "0" + hour : hour;
-    pageTimer.minutesInit = minutes < 10 ? "0" + minutes : minutes;
-    pageTimer.secondsInit = seconds < 10 ? "0" + seconds : seconds;
+    _hourInit = hour < 10 ? "0" + hour : hour;
+    _minutesInit = minutes < 10 ? "0" + minutes : minutes;
+    _secondsInit = seconds < 10 ? "0" + seconds : seconds;
 
-    pageTimer.resetTimer();
-    pageTimer.timerID = setInterval(pageTimer.updateClock, 1000);
+    resetTimer();
+    _timerID = setInterval(updateClock, 1000);
   }
-};
 
-document.addEventListener('DOMContentLoaded', pageTimer.init);
-//window.addEventListener('focus', pageTimer.updateClock);
-// window.addEventListener('input', pageTimer.resetTimer);
+  document.addEventListener('DOMContentLoaded', init);
 
-// If the module Autosave is included, this is editing
-if (window.AS)
-{
-  AS.subscribe("saved", (function()
+  // If the module Autosave is included, this is editing
+  if (window.AS)
   {
-    // If the module pageindexUpdater is included, set a timer for requesting
-    // pageindex update on saved event
-    if (!window.pageindexUpdater) { return function () { pageTimer.resetTimer(); } }
-    else
+    AS.subscribe("saved", (function()
     {
-      var timerID;
-
-      return function()
+      // If the module pageindexUpdater is included, set a timer for requesting
+      // pageindex update on saved event
+      if (!window.pageindexUpdater) { return function () { resetTimer(); } }
+      else
       {
-        // On saving, update the shutdown timer as the server keeps its timer depending on
-        // the saving activity. The timer value shown is then in line with the server's one
-        pageTimer.resetTimer();
+        var timerID;
 
-        // Right before the server restricts page access (logout timer is set to be the same
-        // as the counter timer), perform a pageindex update
-        if (timerID) { clearTimeout(timerID); }
-        timerID = setTimeout(function()
+        return function()
         {
-          pageindexUpdater.requestPageindexUpdate();
-        }, (pageTimer.TIMER_EXP_DURATION - 5)*1000);
-      };
-    }
-  })());
-}
-// Else this is browsing. Update the shutdown timer on any user activity
-else
-{
-  window.addEventListener('click', pageTimer.resetTimer);
-  window.addEventListener('keydown', pageTimer.resetTimer);
-  window.addEventListener('scroll', pageTimer.resetTimer);
-}
+          // On saving, update the shutdown timer as the server keeps its timer depending on
+          // the saving activity. The timer value shown is then in line with the server's one
+          resetTimer();
+
+          // Right before the server restricts page access (logout timer is set to be the same
+          // as the counter timer), perform a pageindex update
+          if (timerID) { clearTimeout(timerID); }
+          timerID = setTimeout(function()
+          {
+            pageindexUpdater.requestPageindexUpdate();
+          }, (pageTimer.TIMER_EXP_DURATION - 5)*1000);
+        };
+      }
+    })());
+  }
+  // Else this is browsing. Update the shutdown timer on any user activity
+  else
+  {
+    window.addEventListener('click', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('scroll', resetTimer);
+  }
+
+  return {};
+})();
