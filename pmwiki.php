@@ -24,6 +24,9 @@
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
  */
 
+// ini_set("xdebug.trace_output_dir", getcwd());
+// xdebug_start_trace();
+
 /****************************************************************************************/
 // Meng: Set the timezone to match that of the station; disable deprecated messages
 date_default_timezone_set('Asia/Taipei');
@@ -1276,7 +1279,8 @@ class PageStore
     $page['charset'] = $Charset;
     $page['name'] = $pagename;
     $page['time'] = $Now;
-    $page['host'] = ($_SERVER['REMOTE_ADDR'] == "::1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
+    $page['host'] = ($_SERVER['REMOTE_ADDR'] == "::1" || 
+    $_SERVER['REMOTE_ADDR'] == "127.0.0.1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
     $page['agent'] = @$_SERVER['HTTP_USER_AGENT'];
     if(IsEnabled($EnableRevUserAgent, 0)) $page["agent:$Now"] = $page['agent'];
     $page['rev'] = @$page['rev']+1;
@@ -2176,6 +2180,10 @@ function HandleBrowse($pagename, $auth = 'read')
 
 // var_dump((new \Exception)->getTraceAsString());
 
+// echo xdebug_get_tracefile_name();
+            
+// var_dump(xdebug_get_declared_vars());
+            
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
 
@@ -2461,7 +2469,8 @@ function PostPage($pagename, &$page, &$new)
     $new['charset'] = $Charset; # kept for now, may be needed if custom PageStore
     $new['author'] = $AuthorLink;//@$Author;
     $new["author:$Now"] = $AuthorLink;//@$Author;
-    $new["host:$Now"] = ($_SERVER['REMOTE_ADDR'] == "::1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
+    $new["host:$Now"] = ($_SERVER['REMOTE_ADDR'] == "::1" || 
+    $_SERVER['REMOTE_ADDR'] == "127.0.0.1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
     $diffclass = preg_replace('/\\W/','',@$_POST['diffclass']);
 
     // Meng. The first line of a page history version lists the author and the csum. The
