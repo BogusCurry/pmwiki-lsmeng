@@ -144,8 +144,6 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
 }
 
 // Borrowed from the Internet.
-// It appears that the IP of localhost will be shown as "::1". Replace it with the string 
-// "localhost".
 $IP = get_client_ip();
 function get_client_ip()
 {
@@ -165,7 +163,7 @@ function get_client_ip()
   else
   $ipaddress = 'UNKNOWN';
 
-  if ($ipaddress == "::1") { return "localhost"; }
+  if ($ipaddress == "::1" || $ipaddress == "127.0.0.1") { return "localhost"; }
   else { return $ipaddress; }
 }
 
