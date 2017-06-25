@@ -32,7 +32,7 @@ if ($pagename === "") { Redirect("Main/HomePage".$actionStr); }
 ## If you want to have a custom skin, then set $Skin to the name
 ## of the directory (in pub/skins/) that contains your skin files.
 ## See PmWiki.Skins and Cookbook.Skins.
-$Skin = pmwiki_gray;
+$Skin = "pmwiki_gray";
 
 ## You'll probably want to set an administrative password that you
 ## can use to get into password-protected pages.  Also, by default
@@ -163,12 +163,6 @@ include_once("$FarmD/scripts/xlpage-utf-8.php");
 
 /****************************************************************************************/
 // Meng. PHP related configurations/functions.
-
-// Start the session early as encryption & timeStamp check all need to use sessions.
-// Also, start the session once only; refrain from starting/closing it multiple times as
-// multiple set-cookie headers will be sent from the server, and it seems that there is 
-// a performance hit by manipulating session like this.
-session_start();
 
 // Set the station name and path for public wiki.d
 // On MAC, it appears the environment variable is not working.
@@ -414,7 +408,7 @@ if ($isEdit || $action === "autosave")
   // Autosave defaults to off if the last modification time of the page is older than
   // $autoSaveOffDay days
   $autoSaveOffDay = 30;
-  
+
   include_once("$FarmD/cookbook/autosave.php");
 }
 

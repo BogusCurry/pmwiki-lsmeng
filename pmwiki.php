@@ -24,11 +24,34 @@
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
  */
 
+/****************************************************************************************/
+// Meng. Start the session early as encryption & timeStamp check all need to use sessions.
+// Also, start the session once only; refrain from starting/closing it multiple times as
+// multiple set-cookie headers will be sent from the server, and it seems that there is 
+// a performance hit by manipulating session like this.
+// session_start();
+session_start();
+
 // ini_set("xdebug.trace_output_dir", getcwd());
 // xdebug_start_trace();
+// ini_set("xdebug.coverage_enable", 1);
+// xdebug_start_code_coverage();
 
-/****************************************************************************************/
-// Meng: Set the timezone to match that of the station; disable deprecated messages
+ini_set('xdebug.dump_globals', 1);
+ini_set('xdebug.dump_once', 1);
+ini_set('xdebug.dump_undefined', 1);
+ini_set('xdebug.dump.GET', '*');
+ini_set('xdebug.dump.FILES', '*');
+ini_set('xdebug.dump.GET', '*');
+ini_set('xdebug.dump.POST', '*');
+ini_set('xdebug.dump.REQUEST', '*');
+ini_set('xdebug.dump.SERVER', '*');
+ini_set('xdebug.dump.SESSION', '*');
+ini_set('xdebug.show_local_vars', 1);
+ini_set('xdebug.collect_params', 4); //Also affects function trace files
+ini_set('xdebug.show_exception_trace', 1);
+
+// Set the timezone to match that of the station; disable deprecated messages
 date_default_timezone_set('Asia/Taipei');
 ini_set("memory_limit","1024M");
 
@@ -982,7 +1005,8 @@ function PageVar($pagename, $var, $pn = '')
     }
     @list($d, $group, $name) = $match;
     $page = &$PCache[$pn];
-    if (strpos($FmtPV[$var], '$authpage') !== false)
+// Meng.
+    if (isset($FmtPV[$var]) && strpos($FmtPV[$var], '$authpage') !== false)
     {
       if (!isset($page['=auth']['read']))
       {
@@ -1096,7 +1120,8 @@ function XLSDV($lang,$a)
     if (!isset($XL[$lang][$k]))
     {
       if (preg_match('/^e_(rows|cols)$/', $k)) $v = intval($v);
-      elseif (preg_match('/^ak_/', $k)) $v = $v{0};
+// Meng.
+      elseif (preg_match('/^ak_/', $k) && $v !== "") $v = $v{0};
       $XL[$lang][$k]=$v;
     }
   }
@@ -1279,7 +1304,7 @@ class PageStore
     $page['charset'] = $Charset;
     $page['name'] = $pagename;
     $page['time'] = $Now;
-    $page['host'] = ($_SERVER['REMOTE_ADDR'] == "::1" || 
+    $page['host'] = ($_SERVER['REMOTE_ADDR'] == "::1" ||
     $_SERVER['REMOTE_ADDR'] == "127.0.0.1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
     $page['agent'] = @$_SERVER['HTTP_USER_AGENT'];
     if(IsEnabled($EnableRevUserAgent, 0)) $page["agent:$Now"] = $page['agent'];
@@ -2178,12 +2203,9 @@ function HandleBrowse($pagename, $auth = 'read')
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
-// var_dump((new \Exception)->getTraceAsString());
+// xdebug_print_function_stack();
+// exit;
 
-// echo xdebug_get_tracefile_name();
-            
-// var_dump(xdebug_get_declared_vars());
-            
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
 
@@ -2290,7 +2312,7 @@ function HandleBrowse($pagename, $auth = 'read')
 
     $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt).'<br>';
 
-    if (function_exists(formatImgSize))
+    if (function_exists("formatImgSize"))
     {
       // Meng. Apply default image size.
       $FmtV['$PageText'] = formatImgSize($FmtV['$PageText']);
@@ -2469,7 +2491,7 @@ function PostPage($pagename, &$page, &$new)
     $new['charset'] = $Charset; # kept for now, may be needed if custom PageStore
     $new['author'] = $AuthorLink;//@$Author;
     $new["author:$Now"] = $AuthorLink;//@$Author;
-    $new["host:$Now"] = ($_SERVER['REMOTE_ADDR'] == "::1" || 
+    $new["host:$Now"] = ($_SERVER['REMOTE_ADDR'] == "::1" ||
     $_SERVER['REMOTE_ADDR'] == "127.0.0.1") ? "Localhost" : $_SERVER['REMOTE_ADDR'];
     $diffclass = preg_replace('/\\W/','',@$_POST['diffclass']);
 
@@ -3068,7 +3090,8 @@ function IsAuthorized($chal, $source, &$from)
       foreach((array)$AuthPw as $pwresp) # password
       {
         // Meng. The password for encryption is a universal key; it unlocks everything
-        if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
+        if (isset($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])]) &&
+        $_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
         { $auth = 1; continue; }
 
         // Else it's the default action

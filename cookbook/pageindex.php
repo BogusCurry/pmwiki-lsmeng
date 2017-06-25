@@ -164,8 +164,8 @@ function syncPageindex($flag = false)
 // Detects async request for updating pageindex in the background
 function updatePageindex()
 {
-  $pagelistStr = $_GET["updatePageIndex"];
-  if (!isset($pagelistStr)) { return; }
+	if (!isset($_GET["updatePageIndex"])) { return; }
+  $pagelistStr = $_GET["updatePageIndex"];  
 
   // The 1st case is explict update request from the client
   //     2nd case is due to page index sync process

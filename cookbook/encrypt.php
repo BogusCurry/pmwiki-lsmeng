@@ -1,10 +1,10 @@
 <?php
 
 // Abort if encryption related extension is not enabled
-if (!function_exists(openssl_encrypt)) { Abort("\"openssl_encrypt\" is not supported!"); }
+if (!function_exists("openssl_encrypt")) { Abort("\"openssl_encrypt\" is not supported!"); }
 
 // Abort if compression related extension is not enabled
-if (!function_exists(bzcompress)) { Abort("\"bzcompress\" is not supported!"); }
+if (!function_exists("bzcompress")) { Abort("\"bzcompress\" is not supported!"); }
 
 $OPENSSL_METHOD = "AES-256-CBC";
 
