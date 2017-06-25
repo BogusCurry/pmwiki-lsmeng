@@ -32,6 +32,15 @@
 // session_start();
 session_start();
 
+// Set the timezone to match that of the station; disable deprecated messages
+date_default_timezone_set('Asia/Taipei');
+ini_set("memory_limit","1024M");
+
+// Turn off the basic error reporting. Use xdebug or phpConsole for debugging.
+// error_reporting((E_ALL ^ E_NOTICE) & ~E_DEPRECATED);
+error_reporting(0);
+
+/*
 // ini_set("xdebug.trace_output_dir", getcwd());
 // xdebug_start_trace();
 // ini_set("xdebug.coverage_enable", 1);
@@ -50,12 +59,17 @@ ini_set('xdebug.dump.SESSION', '*');
 ini_set('xdebug.show_local_vars', 1);
 ini_set('xdebug.collect_params', 4); //Also affects function trace files
 ini_set('xdebug.show_exception_trace', 1);
+*/
 
-// Set the timezone to match that of the station; disable deprecated messages
-date_default_timezone_set('Asia/Taipei');
-ini_set("memory_limit","1024M");
+/*
+require_once('cookbook/php-console/src/PhpConsole/__autoload.php');
+$handler = PhpConsole\Handler::getInstance();
+$handler->start(); // start handling PHP errors & exceptions
+$handler->getConnector()->setSourcesBasePath($_SERVER['DOCUMENT_ROOT']);
 
-error_reporting((E_ALL ^ E_NOTICE) & ~E_DEPRECATED);
+PhpConsole\Helper::register();
+PC::getConnector()->getDebugDispatcher()->detectTraceAndSource = true;
+*/
 /****************************************************************************************/
 
 StopWatch('PmWiki');
@@ -2203,8 +2217,9 @@ function HandleBrowse($pagename, $auth = 'read')
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
-// xdebug_print_function_stack();
-// exit;
+// xdebug_print_function_stack();exit;
+
+// PC::debug(null);
 
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
