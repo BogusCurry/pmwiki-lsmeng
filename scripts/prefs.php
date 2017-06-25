@@ -32,8 +32,8 @@ if (isset($_GET['setprefs'])) {
   setcookie($PrefsCookie, $sp, $PrefsCookieExpires, '/');
 }
 if ($sp && PageExists($sp)) XLPage('prefs', $sp, true);
-
-if(is_array($XL['prefs'])) {
+// Meng. 
+if(isset($XL) && is_array($XL['prefs'])) {
   foreach($XL['prefs'] as $k=>$v) {
     if(! preg_match('/^(e_rows|e_cols|TimeFmt|Locale|Site\\.EditForm)$|^ak_/', $k))
       unset($XL['prefs'][$k]);
