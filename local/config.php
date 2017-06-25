@@ -271,7 +271,7 @@ else if ($action === "diff") { require_once("$FarmD/cookbook/plugin_LSMENG_diff.
 
 // Paths for images
 $PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads/", $WorkDir);
-$Photo = 'photo/';
+$Photo = $_SERVER["DIARY_PHOTO_PATH"];
 
 // Functions related to the diary pages.
 if (isDiaryPage() !== 0)
