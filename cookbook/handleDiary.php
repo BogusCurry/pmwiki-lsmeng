@@ -152,7 +152,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
   // Read the photo directory of this month
   global $Photo;
-  $dir = $Photo.$diaryYear."/".$diaryMonth;
+  $dir = "$Photo/$diaryYear/$diaryMonth";
 
   if (!file_exists($dir)) { return $text; }
 

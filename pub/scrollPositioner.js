@@ -325,7 +325,7 @@ var scrollPositioner = scrollPositioner || (function()
 
   // Adjust the height of the text element based on the current window size
   function fixTextareaHeight()
-  {
+  {  
     // Check if the textarea height is correct; if not then adjust
     var rectObject = _textElement.getBoundingClientRect();
     var correctTextAreaHeight = window.innerHeight - rectObject.top - 11;

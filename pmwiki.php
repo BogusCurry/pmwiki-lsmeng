@@ -36,40 +36,40 @@ session_start();
 date_default_timezone_set('Asia/Taipei');
 ini_set("memory_limit","1024M");
 
-// Turn off the basic error reporting. Use xdebug or phpConsole for debugging.
-// error_reporting((E_ALL ^ E_NOTICE) & ~E_DEPRECATED);
-error_reporting(0);
+define("DEBUG", 0);
 
-/*
-// ini_set("xdebug.trace_output_dir", getcwd());
-// xdebug_start_trace();
-// ini_set("xdebug.coverage_enable", 1);
-// xdebug_start_code_coverage();
+if (DEBUG)
+{
+  error_reporting((E_ALL ^ E_NOTICE) & ~E_DEPRECATED);
 
-ini_set('xdebug.dump_globals', 1);
-ini_set('xdebug.dump_once', 1);
-ini_set('xdebug.dump_undefined', 1);
-ini_set('xdebug.dump.GET', '*');
-ini_set('xdebug.dump.FILES', '*');
-ini_set('xdebug.dump.GET', '*');
-ini_set('xdebug.dump.POST', '*');
-ini_set('xdebug.dump.REQUEST', '*');
-ini_set('xdebug.dump.SERVER', '*');
-ini_set('xdebug.dump.SESSION', '*');
-ini_set('xdebug.show_local_vars', 1);
-ini_set('xdebug.collect_params', 4); //Also affects function trace files
-ini_set('xdebug.show_exception_trace', 1);
-*/
+  ini_set("xdebug.trace_output_dir", getcwd());
+  // fxdebug_start_trace();
+  // ini_set("xdebug.coverage_enable", 1);
+  // xdebug_start_code_coverage();
 
-/*
-require_once('cookbook/php-console/src/PhpConsole/__autoload.php');
-$handler = PhpConsole\Handler::getInstance();
-$handler->start(); // start handling PHP errors & exceptions
-$handler->getConnector()->setSourcesBasePath($_SERVER['DOCUMENT_ROOT']);
+  ini_set('xdebug.dump_globals', 1);
+  ini_set('xdebug.dump_once', 1);
+  ini_set('xdebug.dump_undefined', 1);
+  ini_set('xdebug.dump.GET', '*');
+  ini_set('xdebug.dump.FILES', '*');
+  ini_set('xdebug.dump.GET', '*');
+  ini_set('xdebug.dump.POST', '*');
+  ini_set('xdebug.dump.REQUEST', '*');
+  ini_set('xdebug.dump.SERVER', '*');
+  ini_set('xdebug.dump.SESSION', '*');
+  ini_set('xdebug.show_local_vars', 1);
+  ini_set('xdebug.collect_params', 4); //Also affects function trace files
+  ini_set('xdebug.show_exception_trace', 1);
 
-PhpConsole\Helper::register();
-PC::getConnector()->getDebugDispatcher()->detectTraceAndSource = true;
-*/
+  include_once('../../php-console/consoleLog.php');
+}
+else
+{
+	function consoleLog() { return; }
+	class PC { static function debug() { return; } }
+	error_reporting(0); 
+}
+
 /****************************************************************************************/
 
 StopWatch('PmWiki');
@@ -2217,9 +2217,6 @@ function HandleBrowse($pagename, $auth = 'read')
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
-// xdebug_print_function_stack();exit;
-
-// PC::debug(null);
 
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
@@ -2950,7 +2947,7 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
         // time.
         global $siteLogoutIdleDuration, $pageLockIdleDuration;
         $countdownTimer = $siteLogoutIdleDuration;
-        $pagePass = $page['passwdread'];
+        $pagePass = isset($page['passwdread']) ? $page['passwdread'] : null;
         if ($pagePass === '@nopass') { $countdownTimer = $siteLogoutIdleDuration; }
         else if (isset($pagePass) || isset($gp['passwdread']))
         { $countdownTimer = $pageLockIdleDuration; }
