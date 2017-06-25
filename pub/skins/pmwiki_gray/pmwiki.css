@@ -193,13 +193,13 @@ h6 { font-size:1.0em; }
 /*   white-space: pre-wrap; */
 /*   word-break: break-all; */
   word-break: break-word;
-  width:100%;
-  margin-top:-34px;
+  width: 100%;
+  margin-top: -34px;
   font-family: Lucida Grande, Courier;
   font-size:21px;
   line-height: 24px;
 /*  border:1px #cccccc solid;*/
-  border:none;
+  border: none;
   resize: none;
 }
 #wikiedit textarea:focus { outline: none; }
