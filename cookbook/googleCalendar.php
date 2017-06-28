@@ -20,7 +20,7 @@ $CALENDAR_TYPE = ["b" => "Repeated Work", "r" => "One-time Work", "g" => "Repeat
 if ($action =='browse' && isset($_GET["getGC"]))
 {
 	// A post request with "startDateTime" is for editing calendar events
-	$startDateTime = $_POST['startDateTime'];
+	$startDateTime = isset($_POST['startDateTime']) ? $_POST['startDateTime'] : null;
 	if (isset($startDateTime))
 	{
 		$client = getClient();

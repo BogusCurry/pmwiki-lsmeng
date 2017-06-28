@@ -25,18 +25,12 @@
  */
 
 /****************************************************************************************/
-// Meng. Start the session early as encryption & timeStamp check all need to use sessions.
-// Also, start the session once only; refrain from starting/closing it multiple times as
-// multiple set-cookie headers will be sent from the server, and it seems that there is 
-// a performance hit by manipulating session like this.
-// session_start();
-session_start();
 
 // Set the timezone to match that of the station; disable deprecated messages
 date_default_timezone_set('Asia/Taipei');
 ini_set("memory_limit","1024M");
 
-define("DEBUG", 0);
+define("DEBUG", 1);
 
 if (DEBUG)
 {
@@ -69,6 +63,13 @@ else
 	class PC { static function debug() { return; } }
 	error_reporting(0); 
 }
+
+// Meng. Start the session early as encryption & timeStamp check all need to use sessions.
+// Also, start the session once only; refrain from starting/closing it multiple times as
+// multiple set-cookie headers will be sent from the server, and it seems that there is 
+// a performance hit by manipulating session like this.
+// session_start();
+session_start();
 
 /****************************************************************************************/
 
@@ -2216,6 +2217,10 @@ function HandleBrowse($pagename, $auth = 'read')
     $elapsedTime = (microtime(true) - $startMicroTime);
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
+
+
+// PC::debug($_SERVER);
+
 
 
     // Meng. Handle the pageindex process on browsing
