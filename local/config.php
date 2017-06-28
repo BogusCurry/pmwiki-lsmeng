@@ -374,8 +374,7 @@ if ($isBrowse)
   "<script type='text/javascript' src='$PubDirUrl/autoRefresher.js'></script>";
 
   // Google calendar integration
-  define("LOAD_CALENDAR", 0);
-  if (isDiaryPage() === 2 && LOAD_CALENDAR)
+  if (isDiaryPage() === 2)
   {
     include_once("$FarmD/cookbook/googleCalendar.php");
     $GCImgUrl = "$PubDirUrl/googleCalendar/googleCalendar.png";

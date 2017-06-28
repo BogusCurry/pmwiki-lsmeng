@@ -164,12 +164,13 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
   for ($iDay=1; $iDay<=31; $iDay++) { $dayImgList[$iDay] = ""; }
 
-  for ($iFile=1; $iFile<=$N_FILE; $iFile++)
+  for ($iFile=0; $iFile<$N_FILE; $iFile++)
   {
     // Check if this is a valid image file with correct filename format.
     $imgName = $file[$iFile];
 
-    // Skip thumbnail images
+    // Skip invalid files & thumbnail images
+    if ($imgName === "." || $imgName === "..") { continue; }
     if (strpos($imgName,'_thumb.') !== false) { continue; }
 
     $imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);
