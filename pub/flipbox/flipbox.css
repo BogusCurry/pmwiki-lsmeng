@@ -1,4 +1,9 @@
 /** flipbox */
 
 /*.fbx { color: #808080; text-decoration: line-through; }*/
-.fbx { color: #808080; }
+.fbx
+{
+  color: #808080;
+/*   background: red; */
+/*   font-size: 50px; */
+}
