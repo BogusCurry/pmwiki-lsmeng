@@ -220,7 +220,7 @@ var AS = AS || (function()
     countBulletWriteCookie();
     setLastModLS();
     _req.send(_post_str);
-
+    
 /*
     // If there are & symbols, scripts after req.send will not be executed.
     // The best I can do for now is to move setLastModLS() ahead of req.send

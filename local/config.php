@@ -23,7 +23,7 @@ $EnablePathInfo = 1;
 
 // Meng. The default behavior of opening the homepage for empty url is not allowed.
 // Explicitly redirect it to the homepage.
-if ($pagename === "") { Redirect("Main/HomePage".$actionStr); }
+// if ($pagename === "") { Redirect("Main/HomePage".$actionStr); }
 
 ## $PageLogoUrl is the URL for a logo image -- you can change this
 ## to your own logo if you wish.
@@ -311,6 +311,7 @@ $isDiaryPage = isDiaryPage();
 $HTMLHeaderFmt['pmwiki'] =
 "<script>
 window.pmwiki = {};
+pmwiki.base = '$base';
 pmwiki.pagename = '$pagename';
 pmwiki.action = '$action';
 pmwiki.isDiaryPage = '$isDiaryPage';

@@ -1,6 +1,9 @@
+# Direct everything except files to index.php
 RewriteEngine On
-
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteBase /
-RewriteRule ^(?!pmwiki\.php)([\w-]+[/\.][\w-]+)/(\w+)/?$ pmwiki.php?n=$1&action=$2 [QSA,L]
-RewriteRule ^(?!pmwiki\.php)([\w-]+)?([/\.])?([\w-]+)?/?$ pmwiki.php?n=$1$2$3 [QSA,L]
+RewriteRule . index.php [QSA,L]
+
+#RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteBase /
+#RewriteRule ^(?!pmwiki\.php)([\w-]+[/\.][\w-]+)/(\w+)/?$ pmwiki.php?n=$1&action=$2 [QSA,L]
+#RewriteRule ^(?!pmwiki\.php)([\w-]+)?([/\.])?([\w-]+)?/?$ pmwiki.php?n=$1$2$3 [QSA,L]

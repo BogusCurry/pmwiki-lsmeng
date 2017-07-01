@@ -9,7 +9,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170606
+ * Version 20170702
  */
 
 "use strict";
@@ -122,12 +122,17 @@ var pageCommand = pageCommand || (function()
       if (!match[5]) { var action = "browse"; }
       else { action = match[6]; }
     }
-    // Url mapping using mod_rewrite in Apache
-    // pmwiki/group/page?action=xxxx
-    // pmwiki/group/page/action
+    // /group/page?action=xxxx
+    // /group/page/action
     else
     {
-      match = url.match(/pmwiki\/((\w+)\/(\w+))?(\?action=(\w+)|\/(\w+)\/?$|\/(\w+)[\?&])?/i);
+      // Get the URI with base path stripped
+      var match = url.match(/https?:\/\/[^\/]+(.*)/);
+      var URI = match[1];
+      var pattern = new RegExp(window.pmwiki.base, "i");
+      URI = URI.replace(pattern, "", URI);
+
+      match = URI.match(/((\w+)\/(\w+))(\?action=(\w+)|\/(\w+)\/?$|\/(\w+)[\?&])?/i);
       if (!match[1]) { var pagename = "Main/HomePage"; }
       else
       {
