@@ -83,7 +83,12 @@ function filePutContentsWait($file, $content, $N_TRY=3)
 // are cleared depending on the time duration that the user has been idle.
 function checkTimeStamp()
 {
-  if (!isset($_SESSION['MASTER_KEY'])) { return; }
+  if (!isset($_SESSION['MASTER_KEY']))
+  {
+    global $sysLogFile, $pagename;
+    file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." No SESSION recorded while accessing $pagename. Performing login\n",  FILE_APPEND);
+    return;
+  }
 
   global $siteLogoutIdleDuration, $pageLockIdleDuration;
   $currentTime = time();
@@ -317,12 +322,11 @@ function addpageTimerJs($countdownTimer)
   global $HTMLHeaderFmt, $PubDirUrl, $pagename, $ScriptUrl, $action,
   $standbyLogoutDuration;
 
-// Determine the dummy pagename to redirect upon timer expiration
+  // Determine the dummy pagename to redirect upon timer expiration
   preg_match("/[\.\/](\w+)$/", $pagename, $match); $_pagename = $match[1];
   preg_match("/^(\w+)[\.\/]/", $pagename, $match); $groupname = $match[1];
   $closeRedirectName = $_pagename.'/'.$groupname;
-  $logoutUrl = "$ScriptUrl/CLICKLOGOUT$pagename/$action";
-
+  $logoutUrl = "$ScriptUrl/CLICKLOGOUT$groupname/$_pagename/$action";
   $HTMLHeaderFmt[] .= "<script type='text/javascript' src='$PubDirUrl/pageTimer.js'></script>
   <script type='text/javascript'>
   pageTimer.TIMER_EXP_DURATION = $countdownTimer;
@@ -331,7 +335,6 @@ function addpageTimerJs($countdownTimer)
   pageTimer.logoutUrl = '$logoutUrl';
   </script>";
 }
-// echo $ScriptUrl;
 
 // Use PBKDF2 to derive the master key based on the input password, and
 // then use the master key to decrypt "Main.Homepage"

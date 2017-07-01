@@ -87,7 +87,6 @@ document.addEventListener('DOMContentLoaded', function()
     {
       item.originalColor = window.getComputedStyle(item)['color'];
       item.originalBgColor = window.getComputedStyle(item)['background-color'];
-      console.log(item.originalBgColor);
       item.style.color = "inherit";
       item.style.backgroundColor = "transparent";
     });
