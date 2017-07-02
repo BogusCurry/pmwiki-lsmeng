@@ -40,10 +40,8 @@ function rebuildPageindexFile()
 {
   global $PageIndexFile;
   if (file_exists($PageIndexFile)) { unlink($PageIndexFile); }
-
   $opt['action'] = 'search';
   MakePageList("Main.Homepage", $opt, 0, 1);
-
   global $sysLogFile;
   file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Pageindex rebuilt\n",  FILE_APPEND);
 }

@@ -291,7 +291,7 @@ else if (preg_match("/Main[\.\/]Runcode/i", $pagename))
 $maxUploadSize = 100000000;
 // The folder for storing the uploaded files. Default to the "$WorkDir" in dropbox.
 // For diary pages, the uploaded files go to the diary photo folder if it's MBA.
-preg_match("/(\w+)[\.\/]/", $pagename, $match);
+preg_match("/(\w+)[\.\/]?/", $pagename, $match);
 $groupName = !$match[1] ? "Main" : $match[1];
 $UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
 if (isDiaryPage() === 2 && $AuthorLink == 'MBA')

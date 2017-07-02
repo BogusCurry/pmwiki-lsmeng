@@ -2192,8 +2192,6 @@ function HandleBrowse($pagename, $auth = 'read')
 
 // PC::debug($_SERVER);
 
-
-
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
 
@@ -3277,6 +3275,7 @@ function HandlePostAttr($pagename, $auth = 'attr')
 
 function HandleLogoutA($pagename, $auth = 'read')
 {
+PC::debug();
   global $LogoutRedirectFmt, $LogoutCookies;
   SDV($LogoutRedirectFmt, '$FullName');
   SDV($LogoutCookies, array());
