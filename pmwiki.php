@@ -26,8 +26,7 @@
 
 /****************************************************************************************/
 
-// If this is a direct access, turn off error reporting
-if (!defined("INDEX_PMWIKI")) { error_reporting(0); }
+if (!defined("INDEX_PMWIKI")) { echo "no direct access"; exit; }
 
 // Set the timezone to match that of the station; disable deprecated messages
 date_default_timezone_set('Asia/Taipei');
