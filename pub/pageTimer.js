@@ -12,7 +12,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170617
+ * Version 20170703
  */
 
 "use strict";
@@ -24,7 +24,7 @@ var pageTimer = pageTimer || (function()
   // window.pageindexUpdater;
 
   /* Private properties */
-
+  var _timerElement;
   var _TIMER_EXP_DURATION = 0;
   var _timer = 0;
   var _timerID = 0;
@@ -54,7 +54,8 @@ var pageTimer = pageTimer || (function()
       var msg = 'Standby for '+timeDiff+' seconds @ '+timeStr+" on "+window.pmwiki.pagename+" while "+window.pmwiki.action;
       localStorage.setItem('StandbyLogout', msg);
 
-      window.location = pageTimer.logoutUrl + '?pageTimer=true&msg=' + msg;
+			window.location = pageTimer.logoutUrl + '?pageTimer=true&msg=' + encodeURIComponent(msg);
+      
       return;
     }
 
@@ -76,15 +77,15 @@ var pageTimer = pageTimer || (function()
       minutes = minutes < 10 ? "0" + minutes : minutes;
       seconds = seconds < 10 ? "0" + seconds : seconds;
 
-      document.querySelector('#ID_LOGOUTTIMER').textContent = hour +":" + minutes + ":" + seconds;
+      _timerElement.textContent = hour +":" + minutes + ":" + seconds;
     }
   }
 
   // Reset the timer.
   function resetTimer()
   {
-    if (document.querySelector('#ID_LOGOUTTIMER'))
-    { document.querySelector('#ID_LOGOUTTIMER').textContent = _hourInit + ":" + _minutesInit + ":" + _secondsInit; }
+    if (_timerElement)
+    { _timerElement.textContent = _hourInit + ":" + _minutesInit + ":" + _secondsInit; }
 
     var clock = new Date();
     _timer = clock.getTime()/1000 + pageTimer.TIMER_EXP_DURATION;
@@ -96,6 +97,8 @@ var pageTimer = pageTimer || (function()
     if (pageTimer.TIMER_EXP_DURATION == 0 || pageTimer.STANDBY_LOGOUT_DURATION == 0)
     { alert("TIMER BUG"); }
 
+		_timerElement = document.getElementById('ID_LOGOUTTIMER');
+		
     var hour = parseInt(pageTimer.TIMER_EXP_DURATION / 3600, 10);
     var minutes = parseInt((pageTimer.TIMER_EXP_DURATION-hour*3600) / 60, 10);
     var seconds = parseInt(pageTimer.TIMER_EXP_DURATION % 60, 10);
