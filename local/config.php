@@ -270,8 +270,8 @@ if ($isBrowse)
 else if ($action === "diff") { require_once("$FarmD/cookbook/plugin_LSMENG_diff.php"); }
 
 // Paths for images
-$PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads/", $WorkDir);
-$Photo = $_SERVER["DIARY_PHOTO_PATH"];
+$PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads", $WorkDir);
+$Photo = preg_replace("/\/$/", '', $_SERVER["DIARY_PHOTO_PATH"]);
 
 // Functions related to the diary pages.
 if (isDiaryPage() !== 0)
@@ -300,7 +300,7 @@ if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
   // be a way not to repeat the look behind part (?<=\.\d{4}0)
   preg_match('/(?<=[\.\/])\d{4}/', $pagename, $match); $year = $match[0];
   preg_match('/(?<=[\.\/]\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
-  $UploadDir = "$Photo$year/$mon";
+  $UploadDir = "$Photo/$year/$mon";
 }
 
 /****************************************************************************************/

@@ -14,10 +14,10 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170602
+ * Version 20170702
  */
 
-$RecipeInfo['pasteimgupload']['Version'] = '20170525';
+$RecipeInfo['pasteimgupload']['Version'] = '20170702';
 
 if ($action == 'edit')
 {
@@ -28,13 +28,13 @@ if ($action == 'edit')
     $year = $match[1];
     preg_match('/\d\d$/', $pagename, $match);
     $mon = (string)intval($match[0]);
-    $uploadDirUrlHeader = "Photo}$year/$mon/";
+    $uploadDirUrlHeader = "Photo}/$year/$mon/";
   }
   else
   {
 		preg_match('/(\w+)[\.\/]/', $pagename, $match);
     $groupName = $match[1];
-    $uploadDirUrlHeader = "PhotoPub}$groupName/";
+    $uploadDirUrlHeader = "PhotoPub}/$groupName/";
   }
 
 // Remove "uploadDirUrlHeader" for publication
