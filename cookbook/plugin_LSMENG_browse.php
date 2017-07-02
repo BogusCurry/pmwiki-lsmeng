@@ -192,7 +192,7 @@ function replaceImgWithDataContent($HTML)
   {
     // Replace the dummy url with the img's file content
     global $PhotoPub;
-    $srcContent = getImgFileContent(str_replace('http://replaceWithImgData/', $PhotoPub, $match[0]));
+    $srcContent = getImgFileContent(str_replace('http://replaceWithImgData', $PhotoPub, $match[0]));
     return $srcContent;
   }
   ,$HTML);

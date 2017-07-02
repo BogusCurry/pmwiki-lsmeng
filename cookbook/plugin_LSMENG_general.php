@@ -481,7 +481,7 @@ function getImgFileContent($file, $mime='image/png')
   $base64 = base64_encode($contents);
 
 // Parse the filename from the complete file path
-  global $PhotoPub, $pagename;
+  global $pagename;
   $groupname = substr($pagename,0,strpos($pagename,'.'));
   $pos = strrpos($file,'/');
   if ($pos !== false) { $filename = substr($file, $pos+1); }
