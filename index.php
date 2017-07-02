@@ -32,7 +32,12 @@ if (DEBUG)
   ini_set('xdebug.show_exception_trace', 1);
 
   $phpConsolePath = "../../php-console/consoleLog.php";
-  include_once($phpConsolePath);
+  if (file_exists($phpConsolePath)) { include_once($phpConsolePath); }
+  else
+  {
+    function consoleLog() { return; }
+    class PC { static function debug() { return; } }
+  }
 }
 else
 {
@@ -52,16 +57,16 @@ if ($base !== "/")
 {
   $_base = preg_replace("/\/$/", '', $base);
   $_base = preg_replace("/\//", '\/', $_base);
-	
-	// If URI does not begin with $base, the request is invalid
-	if(!preg_match("/^$_base(?=\/|$)/", $URI))	{ echo "URL invalid!"; exit;  }
-	
+
+  // If URI does not begin with $base, the request is invalid
+  if(!preg_match("/^$_base(?=\/|$)/", $URI)) { echo "URL invalid!"; exit; }
+
   $URI = preg_replace("/^$_base(?=\/|$)/", '', $URI);
 }
 
 // now URI is of the form /main/test/edit or / or emtpy
 // Redirect to homepage for accessing $base
-if ($URI === "" || $URI === "/") { header("Location: $base"."Main/Homepage"); }
+if ($URI === "" || $URI === "/") { header("Location: $base"."Main/Homepage"); return; }
 
 // Else parse the group/page/action from the URI
 else
@@ -69,10 +74,12 @@ else
   preg_match("/^\/([\w-]+)[\/\.]?([\w-]+)?\/?([\w-]+)?\/?[^\/]*$/i", $URI, $match);
 
   if (!$match) { echo "URL invalid!"; exit; }
-	$match[2] = isset($match[2]) ? $match[2] : "";
-	$match[3] = isset($match[3]) ? $match[3] : "";
-  $_REQUEST["n"] = $_GET["n"] = $match[1]."/".$match[2];
-  if (!isset($_GET["action"]) && $match[3] !== "")
+
+  $pagename = $match[1]."/";
+  if (isset($match[2])) { $pagename .= $match[2]; }
+  $_REQUEST["n"] = $_GET["n"] = $pagename;
+
+  if (!isset($_GET["action"]) && isset($match[3]))
   { $_REQUEST["action"] = $_GET["action"] = $match[3]; }
 }
 
