@@ -66,12 +66,14 @@ if ($URI === "" || $URI === "/") { header("Location: $base"."Main/Homepage"); }
 // Else parse the group/page/action from the URI
 else
 {
-  preg_match("/^\/([\w-]+)[\/\.]?([\w-]+)?\/?([\w-]+)?\/?([^\/]+)?$/i", $URI, $match);
+  preg_match("/^\/([\w-]+)[\/\.]?([\w-]+)?\/?([\w-]+)?\/?[^\/]*$/i", $URI, $match);
 
   if (!$match) { echo "URL invalid!"; exit; }
-
+	$match[2] = isset($match[2]) ? $match[2] : "";
+	$match[3] = isset($match[3]) ? $match[3] : "";
   $_REQUEST["n"] = $_GET["n"] = $match[1]."/".$match[2];
-  if (!isset($_GET["action"]) && $match[3] !== "") { $_REQUEST["action"] = $_GET["action"] = $match[3]; }
+  if (!isset($_GET["action"]) && $match[3] !== "")
+  { $_REQUEST["action"] = $_GET["action"] = $match[3]; }
 }
 
 include("pmwiki.php");
