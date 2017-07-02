@@ -29,7 +29,7 @@ var pageindexUpdater = (function()
     else { AS.subscribe("saved", function(){ _isSaved = true; }); }
   }
 
-  window.addEventListener("beforeunload", requestPageindexUpdate);
+//   window.addEventListener("beforeunload", requestPageindexUpdate);
 
   document.addEventListener('DOMContentLoaded', init);
 

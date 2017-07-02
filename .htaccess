@@ -1,6 +1,7 @@
 # Direct everything except files to index.php
 RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-f [OR]
+RewriteCond %{REQUEST_FILENAME} /pmwiki\.php$ [NC]
 RewriteRule . index.php [QSA,L]
 
 #RewriteCond %{REQUEST_FILENAME} !-f
