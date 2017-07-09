@@ -1,7 +1,7 @@
 <?php if (!defined('PmWiki')) exit();
 /**
   Simple Flip Checkbox for PmWiki
-  Written by (c) Petko Yotov 2008-2011
+  Written by (c) Petko Yotov 2008-2015
 
   This text is written for PmWiki; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published
@@ -9,15 +9,12 @@
   (at your option) any later version. See pmwiki.php for full details
   and lack of warranty.
 
-  Copyright 2008-2011 Petko Yotov www.pmwiki.org/Petko
+  Copyright 2008-2015 Petko Yotov www.pmwiki.org/petko
   
-  Copyright 2008-2011 Petko Yotov www.pmwiki.org/Petko
-  
-	20170529. Modified by Ling-San Meng.
+  20170529. Modified by Ling-San Meng.
 */
-
 # Version date
-$RecipeInfo['Flipbox']['Version'] = '20111009';
+$RecipeInfo['Flipbox']['Version'] = '20150102';
 
 SDVA($HandleActions, array('flipbox'=>'HandleFlipbox', 
   'lockflipbox'=>'HandleLockFlipbox', 'unlockflipbox'=>'HandleUnlockFlipbox'));
@@ -31,11 +28,18 @@ SDV($FlipboxHTML, '<img id="_fbi%1$s" src="%2$s" title="%1$s" alt="%1$s" %3$s/>'
 SDV($QualifyPatterns["/\\[([$FlipboxChoices])\\]/"], '[$1$1$1]');
 
 # I wish I could do this otherwise...
-Markup('flipbox_pre', '<[=', "/(\\[[$FlipboxChoices]{1,3})(\\])/e", "FmtPreFlipbox('$1', '$2')");
-Markup('flipbox', 'inline', "/\\[([$FlipboxChoices]{1,3})\t\t\t(\\d+)\t\t\t\\]/e",
- "FmtFlipbox(\$pagename,'$1','$2','$3')");
-Markup('flipbox_post', '>restore', "/\\[([$FlipboxChoices]{1,3})\t\t\t\\d+\t\t\t\\]/", "[$1]");
-
+if (function_exists('Markup_e')) {
+  Markup_e('flipbox_pre', '<[=', "/(\\[[$FlipboxChoices]{1,3})(\\])/", "FmtPreFlipbox(\$m[1], \$m[2])");
+  Markup_e('flipbox', 'inline', "/\\[([$FlipboxChoices]{1,3})\t\t\t(\\d+)\t\t\t\\]/",
+   "FmtFlipbox(\$pagename,\$m[1],\$m[2],\$m[3])");
+  Markup('flipbox_post', '>restore', "/\\[([$FlipboxChoices]{1,3})\t\t\t\\d+\t\t\t\\]/", "[$1]");
+}
+else {
+  Markup('flipbox_pre', '<[=', "/(\\[[$FlipboxChoices]{1,3})(\\])/e", "FmtPreFlipbox('$1', '$2')");
+  Markup('flipbox', 'inline', "/\\[([$FlipboxChoices]{1,3})\t\t\t(\\d+)\t\t\t\\]/e",
+   "FmtFlipbox(\$pagename,'$1','$2','$3')");
+  Markup('flipbox_post', '>restore', "/\\[([$FlipboxChoices]{1,3})\t\t\t\\d+\t\t\t\\]/", "[$1]");
+}
 function FmtPreFlipbox($_1, $_2) {
   static $id = 0;$id++;
   return "$_1\t\t\t$id\t\t\t$_2";
@@ -49,13 +53,12 @@ function FmtFlipbox($pagename, $_x, $id) {
   var FlipboxChoices = \"$FlipboxChoices$FlipboxChoices\";
   var FlipboxIcon = new Array('{$FlipboxIcon[0]}', '{$FlipboxIcon[1]}');
   //--></script><script type='text/javascript' src='$FlipboxPubDirUrl/flipbox.js'></script>
-  <link rel='stylesheet' href='$FlipboxPubDirUrl/flipbox.css' type='text/css'>";
+  <link rel='stylesheet' href='$FlipboxPubDirUrl/flipbox.css' type='text/css'>"; // Meng. Add css here.
 
   $_y = $_x{0};
   $wiki = sprintf($FlipboxWikiStyle, "fb$_y", "_fbl$id");
 
   $html = "<img id='_fbi$id' src='$FlipboxPubDirUrl/{$FlipboxIcon[0]}$_y{$FlipboxIcon[1]}'";
-
   $onclick = "";
   if(strlen($_x)==1)
     $onclick = " onclick='try{flipbox($id, \"$_y\", true);}catch(e){void(0);}'";
@@ -63,8 +66,7 @@ function FmtFlipbox($pagename, $_x, $id) {
     $onclick = " onclick='try{flipbox($id, \"$_y\", false);}catch(e){void(0);}'";
 
   $html = sprintf($FlipboxHTML, $id, "$FlipboxPubDirUrl/{$FlipboxIcon[0]}$_y{$FlipboxIcon[1]}", $onclick, $_x, $_y);
-  
-  return $wiki.Keep(Fmtpagename($html, $pagename));
+  return $wiki.Keep(FmtPageName($html, $pagename));
 }
 
 function HandleFlipbox($pagename, $auth="edit") {
