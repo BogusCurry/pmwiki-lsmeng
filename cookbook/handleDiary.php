@@ -185,7 +185,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
     // Get its date & hour
     // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
     // Otherwise the number before the underscore is the date
-    if ($imgName[8] == "_")
+    if (strlen($imgName) > 8 && $imgName[8] == "_")
     {
       $imgDay = (int)substr($imgName,6,2);
       $imgHour = (int)substr($imgName,9,2);
@@ -198,7 +198,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
     // Before 6am, it's still the same day...
     // This rule applies to images with filename format YYYYMMDD_HHMMSS.jpg only
-    if ($imgName[8] == "_" && $imgHour<6)
+    if (strlen($imgName) > 8 && $imgName[8] == "_" && $imgHour<6)
     {
       if ($imgDay>1)
       {
@@ -280,7 +280,8 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
 
   // Format check by examining the underscore and the character right before the filename.
   $IMG_NAME_LEN = strlen("YYYYMMDD_HHMMSS");
-  if ($img[8] == "_" && $img[0] == "2" && $img[1] == "0")
+
+  if (strlen($img) > 8 && $img[8] == "_" && $img[0] == "2" && $img[1] == "0")
   {
     if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN) {}
     else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1) {}

@@ -46,8 +46,9 @@ function HTML5Video($name, $args)
   if ($dotPos !== false) { $filename = substr($filename, 0, $dotPos); }
 
 //	$poster   = "http://localhost/pmwiki/pub/html5avctrl/videoPoster.png";
-  $width    = $args['width'   ];
-  $height   = $args['height'  ];
+	$poster	= "";
+  $width = isset($args['width']) ? $args['width'] : "";
+  $height = isset($args['height']) ? $args['height'] : "";
 
   SDV($HTML5VideoDir, '/uploads/');
 

@@ -8,7 +8,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170530
+ * Version 20170709
  */
 
 "use strict";
@@ -259,7 +259,7 @@
     if (dayElementLen == 0)
     {
       _GCImg.remove();
-      console.log("No bullet elements found!");
+      pmwiki.consoleLog("No bullet elements found!");
       return;
     }
 
@@ -390,10 +390,10 @@
     // register fixPos with its onload event
     if (window.html5AVCtrl && !html5AVCtrl.isVideoLoad())
     {
-      console.log("GC waiting for video onload to adjust pos");
+      pmwiki.consoleLog("GC waiting for video onload to adjust pos");
       html5AVCtrl.subscribe("videoLoad", function()
       {
-        console.log("Video onload; GC adjusts Pos");
+        pmwiki.consoleLog("Video onload; GC adjusts Pos");
         for (var i=0;i<31;i++)
         { if (_dayElement[i]) { fixGCElementPos(_dayElement[i]); } }
       });
@@ -460,8 +460,8 @@
         try { var eventList = JSON.parse(response); }
         catch(e)
         {
-          console.log(response);
-          console.log('Calendar error');
+          pmwiki.consoleLog(response);
+          pmwiki.consoleLog('Calendar error');
           _GCImg.remove();
           return;
         }
@@ -481,7 +481,7 @@
           _eventByDay[day].push(eventList[i]);
         }
 
-        console.log('Calendar ready');
+        pmwiki.consoleLog('Calendar ready');
 
         _GCImg.style.opacity = 1.0;
 

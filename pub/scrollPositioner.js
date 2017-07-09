@@ -26,7 +26,7 @@
  * sent to the server side.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170531
+ * Version 20170709
  */
 
 "use strict";
@@ -411,16 +411,16 @@ var scrollPositioner = scrollPositioner || (function()
     if ((/\{\$[^\n]+?\$\}/.test(HTML) ||
     HTML.lastIndexOf('<span class="MathJax_Preview">') !== -1) && MathJax && MathJax.Hub)
     {
-      console.log("scrollPositioner waiting for MathJax");
+      pmwiki.consoleLog("scrollPositioner waiting for MathJax");
       MathJax.Hub.Queue(function ()
       {
-        console.log("MathJax loaded; scrollPositioner continues");
+        pmwiki.consoleLog("MathJax loaded; scrollPositioner continues");
         setScrollFromEdit(value);
       });
     }
     else
     {
-      console.log("No MathJax/markup. scrollPositioner continues");
+      pmwiki.consoleLog("No MathJax/markup. scrollPositioner continues");
       setScrollFromEdit(value);
     }
   }
@@ -483,16 +483,16 @@ var scrollPositioner = scrollPositioner || (function()
         // register scroll with its videoload event
         if (window.html5AVCtrl && !html5AVCtrl.isVideoLoad())
         {
-          console.log("scrollPositioner waiting for video onload");
+          pmwiki.consoleLog("scrollPositioner waiting for video onload");
           html5AVCtrl.subscribe("videoLoad", function()
           {
-            console.log("No video/video loaded; scrollPositioner continues");
+            pmwiki.consoleLog("No video/video loaded; scrollPositioner continues");
             waitLatexThenSetScroll(value);
           });
         }
         else
         {
-          console.log("No video/video already loaded; scrollPositioner continues");
+          pmwiki.consoleLog("No video/video already loaded; scrollPositioner continues");
           waitLatexThenSetScroll(value);
         }
 
