@@ -14,10 +14,10 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170702
+ * Version 20170709
  */
 
-$RecipeInfo['pasteimgupload']['Version'] = '20170702';
+$RecipeInfo['pasteimgupload']['Version'] = '20170709';
 
 if ($action == 'edit')
 {
@@ -38,11 +38,12 @@ if ($action == 'edit')
   }
 
 // Remove "uploadDirUrlHeader" for publication
+  $PasteImgUploadUrl = "$ScriptUrl/$pagename?action=postupload";
   $HTMLHeaderFmt['pasteimgupload'] = '
   <script type="text/javascript" src="$PubDirUrl/pasteimgupload/pasteimgupload.js"></script>
   <script type="text/javascript">
   PasteImgUploadImgSrc = "<img height=\'50\' src=\'$PubDirUrl/pasteimgupload/upload.png\' >";
-  PasteImgUploadUrl = "$ScriptUrl/$pagename?action=postupload";
+  PasteImgUploadUrl = "$PasteImgUploadUrl";
   uploadDirUrlHeader = "{$" + "$uploadDirUrlHeader";
   </script>';
 }

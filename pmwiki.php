@@ -3275,7 +3275,6 @@ function HandlePostAttr($pagename, $auth = 'attr')
 
 function HandleLogoutA($pagename, $auth = 'read')
 {
-PC::debug();
   global $LogoutRedirectFmt, $LogoutCookies;
   SDV($LogoutRedirectFmt, '$FullName');
   SDV($LogoutCookies, array());
