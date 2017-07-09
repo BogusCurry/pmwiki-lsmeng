@@ -341,8 +341,7 @@ function hasAlphaColour($r)
 // false otherwise
 function isImgExt($ext)
 {
-  if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'png' || $ext == 'bmp' || $ext == 'gif')
-  { return true; }
+  if (preg_match("/^jpg$|^jpeg$|^png$|^bmp$|^gif$/", $ext)) { return true; }
   else { return false; }
 }
 
@@ -358,7 +357,7 @@ function isImgExt($ext)
 function resizeImg($ext, $imgFile, $MAXWHPX)
 {
   // If the related functions are supported and this is an image
-  if (function_exists(imagecreatetruecolor) && isImgExt($ext))
+  if (function_exists("imagecreatetruecolor") && isImgExt($ext))
   {
     // For png/gif, check for transparency first
     if ($ext == 'png' || $ext == 'gif')
@@ -439,7 +438,7 @@ function HandlePostUpload($pagename, $originalAction = 'upload' ,$auth = 'upload
 
   // Meng. Check if the image type and its extension matches
   $ext = strtolower(substr($upname, strrpos($upname, '.')+1));
-  if (function_exists(exif_imagetype))
+  if (function_exists("exif_imagetype"))
   {
     $imgType = exif_imagetype($uploadfile['tmp_name']);
     if ((($ext == 'jpg' || $ext == 'jpeg') && $imgType != 2) ||
@@ -627,8 +626,7 @@ function FmtUploadList($pagename, $args)
 
     // Meng. Get the image dimensions.
     $imgDimension = '';
-    if (function_exists(getimagesize) &&
-    isImgExt($ext))
+    if (function_exists("getimagesize") && isImgExt($ext))
     {
       list($width,$height) = getimagesize($filePath);
       if (isset($width)) { $imgDimension = $width.'x'.$height.' ... '; }
@@ -641,7 +639,7 @@ function FmtUploadList($pagename, $args)
     "<span id='file_$file' class='uploadFilelist' style=\"margin-left:40px; color:blue; cursor: pointer;\"
     onclick=\"document.getElementById('img_$file').click();\">".$file."</span>" .
 
-    "$lnk$overwrite$del ... ".
+    "$overwrite$del ... ".
 
     $imgDimension.
 
@@ -654,7 +652,7 @@ function FmtUploadList($pagename, $args)
     if (isImgExt($ext))
     {
       // Create the thumbnail if non-existent
-      $thumbnailImgPath = str_replace('.'.$ext,'_thumb.'.$ext,$filePath);
+      $thumbnailImgPath = preg_replace("/\.$ext$/i", "_thumb.$ext", $filePath);
       if (!file_exists($thumbnailImgPath))
       {
         if (!@copy($filePath, $thumbnailImgPath))
