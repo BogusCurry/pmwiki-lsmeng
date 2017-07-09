@@ -2119,9 +2119,51 @@ function MarkupToHTML($pagename, $text, $opt = NULL)
     {
       if ($p{0} == '/')
       {
-        if (is_callable($r)) $x = preg_replace_callback($p,$r,$x);
-        else $x=preg_replace($p,$r,$x);
+        if (is_callable($r)) { $x = preg_replace_callback($p, $r, $x); }
+        else { $x = preg_replace($p, $r, $x); }
+        
+        // Trying to fix the undefined offset in runtime created function
+        // and the deprecation toward e modifier
+        // to no avail
+/*
+        if (is_callable($r))
+        {
+          global $r;
+          $x = preg_replace_callback($p,function($m)
+          {
+            global $r;
+            if (!isset($m[2])) { $m[2] = ""; }
+            if (!isset($m[4])) { $m[4] = ""; }
+            return $r($m);
+          }, $x);
+        }
+
+        else
+        {
+//           $p = preg_replace("/(.*)e$/", "$1", $p);
+//           $x = preg_replace($p, $r, $x);
+
+          $p = preg_replace("/(.*)e$/", "$1", $p);
+
+          global $r;
+          $x = preg_replace_callback($p, function($m)
+          {
+            global $r;
+            global $temp;
+            $temp = $m;
+            $r = preg_replace_callback('/\$(\d+)/', function($_m)
+            {
+              global $temp;
+              $idx = $_m[1];
+              return isset($temp[$idx]) ? $temp[$idx] : "";
+            }, $r);
+
+            return $r;
+          }, $x);
+        }
+*/
       }
+
       elseif (strstr($x,$p)!==false) $x=eval($r);
       if (isset($php_errormsg))
       { echo "ERROR: pat=$p $php_errormsg"; unset($php_errormsg); }
@@ -2188,7 +2230,6 @@ function HandleBrowse($pagename, $auth = 'read')
     $elapsedTime = (microtime(true) - $startMicroTime);
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
-
 
 // PC::debug($_SERVER);
 

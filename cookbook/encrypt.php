@@ -177,7 +177,8 @@ function encryptStr($text, $key = "")
   if ($encryptText === false) { Abort("$pagename encryption error!"); }
 
   $KEYWORD = $ENC_KEYWORD;
-  $cryptMethod = crypt($OPENSSL_METHOD);
+  $cryptMethod = crypt($OPENSSL_METHOD, null);
+
   // Base64 encode the output so that we can copy/paste the ciphertext for debugging
   // purpose.
   $encryptText = $KEYWORD."\n".$cryptMethod."\n".base64_encode($salt.$iv.$encryptText);
