@@ -557,6 +557,8 @@ function PCCF($code, $template = 'default', $args = '$m')
   $code = sprintf($CallbackFnTemplates[$template], $code);
   if (!isset($CallbackFunctions[$code]))
   {
+		// Meng. Fix for the unset match offset; specifically offset 2 & 4 cause problems
+		$code = preg_replace('/\$m\[([24])\]/', '(isset($m[$1])?$m[$1]:null)', $code);
     $fn = create_function($args, $code);
     if ($fn) $CallbackFunctions[$code] = $fn;
     else StopWatch("Failed to create callback function: ".PHSC($code));
@@ -2121,23 +2123,10 @@ function MarkupToHTML($pagename, $text, $opt = NULL)
       {
         if (is_callable($r)) { $x = preg_replace_callback($p, $r, $x); }
         else { $x = preg_replace($p, $r, $x); }
-        
-        // Trying to fix the undefined offset in runtime created function
-        // and the deprecation toward e modifier
+
+        // Trying to fix the deprecation toward e modifier problem
         // to no avail
 /*
-        if (is_callable($r))
-        {
-          global $r;
-          $x = preg_replace_callback($p,function($m)
-          {
-            global $r;
-            if (!isset($m[2])) { $m[2] = ""; }
-            if (!isset($m[4])) { $m[4] = ""; }
-            return $r($m);
-          }, $x);
-        }
-
         else
         {
 //           $p = preg_replace("/(.*)e$/", "$1", $p);
