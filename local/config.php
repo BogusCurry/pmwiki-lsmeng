@@ -316,6 +316,14 @@ pmwiki.pagename = '$pagename';
 pmwiki.action = '$action';
 pmwiki.isDiaryPage = '$isDiaryPage';
 </script>";
+if (!DEBUG)
+{
+  $HTMLHeaderFmt['pmwiki'] .= <<<EOD
+  <script>
+  if (window.console && console.log) { console.log = function(){} }
+  </script>
+EOD;
+}
 
 if ($AuthorLink === "MBA") { $ChromeExtPath = "/Users/Shared/Chrome extensions"; }
 else { $ChromeExtPath = 'D:\Chrome extensions'; }
