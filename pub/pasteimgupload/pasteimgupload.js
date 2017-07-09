@@ -12,7 +12,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170401
+ * Version 20170709
  */
 
 // Show an animation of a predetermined image to signify the result of file upload. 
@@ -72,9 +72,9 @@ document.addEventListener('drop', function(e)
             document.execCommand("insertText", false, uploadDirUrlHeader+this.name+' ');
             showUploadImg(++req.numUpload, req.numFail);
           }
-          else { error++; console.log('"'+this.name+'"'+' upload failed: '+response+'!'); }
+          else { error++; pmwiki.consoleLog('"'+this.name+'"'+' upload failed: '+response+'!'); }
         }
-        else { error++; console.log('Upload failed: HTTP error!'); }
+        else { error++; pmwiki.consoleLog('Upload failed: HTTP error!'); }
       }
 
       if (error > 0) { showUploadImg(req.numUpload, ++req.numFail); }
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function()
       var files = items[idx].getAsFile();
       if (files.size == 0) { return true; }
 
-//console.log(files.size);
+//pmwiki.consoleLog(files.size);
 
       var formData = new FormData();
       formData.append('uploadfile', files, fileName);

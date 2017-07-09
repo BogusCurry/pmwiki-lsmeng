@@ -315,15 +315,10 @@ pmwiki.base = '$base';
 pmwiki.pagename = '$pagename';
 pmwiki.action = '$action';
 pmwiki.isDiaryPage = '$isDiaryPage';
+pmwiki.consoleLog = function (){};
 </script>";
-if (!DEBUG)
-{
-  $HTMLHeaderFmt['pmwiki'] .= <<<EOD
-  <script>
-  if (window.console && console.log) { console.log = function(){} }
-  </script>
-EOD;
-}
+if (DEBUG)
+{ $HTMLHeaderFmt['pmwiki'] .= "<script> pmwiki.consoleLog = console.log; </script>"; }
 
 if ($AuthorLink === "MBA") { $ChromeExtPath = "/Users/Shared/Chrome extensions"; }
 else { $ChromeExtPath = 'D:\Chrome extensions'; }

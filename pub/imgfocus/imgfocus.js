@@ -15,7 +15,7 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170602
+* Version 20170709
 */
 
 var imgfocus = {};
@@ -53,7 +53,7 @@ imgfocus.unsubscribe = function(event, callback)
     { throw "Unexpected param: " + callback; return; }
 
     var idx = imgfocus.eventCallback[event].indexOf(callback);
-    if (idx !== -1) { console.log("unsubsribed");imgfocus.eventCallback[event].splice(idx, 1); }
+    if (idx !== -1) { pmwiki.consoleLog("unsubsribed");imgfocus.eventCallback[event].splice(idx, 1); }
   }
   else { throw "Unexpected event: " + event; return; }
 };
@@ -109,7 +109,7 @@ imgfocus.clickHandle = function(element, idx)
   }
 
   // Blur and dim the background and then show the popup image on image load.
-  imgfocus.popupImgElement.onerror = function() { console.log('on load error'); }
+  imgfocus.popupImgElement.onerror = function() { pmwiki.consoleLog('on load error'); }
   imgfocus.popupImgElement.onload = function()
   {
     // A fix for hiding the glowing effect immediately after showing the pop-up
@@ -247,7 +247,7 @@ imgfocus.popupImgOnClick = function()
 imgfocus.blurElement = function(element)
 {
   if (typeof element === 'undefined')
-  { console.log('Error: element undefined in ImgfocusBlurElement()!'); return; }
+  { pmwiki.consoleLog('Error: element undefined in ImgfocusBlurElement()!'); return; }
 
   // Set blur and opacity
   element.originalFilterEffect = document.defaultView.getComputedStyle(element)['webkitFilter'];
@@ -260,7 +260,7 @@ imgfocus.blurElement = function(element)
 imgfocus.unBlurElement = function(element)
 {
   if (typeof element === 'undefined')
-  { console.log('Error: element undefined in ImgfocusUnBlurElement()!'); return; }
+  { pmwiki.consoleLog('Error: element undefined in ImgfocusUnBlurElement()!'); return; }
 
   // Recover the filter effect and opacity of the element
   var originalFE = element.originalFilterEffect;
@@ -287,7 +287,7 @@ imgfocus.unBlurElement = function(element)
 // callback function which points to the general removing mechanism should be used here
 imgfocus.fadeElement = function(element, startOpacity, endOpacity, duration, callbackF)
 {
-  if (typeof element === 'undefined') { console.log('Error: element undefined in ImgfocusFadeElement()!'); return; }
+  if (typeof element === 'undefined') { pmwiki.consoleLog('Error: element undefined in ImgfocusFadeElement()!'); return; }
   else if (startOpacity == endOpacity) { return; }
 
   var initialWidth = element.width;
@@ -459,7 +459,7 @@ imgfocus.mouseUpStopDragOrRemoveImg = function(e)
 // it's best to avoid the use of "this"
 imgfocus.wheelZoom = function(e)
 {
-// console.log(event);
+// pmwiki.consoleLog(event);
 
   e.preventDefault();
 
@@ -643,7 +643,7 @@ imgfocus.removeImgRecoverBackground = function(style)
 // callback: An optional callback function to run at the end of zooming
 imgfocus.zoomElement = function(element, zoom, targetSize, duration, springOutTick, filterEffect, callback)
 {
-  if (typeof element === 'undefined') { console.log('Error: element undefined in ImgfocusZoomElement()!'); return; }
+  if (typeof element === 'undefined') { pmwiki.consoleLog('Error: element undefined in ImgfocusZoomElement()!'); return; }
 
   if (element.fadeTimerID != null) { return; }
 

@@ -10,7 +10,7 @@
  * (blocking saving). This can cause a bit unresponsiveness.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170611
+ * Version 20170709
  */
 
 "use strict";
@@ -133,7 +133,7 @@ var AS = AS || (function()
       _autosaveElement.innerHTML = _errStatusHtml;// + "<span style='margin-left:25px; color: red;'>"+str+"</span>";
       var div = document.createElement("div");
       div.innerHTML = str;
-      console.log("Autosave error:\n"+div.textContent);
+      pmwiki.consoleLog("Autosave error:\n"+div.textContent);
       alert("Autosave error:\n"+div.textContent);
     }
   }
@@ -155,7 +155,7 @@ var AS = AS || (function()
     {
       _status = 'Disabled';
       _autosaveElement.innerHTML = _errStatusHtml;
-      console.log("Autosave error:\n"+"HTTP status: "+_req.status);
+      pmwiki.consoleLog("Autosave error:\n"+"HTTP status: "+_req.status);
       alert("Autosave error:\n"+"HTTP status: "+_req.status);
 
       _busy = false;
@@ -286,7 +286,7 @@ var AS = AS || (function()
 
         // Show saving progress
 // 				_req.upload.onprogress = function(e)
-// 				{ console.log("Saving... " + Math.round(e.loaded/e.total*100) + "%"); };
+// 				{ pmwiki.consoleLog("Saving... " + Math.round(e.loaded/e.total*100) + "%"); };
 
         _req.onreadystatechange = reply;
         _req.send(postMsg);
@@ -348,7 +348,7 @@ var AS = AS || (function()
       // So there is no need to check new input, change status, or set timeout to trigger another saving
       // process)
       if (!_busy && _status != 'Typing') { set_status("Typing"); }
-      else { }//console.log('here'); }
+      else { }//pmwiki.consoleLog('here'); }
 
       // Record the starting time of the input burst
       var clock = new Date();
@@ -466,7 +466,7 @@ var AS = AS || (function()
     postMsg.prevValue = prevValue;
     postMsg.newValue = newValue;
     postMsg = JSON.stringify(postMsg);
-    console.log(postMsg);
+    pmwiki.consoleLog(postMsg);
     _req.open('POST', AS.url, true);
     _req.setRequestHeader("BASETIME", _basetime);
     _req.setRequestHeader("WYSIWYG", true);
@@ -475,7 +475,7 @@ var AS = AS || (function()
     {
       if (this.readyState === 4 && this.status === 200)
       {
-        console.log("saved");
+        pmwiki.consoleLog("saved");
       }
     };
   }
