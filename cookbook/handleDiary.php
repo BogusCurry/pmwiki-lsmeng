@@ -177,10 +177,8 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
     if ($imgUrl == "") { continue; }
 
-    // If the filename has been explicitly typed on the page, and the header is {$Photo}
-    // skip auto pasting. Also checking for the header is to account for the older stuff
-    // such as $imgpxd
-    if (preg_match("/{\\\$Photo}(\S*)?$imgName/", $text,$match)) { continue; }
+    // If the filename has been explicitly typed on the page, skip auto pasting
+    if (preg_match("/$imgName/i", $text,$match)) { continue; }
 
     // Get its date & hour
     // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
