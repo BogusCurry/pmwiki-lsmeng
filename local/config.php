@@ -296,10 +296,9 @@ $groupName = !$match[1] ? "Main" : $match[1];
 $UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
 if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
 {
-  // Use regex to get year & mon from pagename. Not satisfied with the mon; there should
-  // be a way not to repeat the look behind part (?<=\.\d{4}0)
-  preg_match('/(?<=[\.\/])\d{4}/', $pagename, $match); $year = $match[0];
-  preg_match('/(?<=[\.\/]\d{4}0)[1-9]|(?<=\.\d{4})1[0-2]/', $pagename, $match); $mon = $match[0];
+  preg_match("/[\.\/](\d{4})0?(\d+)$/", $pagename, $match);
+  $year = $match[1];
+  $mon = $match[2];
   $UploadDir = "$Photo/$year/$mon";
 }
 
