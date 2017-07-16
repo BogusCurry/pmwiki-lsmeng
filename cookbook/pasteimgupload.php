@@ -28,13 +28,13 @@ if ($action == 'edit')
     $year = $match[1];
     preg_match('/\d\d$/', $pagename, $match);
     $mon = (string)intval($match[0]);
-    $uploadDirUrlHeader = "Photo}/$year/$mon/";
+    $uploadDirUrlHeader = "Photo}$year/$mon/";
   }
   else
   {
 		preg_match('/(\w+)[\.\/]/', $pagename, $match);
     $groupName = $match[1];
-    $uploadDirUrlHeader = "PhotoPub}/$groupName/";
+    $uploadDirUrlHeader = "PhotoPub}$groupName/";
   }
 
 // Remove "uploadDirUrlHeader" for publication
