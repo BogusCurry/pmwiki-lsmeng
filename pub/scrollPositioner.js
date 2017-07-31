@@ -26,7 +26,7 @@
  * sent to the server side.
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170709
+ * Version 20170731
  */
 
 "use strict";
@@ -584,8 +584,8 @@ var scrollPositioner = scrollPositioner || (function()
     { _eventCallback["init"].forEach(function(fn) { fn(); }); }
   }
 
-  document.addEventListener('DOMContentLoaded', init);
-
+	window.addEventListener("load", init);
+	
   // Record the scroll and caret position on focusout and page close.
   //window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie);
   window.addEventListener("beforeunload", setScrollAndCaretPosCookie);
