@@ -119,6 +119,7 @@
       var url = window.location.href+'?getGC=true';
       req.open('POST',url,true);
       req.setRequestHeader( 'Content-type', 'application/x-www-form-urlencoded' );
+      req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
 
       // Remove the time range
       var match = this.value.match(/^(.*\S)\s+(((\d{4}-)?\d{1,2}-)?\d{1,2}T)?(\d{1,2}:\d{1,2})(~(((\d{4}-)?\d{1,2}-)?\d{1,2}T)?(\d{1,2}:\d{1,2}))?\s*$/);
