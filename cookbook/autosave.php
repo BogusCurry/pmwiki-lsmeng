@@ -106,7 +106,7 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
     $charOffset = computeCharOffsetForBullet($page["text"], $numBullet);
     $charOffset2 = computeCharOffsetForBullet($page["text"], $numBullet + 1);
     if ($charOffset2 === -1) { $charOffset2 = strlen($page["text"]); }
-		$length = $charOffset2 - $charOffset - 1;
+    $length = $charOffset2 - $charOffset - 1;
     $bulletText = substr($page["text"], $charOffset, $length);
 
     // if the preValue is UNIQUE in the bullet element's textContent, it's safe
@@ -129,8 +129,8 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
 //     file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$testStr."\nend");
 //     file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$numBullet."\n".$charOffset2);
 
-		$_POST['text'] = substr_replace($page["text"], $newBulletText, $charOffset, $length);
-		
+    $_POST['text'] = substr_replace($page["text"], $newBulletText, $charOffset, $length);
+
 // 		    file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$_POST['text']."\nend");
 //     return;
   }

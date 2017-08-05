@@ -50,10 +50,10 @@ var AS = AS || (function()
 
   var _eventCallback = {"saved": []}; // queue for callback functions on saved event
 
-// Set a local storage item "name" with key/value pair "key" and "value".
-// If "key" is null then the item is treated as a simple variable; otherwise it is an
-// array. If "value" is null then the local storage is deleted in the former case; the
-// entry is deleted in the latter case.
+  // Set a local storage item "name" with key/value pair "key" and "value".
+  // If "key" is null then the item is treated as a simple variable; otherwise it is an
+  // array. If "value" is null then the local storage is deleted in the former case; the
+  // entry is deleted in the latter case.
   function setStorageByKey(name, key, value)
   {
     if (key == null)
@@ -216,11 +216,12 @@ var AS = AS || (function()
   function saveOnUnload()
   {
     _req.open("POST",AS.url,false);
-    _req.setRequestHeader( "BASETIME", _basetime );
+    _req.setRequestHeader("BASETIME", _basetime);
+    _req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
     countBulletWriteCookie();
     setLastModLS();
     _req.send(_post_str);
-    
+
 /*
     // If there are & symbols, scripts after req.send will not be executed.
     // The best I can do for now is to move setLastModLS() ahead of req.send
@@ -281,7 +282,8 @@ var AS = AS || (function()
         set_status("Autosaving");
         _busy = true;
         _req.open("POST",AS.url,true);
-        _req.setRequestHeader( "BASETIME", _basetime );
+        _req.setRequestHeader("BASETIME", _basetime);
+				_req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");        
         if (_wikitextElement) { _req.setRequestHeader("WYSIWYG", true); }
 
         // Show saving progress
@@ -469,6 +471,7 @@ var AS = AS || (function()
     pmwiki.consoleLog(postMsg);
     _req.open('POST', AS.url, true);
     _req.setRequestHeader("BASETIME", _basetime);
+    _req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
     _req.setRequestHeader("WYSIWYG", true);
     _req.send(postMsg);
     _req.onreadystatechange = function()
