@@ -7,6 +7,7 @@ function getAndShowImgFile(fileName)
   var req = new XMLHttpRequest();
 	var uploadUrl = window.location.href+'&show='+fileName;
 	req.open('GET',uploadUrl,true);
+	req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
 	req.send();
 
 	// Show download progress

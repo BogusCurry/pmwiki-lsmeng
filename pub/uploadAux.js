@@ -7,6 +7,7 @@ uploadAux.deleteFile = function(fileName)
   var req = new XMLHttpRequest();
   var uploadUrl = window.location.href+'?delete='+fileName;
   req.open('GET',uploadUrl,true);
+  req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
   req.send();
 
   req.onreadystatechange = function()

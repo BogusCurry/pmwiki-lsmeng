@@ -41,6 +41,7 @@ var wysiwyg = wysiwyg || (function()
     var req = new XMLHttpRequest();
     req.open('POST', _saveUrl, true);
 		req.setRequestHeader("BASETIME", _basetime);
+		req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
 		req.setRequestHeader("WYSIWYG", true);
     req.send(postMsg);
     req.onreadystatechange = function()

@@ -56,6 +56,7 @@ document.addEventListener('drop', function(e)
     var req = new XMLHttpRequest();
     req.open('POST',PasteImgUploadUrl,true);
     req.setRequestHeader('AJAXUPLOAD','TRUE');
+    req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
     req.numUpload = 0;
     req.numFail = 0;
     req.name = fileName;
@@ -120,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function()
       var req = new XMLHttpRequest();
       req.open('POST',PasteImgUploadUrl,true);
       req.setRequestHeader('AJAXUPLOAD','TRUE');
+      req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
       req.send(formData);
       req.onreadystatechange = function()
       {

@@ -86,6 +86,7 @@ imgfocus.clickHandle = function(element, idx)
     var req = new XMLHttpRequest();
     var uploadUrl = window.location.href+'?show='+element.name.replace("_thumb","");
     req.open('GET',uploadUrl,true);
+    req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
     req.send();
 
     req.onreadystatechange = function()
