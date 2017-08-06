@@ -127,7 +127,7 @@ SDVA($UploadExts,array(
 SDV($UploadBlacklist, array());
 
 // Meng. Configure this in config.php
-SDV($UploadMaxSize,$maxUploadSize);
+SDV($UploadMaxSize, isset($maxUploadSize) ? $maxUploadSize : 0);
 SDV($UploadPrefixQuota,0);
 SDV($UploadDirQuota,0);
 foreach($UploadExts as $k=>$v)
