@@ -164,27 +164,32 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
 
   for ($iDay=1; $iDay<=31; $iDay++) { $dayImgList[$iDay] = ""; }
 
+  // Check if this is a valid image file with correct filename format.
   for ($iFile=0; $iFile<$N_FILE; $iFile++)
   {
-    // Check if this is a valid image file with correct filename format.
     $imgName = $file[$iFile];
 
-    // Skip invalid files & thumbnail images
+    // Skip system files & thumbnail images
     if ($imgName === "." || $imgName === "..") { continue; }
     if (strpos($imgName,'_thumb.') !== false) { continue; }
 
-    $imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);
-
-    if ($imgUrl == "") { continue; }
-
-    // If the filename has been explicitly typed on the page, skip auto pasting
-    if (preg_match("/$imgName/i", $text,$match)) { continue; }
+    // If the filename has been explicitly typed on the page, skip format check &
+    // skip auto pasting
+    if (preg_match("/$imgName/i", $text)) { continue; }
+    
+		$imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);    
 
     // Get its date & hour
     // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
     // Otherwise the number before the underscore is the date
     if (isset($imgName[8]) && $imgName[8] == "_")
     {
+      // Check if the year/mon matches the page year/mon
+      $imgYear = (int)substr($imgName,0,4);
+      $imgMon = (int)substr($imgName,4,2);
+      if ($imgYear !== (int)$diaryYear || $imgMon !== (int)$diaryMonth)
+      { echo_("Image year/mon does not match pagename: $imgName"); continue; }
+
       $imgDay = (int)substr($imgName,6,2);
       $imgHour = (int)substr($imgName,9,2);
     }
@@ -283,13 +288,13 @@ function getDiaryImgUrl($img, $diaryYear, $diaryMonth)
   {
     if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN) {}
     else if (strlen($img) == $IMG_NAME_LEN+$EXT_LEN+1) {}
-//     else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
+    else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
   }
   // For downloaded images that cannot be automatically renamed, D_X.jpg DD_X.jpg are valid
   // image name format. The length and type of "X" is not limited, i.e., can be non-numeric.
   else if ($img[2] == "_" && is_numeric($img[0]) && is_numeric($img[1]) ) { $isImgFileNameValid = 1; }
   else if ($img[1] == "_" && is_numeric($img[0])) { $isImgFileNameValid = 1; }
-//   else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
+  else { echo "Unexpected filename \"$img\" in getDiaryImgUrl()!<br>"; return ""; }
 
   global $diaryImgDirURL;
   if (strcasecmp($extension,'.mp4') == 0)
