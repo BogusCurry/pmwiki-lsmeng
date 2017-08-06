@@ -2457,7 +2457,7 @@ function RestorePage($pagename,&$page,&$new,$restore=NULL)
 function ReplaceOnSave($pagename,&$page,&$new)
 {
   global $EnablePost, $ROSPatterns, $ROEPatterns, $EnableROSEscape;
-  $t = $new['text'];
+  $t = isset($new['text']) ? $new['text'] : null;
   if (IsEnabled($EnableROSEscape, 0)) $t = MarkupEscape($t);
   $t = PPRA((array)@$ROEPatterns, $t);
   if ($EnablePost)
@@ -2668,7 +2668,7 @@ function HandleEdit($pagename, $auth = 'edit')
   $new['csum'] = $ChangeSummary;
   if ($ChangeSummary) $new["csum:$Now"] = $ChangeSummary;
   $EnablePost &= preg_grep('/^post/', array_keys(@$_POST));
-  $new['=preview'] = $new['text'];
+  $new['=preview'] = isset($new['text']) ? $new['text'] : null;
   PCache($pagename, $new);
   UpdatePage($pagename, $page, $new);
   Lock(0);
@@ -2682,7 +2682,8 @@ function HandleEdit($pagename, $auth = 'edit')
 /****************************************************************************************/
 
   // Meng. The fix for the mysteriously removed newline at the beginning.
-  if( $FmtV['$EditText'][0] == "\n") { $FmtV['$EditText'] = "\n".$FmtV['$EditText']; }
+  if(isset($FmtV['$EditText'][0]) && $FmtV['$EditText'][0] == "\n")
+  { $FmtV['$EditText'] = "\n".$FmtV['$EditText']; }
 
   // Set a template for diary pages
   if (PageExists($pagename) != 1 && isDiaryPage() == 2)
@@ -3142,7 +3143,8 @@ function IsAuthorized($chal, $source, &$from)
       else
       {
         global $sysLogFile;
-        if ($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
+        if (isset($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])]) && 
+        $_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
         { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Unlock using decrypt key\n", FILE_APPEND); }
         else
         { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Unlock using correct password\n", FILE_APPEND); }
