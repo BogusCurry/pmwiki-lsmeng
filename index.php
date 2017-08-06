@@ -33,16 +33,11 @@ if (DEBUG)
 
   $phpConsolePath = "../../php-console/consoleLog.php";
   if (file_exists($phpConsolePath)) { include_once($phpConsolePath); }
-  else
-  {
-    function consoleLog() { return; }
-    class PC { static function debug() { return; } }
-  }
+  else { function consoleLog() { return; } }
 }
 else
 {
   function consoleLog() { return; }
-  class PC { static function debug() { return; } }
   error_reporting(0);
 }
 

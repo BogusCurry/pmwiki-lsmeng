@@ -2218,8 +2218,6 @@ function HandleBrowse($pagename, $auth = 'read')
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
-// PC::debug($_SERVER);
-
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
 
