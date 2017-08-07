@@ -226,7 +226,7 @@ var pageCommand = pageCommand || (function()
       var pagenameAsInURL = parsePagenameAction(_url)[2];
       var pos = _url.indexOf(pagenameAsInURL);
       var url = _url.slice(0, pos);
-      window.location = url + "Site/Search?action=search&q=link=" + _pagename;
+      window.location = url + "Site/Search/search?q=link=" + _pagename.replace(/\//, '.');
     }
 
     // Ctrl+cmd+a to open the attribute
