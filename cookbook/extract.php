@@ -262,9 +262,8 @@ function TextExtract($pagename, $list, $opt = NULL)
   if (!$_REQUEST["regex"]) { $qi = $par['qi'] = (@$opt['case']==1) ? '' : 'i'; }
   else { $qi = $par['qi'] = $_REQUEST["regexModifier"]; }
 
-  // Meng. Fix for Chinese char (and word boundary fix after adding delimiter for match
-  // highlight) by adding the unicode flag "u"
-  $qi = $par['qi'] = $qi.'u';
+  // Meng. Fix for Chinese char by adding the unicode flag "u"
+//   $qi = $par['qi'] = $qi.'u';
 
   $par['listcnt'] = ($FmtV['$MatchSearched']) ? $FmtV['$MatchSearched'] : count($list);
   //inits
