@@ -13,8 +13,12 @@ See Cookbook:TextExtract for documentation and instructions.
 
 2016-04-23 convert source file encoding from UTF-8 to ANSI
 
-20170511. Fixed by Ling-San Meng to correctly support Chinese char, and add support
-for global replace.
+Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
+and global replace. Regex search is automatically identified by a
+beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
+default is case sensitive.
+Version 20170807
+
 */
 
 $RecipeInfo['TextExtract']['Version'] = '2016-04-23';
@@ -27,12 +31,13 @@ global $Extract; $Extract = 1;
 if ($action=='search' && $_REQUEST['fmt']=='extract')
 {
   // Meng. Regex pattern is automatically identified by a beginning and ending forward
-  // slash.
+  // slash (and optionally some regex modifiers)
   $query = $_REQUEST["q"];
-  if ($query[0] === "/" && $query[strlen($query) - 1] === "/")
+  if (preg_match("/\/(.+)\/(\w*)/", $query, $match))
   {
     $_REQUEST["regex"] = "1";
-    $_REQUEST["q"] = substr($query, 1, strlen($query) - 2);
+    $_REQUEST["q"] = $match[1];
+    $_REQUEST["regexModifier"] = $match[2];
   }
 
   // Meng. When replacing without using a regex pattern, prepare a fully escaped version
@@ -43,10 +48,17 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
 
     if (!isset($_REQUEST["regex"]))
     {
+      $_REQUEST["regex"] = 1;
       $_REQUEST["q3"] = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
       function($match) { return "\\$match[0]"; }, $query);
     }
   }
+
+  // Force multi-line mode. This is a compromisze as search eventually is performed line
+  // by line. Unexpected behavior arises if multi-line mode is not force. For example,
+  // when search/replace /^pattern/ without multi-line mode, if there is indeed a match at
+  // the beginning of the text, then every line begins with pattern is a match
+  if ($_REQUEST["regex"]) { $_REQUEST["regexModifier"] .= "m"; }
 
   //add a space, so FmtPageList() will not transform 'foo/' to group='foo'
   if ($_REQUEST['group'] || $_REQUEST['name'] || $_REQUEST['page'])
@@ -245,11 +257,14 @@ function TextExtract($pagename, $list, $opt = NULL)
   SDV($HTMLStylesFmt['telinktext'],
   " .te-linktext {color: {$opt['linktext']} } ");
 
-  //case insensitive search
-  $qi = $par['qi'] = (@$opt['case']==1) ? '' : 'i';
+  // Meng. If it's not regex search, the case sensitivity depends on the check box
+  // othewise everything is handled by regex modifier
+  if (!$_REQUEST["regex"]) { $qi = $par['qi'] = (@$opt['case']==1) ? '' : 'i'; }
+  else { $qi = $par['qi'] = $_REQUEST["regexModifier"]; }
 
-  // Meng. Fix for Chinese char by adding the unicode flag "u"
-  $par['qi'] .= 'u';
+  // Meng. Fix for Chinese char (and word boundary fix after adding delimiter for match
+  // highlight) by adding the unicode flag "u"
+  $qi = $par['qi'] = $qi.'u';
 
   $par['listcnt'] = ($FmtV['$MatchSearched']) ? $FmtV['$MatchSearched'] : count($list);
   //inits
@@ -286,6 +301,7 @@ function TextExtract($pagename, $list, $opt = NULL)
         if(preg_match("($pat)".$qi, $row)) $hit = 1;
         else { if($opt['double']==1 && $hit==1) $hit=0; else continue; }
       }
+
       //use row 'as is' if markup=on or whole page, no futher row processing
       if ($opt['markup']=='on' && ($pat=="." || $opt['unit']=='page' || $opt['unit']=='para'))
       {
@@ -294,22 +310,34 @@ function TextExtract($pagename, $list, $opt = NULL)
         $par['rowcnt']++;
         continue; //start with next source row
       }
+
+      $originalRow = $row;
+
       //change some markup into code or 'defuse', so it will not get rendered, or cut it
       $row = TEMarkupCleaner($row, $opt, $par);
       //exclude lines containing matches with cut pattern
       if ($opt['cut']!='')
       if(preg_match("({$opt['cut']})".$qi, $row)) continue;
+
       //count matches in row
-      $par['rowmatchcnt'] = preg_match_all("($pat)".$qi, $row, $mr);
+      // Meng. Use the original row (without mark delimiter) for preg_match to avoid
+      // unexpected match result
+      $par['rowmatchcnt'] = preg_match_all("($pat)".$qi, $originalRow, $mr);
+
       //check if textrow needs processing
       if($opt['snip']!='')
       $row = preg_replace("({$opt['snip']})", '', $row);
       $row = ltrim($row);
       //empty row
       if ($row=='') continue;
+
       //highlight matches
       if($opt['highlight'] && $pat!='.')
-      $row = TEHighlight($opt, $par, $row);
+
+      // Meng. Pass the original row (without mark delimiter) to TEHighlight() for use of
+      // further preg_match there
+      $row = TEHighlight($opt, $par, $row, $originalRow);
+
       //numbering
       $par['pagenum'] = $par['pagecnt']+1;
       $par['rowcnt']++;
@@ -413,7 +441,9 @@ function replaceText($pagename, $page, &$par)
     else { $query = $par["pat"]; }
     $replace = $_REQUEST["q2"];
 
-    // Perform regex replace
+    // Perform regex replace. Regex search is performed line-by-line, i.e., equivalent to
+    // the multi-line mode. To algin with the search behavior, a multi-line mode modifier
+    // is also added here.
     $count = 0;
     $text = preg_replace("($query)".$par['qi'], $replace, $text, -1, $count);
     if ($count > 0)
@@ -450,9 +480,11 @@ function TETextRows($pagename, $source, $opt, &$par )
   $page = ReadPage($source);
   if (!$page) return '';
   $text = $page['text'];
+
   //use pagename#section if present
   if($opt['section'])
   $text = TextSection($text, $source.$opt['section']);
+
   //skip page if it has an exclude match
   if ($opt['pat']['-']!='')
   foreach ($opt['-'] as $pat)
@@ -666,8 +698,10 @@ function TEMarkupCleaner($row, $opt, $par)
   return $row;
 } //}}}
 
+// Meng. Pass the original row (without mark delimiter) to TEHighlight() for use of
+// further preg_match
 //insert markup for highlighting matches
-function TEHighlight($opt, &$par, $row)
+function TEHighlight($opt, &$par, $row, $originalRow)
 {
   global $LinkPattern, $UrlExcludeChars, $ImgExtPattern, $KeepToken, $KPV;
   //for source view we don't want whole links highlight:
@@ -679,7 +713,9 @@ function TEHighlight($opt, &$par, $row)
     $urlpat = "($LinkPattern)\\/\\/([^\\s$UrlExcludeChars]*[^\\s.,?!$UrlExcludeChars])";
   }
 
-  if (preg_match_all("(($linkpat)|($urlpat)|({$par['pat']}))".$par['qi'], $row, $m, PREG_OFFSET_CAPTURE))
+  // Meng. Use the original row (without mark delimiter) for preg_match to avoid
+  // unexpected match result
+  if (preg_match_all("(($linkpat)|($urlpat)|({$par['pat']}))".$par['qi'], $originalRow, $m, PREG_OFFSET_CAPTURE))
   {
     ## DEBUG 		echo "<pre>OTHER "; print_r($m[0]); echo "</pre>";
     $k = 0; $mpos = array();
