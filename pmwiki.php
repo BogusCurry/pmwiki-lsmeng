@@ -968,8 +968,8 @@ function PageVar($pagename, $var, $pn = '')
 
   if ($var == '$ScriptUrl') return PUE($ScriptUrl);
 
-/****************************************************************************************/
-// Meng: Self-defined page variables can be declared here.
+  /**************************************************************************************/
+  // Meng: Custom page variables can be declared here.
   global $action;
   if ($var == '$action') { return PUE($action); }
 
@@ -977,7 +977,14 @@ function PageVar($pagename, $var, $pn = '')
   if ($var == '$EditLinkMark' && $action != 'edit')
   { return '<span style=\'transform:rotate(90deg); position:absolute;\'>&#9998;</span>'; }
 
-/****************************************************************************************/
+  // For printing pageindex file related information
+  if ($var == '$pageindexFileInfo')
+  {
+    global $PageIndexFile;
+    return sprintf("Pageindex size: %.2f MB, last updated: %s",
+    filesize($PageIndexFile)/1000000, date("Y/m/d H:i:s", filemtime($PageIndexFile)));
+  }
+  /**************************************************************************************/
 
   if ($pn)
   {
@@ -3141,7 +3148,7 @@ function IsAuthorized($chal, $source, &$from)
       else
       {
         global $sysLogFile;
-        if (isset($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])]) && 
+        if (isset($_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])]) &&
         $_SESSION['authpw'][base64_encode($_SESSION['MASTER_KEY'][1])] == 1)
         { file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Unlock using decrypt key\n", FILE_APPEND); }
         else
