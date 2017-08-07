@@ -325,7 +325,7 @@ var scrollPositioner = scrollPositioner || (function()
 
   // Adjust the height of the text element based on the current window size
   function fixTextareaHeight()
-  {  
+  {
     // Check if the textarea height is correct; if not then adjust
     var rectObject = _textElement.getBoundingClientRect();
     var correctTextAreaHeight = window.innerHeight - rectObject.top - 11;
@@ -584,14 +584,15 @@ var scrollPositioner = scrollPositioner || (function()
     { _eventCallback["init"].forEach(function(fn) { fn(); }); }
   }
 
-	window.addEventListener("load", init);
-	
+  window.addEventListener("load", init);
+
   // Record the scroll and caret position on focusout and page close.
   //window.addEventListener("focusout", scrollPositioner.setScrollAndCaretPosCookie);
   window.addEventListener("beforeunload", setScrollAndCaretPosCookie);
 
-  // If the user clicks a hash jump link, handle it with my recipe.
-  window.addEventListener("click", function()
+  // If the event target is a hyperlink for hash tag jump on the same page, get the
+  // hash tag element, and then call highlightScroll() to jump to it
+  function handleHashJump(event)
   {
     // Leave if the target is not a hyperlink or if shift key is pressed (for editing)
     if (event.target.tagName != "A" || event.shiftKey) { return; }
@@ -602,13 +603,17 @@ var scrollPositioner = scrollPositioner || (function()
     var match = url.match(/#.+$/i);
     if (match && url.replace(match[0],"") == _url)
     {
-      //     event.preventDefault();
       var idElement = document.getElementById(match[0].slice(1));
       var bulletObj = idElement.parentElement;
       if (!bulletObj || bulletObj.nodeName != "LI") { bulletObj = idElement; }
       highlightScroll(bulletObj);
     }
-  });
+  }
+
+  // If the user clicks or press enter on a hash jump link, handle it with my recipe.
+  window.addEventListener("click", handleHashJump);
+  window.addEventListener("keydown", function()
+  { if (event.keyCode === 13) { handleHashJump(event); } });
 
   // If the user directly makes a hash change to the url, handle it with my recipe.
   window.addEventListener("hashchange", function()
