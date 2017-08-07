@@ -22,8 +22,9 @@ SDV($DiffMinorFmt, ($DiffShow['minor']=='y') ?
 SDV($DiffSourceFmt, ($DiffShow['source']=='y') ?
   "<a href='{\$PageUrl}?action=diff&amp;source=n&amp;minor=".$DiffShow['minor']."'>$[Show changes to output]</a>" :
   "<a href='{\$PageUrl}?action=diff&amp;source=y&amp;minor=".$DiffShow['minor']."'>$[Show changes to markup]</a>");
-SDV($PageDiffFmt,"<h2 class='wikiaction'>$[{\$FullName} History]</h2>
-  <p>$DiffMinorFmt - $DiffSourceFmt</p>
+SDV($PageDiffFmt,"<h2 class='wikiaction'>$[{\$FullName} History]</h2><span style='color:red'>Update history before restore!</span>
+<!--  <p>$DiffMinorFmt - $DiffSourceFmt</p> -->
+  <p>$DiffSourceFmt</p>
   ");
 SDV($DiffStartFmt,"
       <div class='diffbox'><div class='difftime'><a name='diff\$DiffGMT' href='#diff\$DiffGMT'>\$DiffTime</a>
