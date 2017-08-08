@@ -993,6 +993,60 @@ function MxTextExtract($pagename, $opt)
   return $out;
 } //}}}
 
+// Parse the given string, and list all the pages matching the description
+// For example, $fieldValue = "Main/*, Site/testpage" lists all the pages in group Main, 
+// and the page Site/testpage
+function listPageByName($fieldValue)
+{
+  global $WorkDir;
+  $pageList = [];
+  $pageDescriptionList = explode(",", $fieldValue);
+  foreach ($pageDescriptionList as $pageDescription)
+  {
+    $pageDescription = trim($pageDescription);
+
+    // If this pattern matches group/* or group.*
+    // or a special case if $fieldValue is empty
+    if (preg_match("/^(\w+)[\/\.]\*$/", $pageDescription, $match) ||
+    $pageDescription === "")
+    {
+      // Insert all the pages with group name matching it, and its pagename is neither
+      // RecentChanges nor AllRecentChanges into $pageList
+      $groupName = $match[1];
+      $file = scandir($WorkDir);
+      $N_FILE = count($file);
+      for ($iFile = 0; $iFile < $N_FILE; $iFile++)
+      {
+      	// Skip system files
+      	$fileName = $file[$iFile];
+      	if ($fileName === "." || $fileName === ".." || $fileName === ".htaccess" ||
+      	$fileName === ".lastmod") { continue; }
+      	
+        // Parse group/page name of this file
+        preg_match("/(\w+)\.(\w+)/i", $file[$iFile], $match);
+        $_groupName = $match[1]; $_pageName = $match[2];
+        
+        // If $fieldValue is empty or the groupname matches what we are looking for
+        // and this file is not the recentChange stuff, insert it into the list
+        if (($pageDescription === "" || strcasecmp($groupName, $_groupName) === 0) &&
+        strcasecmp($_pageName,"RecentChanges") !== 0 &&
+        strcasecmp($_pageName,"AllRecentChanges") !== 0)
+        { $pageList[] = $file[$iFile]; }
+      }
+    }
+    
+    // Else if the filename looks like a valid pagename, insert it into $pageList
+    else if (preg_match("/^(\w+)[\/\.](\w+)$/", $pageDescription, $match))
+    {
+      $standardPageName = $match[1].".".$match[2];
+      if (file_exists("$WorkDir/$standardPageName"))
+      { $pageList[] = $standardPageName; }
+    }
+  }
+
+  return $pageList;
+}
+
 //fmt=extract for (:pagelist:) and (:searchbox:)
 SDV($FPLFormatOpt['extract'], array('fn' =>  'FPLTextExtract'));
 function FPLTextExtract($pagename, &$matches, $opt)
@@ -1032,6 +1086,16 @@ function FPLTextExtract($pagename, &$matches, $opt)
   }
 
   $list = MakePageList($pagename, $opt, 0);
+
+/*
+StopWatch("Meng list start");
+$pageNameField = $opt["name"];
+$list = listPageByName($pageNameField);
+consoleLog($list);
+StopWatch("Meng list end");
+global $StopWatch;
+consoleLog($StopWatch);
+*/
 
   //extract page subset according to 'count=' parameter
   if (@$opt['count'] && !$opt['section'])
