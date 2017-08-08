@@ -1085,7 +1085,9 @@ function FPLTextExtract($pagename, &$matches, $opt)
     $opt['name'] = substr($opt['name'],0,$sa);
   }
 
-  $list = MakePageList($pagename, $opt, 0);
+	// Meng. Speed up regex search
+	if ($_REQUEST["regex"]) { $list = listPageByName($opt["name"]); }
+	else { $list = MakePageList($pagename, $opt, 0); }
 
 /*
 StopWatch("Meng list start");
