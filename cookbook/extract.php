@@ -109,12 +109,12 @@ SDV($TEModeDefaults['text']['shorten'], 1);
 SDV($TEModeDefaults['text']['textlinks'], 1);
 #SDV($TEModeDefaults['cut']['shorten'], 1);
 
-// main function for text extract processing
+// Main function for text extract processing
 function TextExtract($pagename, $list, $opt = NULL)
 {
   global $TextExtractOpt, $TEModeDefaults, $TextExtract, $TextExtractExclude,
   $FmtV, $HTMLStylesFmt, $KeepToken, $KPV, $PageListArgPattern;
-  ##DEBUG echo "<pre>LIST array"; print_r($list); echo "</pre>";
+
   foreach($opt as $k => $v)
   {
     if (is_array($v))
@@ -269,6 +269,7 @@ function TextExtract($pagename, $list, $opt = NULL)
   //inits
   $par['sorcnt']=$par['matchnum']=$par['matchcnt']=$par['rowcnt']=0;
   $par['title'] = $opt['title'];
+
   //process each source page in turn
   $new = array(); $j = 0;
   foreach($list as $i => $pn)
@@ -278,8 +279,10 @@ function TextExtract($pagename, $list, $opt = NULL)
     $par['pmatchnum'] = 0;
     $par['prevpmnum'] = 0;
     $hit = 0;
+
     //get rows from source page
     $rows = TETextRows($pagename, $pn, $opt, $par);
+
     if (!$rows) continue;
     $j++;
     $list[$j] = $pn;
@@ -369,6 +372,7 @@ function TextExtract($pagename, $list, $opt = NULL)
       $new[$j]['name'] = $pn;
     }
   } //end of source pages processing
+
   //slice list if we got #section
   if (@$opt['section'] && @$opt['count'])	TESliceList($new, $opt);
   $par['pagecnt'] = count($new);
@@ -472,6 +476,36 @@ function replaceText($pagename, $page, &$par)
   }
 }
 
+// A test function. Delete this afterwards if not used
+function TETextRows_regex($pagename, $source, $opt, &$par)
+{
+  $page = ReadPage($source);
+  if (!$page) { return ''; }
+
+  $text = $page['text'];
+
+  if ($opt['section'])
+  $text = TextSection($text, $source.$opt['section']);
+
+  // skip page if it has an exclude match
+  if ($opt['pat']['-']!='')
+  foreach ($opt['-'] as $pat)
+  { if (preg_match("($pat)".$par['qi'], $text)) return; }
+
+  //skip page if it has no match; all inclusive elements need to match (AND condition)
+  $pat = $opt[''][0];
+  if (!preg_match_all("($pat)".$par['qi'], $text, $match, PREG_OFFSET_CAPTURE))
+  { return; }
+
+  $rows = [];
+  foreach($match[0] as $m)
+  {
+    $rows[] = $m[0];
+  }
+
+  return $rows;
+}
+
 //make rows array from source page
 function TETextRows($pagename, $source, $opt, &$par )
 {
@@ -487,14 +521,10 @@ function TETextRows($pagename, $source, $opt, &$par )
   //skip page if it has an exclude match
   if ($opt['pat']['-']!='')
   foreach ($opt['-'] as $pat)
-  {
-    if (preg_match("($pat)".$par['qi'], $text)) return;
-  }
+  { if (preg_match("($pat)".$par['qi'], $text)) return; }
   //skip page if it has no match; all inclusive elements need to match (AND condition)
   foreach ($opt[''] as $pat)
-  {
-    if (!preg_match("($pat)".$par['qi'], $text)) return;
-  }
+  { if (!preg_match("($pat)".$par['qi'], $text)) return; }
 
 // 	$text = rtrim(Qualify($source, $text));
   // Meng. Use qualify alters the original text, which does not make sense
@@ -1017,15 +1047,15 @@ function listPageByName($fieldValue)
       $N_FILE = count($file);
       for ($iFile = 0; $iFile < $N_FILE; $iFile++)
       {
-      	// Skip system files
-      	$fileName = $file[$iFile];
-      	if ($fileName === "." || $fileName === ".." || $fileName === ".htaccess" ||
-      	$fileName === ".lastmod") { continue; }
-      	
+        // Skip system files
+        $fileName = $file[$iFile];
+        if ($fileName === "." || $fileName === ".." || $fileName === ".htaccess" ||
+        $fileName === ".lastmod") { continue; }
+
         // Parse group/page name of this file
         preg_match("/(\w+)\.(\w+)/i", $file[$iFile], $match);
         $_groupName = $match[1]; $_pageName = $match[2];
-        
+
         // If $fieldValue is empty or the groupname matches what we are looking for
         // and this file is not the recentChange stuff, insert it into the list
         if (($pageDescription === "" || strcasecmp($groupName, $_groupName) === 0) &&
@@ -1034,7 +1064,7 @@ function listPageByName($fieldValue)
         { $pageList[] = $file[$iFile]; }
       }
     }
-    
+
     // Else if the filename looks like a valid pagename, insert it into $pageList
     else if (preg_match("/^(\w+)[\/\.](\w+)$/", $pageDescription, $match))
     {
@@ -1047,19 +1077,17 @@ function listPageByName($fieldValue)
   return $pageList;
 }
 
-//fmt=extract for (:pagelist:) and (:searchbox:)
 SDV($FPLFormatOpt['extract'], array('fn' =>  'FPLTextExtract'));
 function FPLTextExtract($pagename, &$matches, $opt)
 {
-  ##DEBUG	echo "<pre>FPLTextExtract opt "; print_r($opt); echo "</pre>";
   global $FmtV, $EnableStopWatch, $KeepToken, $KPV, $SearchResultsFmt;
   $EnableStopWatch = 1;
   StopWatch('TextExtract pagelist begin');
   $opt['stime'] = strtok(microtime(), ' ') + strtok('');
   $opt['q'] = ltrim($opt['q']);
+
   if(!$opt[''])
   {
-//return '%red%$[Error: search term missing!]';
     $opt['fn'] = 'FPLTemplate';
     $opt['fmt'] = '#default';
     return	"<div>No search term supplied! Result of search for pages:</div>".FPLTemplate($pagename, $matches, $opt);
@@ -1077,6 +1105,7 @@ function FPLTextExtract($pagename, &$matches, $opt)
       unset($opt['']);
     }
   }
+
   if (@$opt['page']) $opt['name'] .= ",".$opt['page'];
   //allow search of anchor sections
   if ($sa=strpos($opt['name'],'#'))
@@ -1085,25 +1114,17 @@ function FPLTextExtract($pagename, &$matches, $opt)
     $opt['name'] = substr($opt['name'],0,$sa);
   }
 
-	// Meng. Speed up regex search
-	if ($_REQUEST["regex"]) { $list = listPageByName($opt["name"]); }
-	else { $list = MakePageList($pagename, $opt, 0); }
-
-/*
-StopWatch("Meng list start");
-$pageNameField = $opt["name"];
-$list = listPageByName($pageNameField);
-consoleLog($list);
-StopWatch("Meng list end");
-global $StopWatch;
-consoleLog($StopWatch);
-*/
+  // Meng. Speed up regex search
+  if ($_REQUEST["regex"]) { $list = listPageByName($opt["name"]); }
+  else { $list = MakePageList($pagename, $opt, 0); }
 
   //extract page subset according to 'count=' parameter
   if (@$opt['count'] && !$opt['section'])
   TESliceList($list, $opt);
   $opt['phead'] = 'link';
+
   $out = TextExtract($pagename, $list, $opt);
+
   return $out;
 } //}}}
 
