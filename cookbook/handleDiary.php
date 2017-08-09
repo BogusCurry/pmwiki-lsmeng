@@ -184,10 +184,10 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
     // Otherwise the number before the underscore is the date
     if (isset($imgName[8]) && $imgName[8] == "_")
     {
-      // Check if the year/mon matches the page year/mon
+      // Except the page "Main.OnThisDay", check if the year/mon matches the page year/mon
       $imgYear = (int)substr($imgName,0,4);
       $imgMon = (int)substr($imgName,4,2);
-      if ($imgYear !== (int)$diaryYear || $imgMon !== (int)$diaryMonth)
+      if (strcasecmp($pagename, "Main.OnThisDay") !== 0 && ($imgYear !== (int)$diaryYear || $imgMon !== (int)$diaryMonth))
       { echo_("Image year/mon does not match pagename: $imgName"); continue; }
 
       $imgDay = (int)substr($imgName,6,2);
