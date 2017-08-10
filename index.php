@@ -4,7 +4,8 @@
  * Note that a file request is not processed here, including any direct access to .php
  * 
  */
-
+// session_start();
+// var_dump($_SESSION);exit;
 define("INDEX_PMWIKI", 1);
 define("DEBUG", 1);
 

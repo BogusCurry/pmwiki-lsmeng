@@ -262,7 +262,8 @@ var editEnhance = editEnhance || (function()
     textElement.focus();
   }
 
-  // As title
+  // As title. For the given textElement, position the cursor at 1/4 browser height from
+  // the screen top
   function scrollToSelection(textElement)
   {
     var start = textElement.selectionStart;
@@ -273,6 +274,7 @@ var editEnhance = editEnhance || (function()
     if (start > textLen>>1) { textElement.scrollTop = 0; }
     else { textElement.scrollTop = textElement.scrollHeight; }
     textElement.focus();
+    textElement.scrollTop = textElement.scrollTop + parseInt(window.innerHeight/4);
     textElement.selectionEnd = end;
   }
 
