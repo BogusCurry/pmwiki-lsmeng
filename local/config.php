@@ -251,7 +251,7 @@ require_once("$FarmD/cookbook/plugin_LSMENG_general.php");
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, and prevent the memory from being paged.
-if ($AuthorLink === "MBA") { shell_exec("memcached -d -l localhost -k"); }
+if ($AuthorLink === "MBA") { shell_exec("memcached -d -l localhost -k -I 10m"); }
 
 /************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
 if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) { return; }
