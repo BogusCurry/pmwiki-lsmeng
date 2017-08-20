@@ -67,6 +67,8 @@ if ($action === "browse" || $action === "edit")
 
 function HandleAutoSave( $pagename, $auth = 'edit' )
 {
+  StopWatch('HandleAutoSave begin');
+  
   global
   $EditFunctions,
   $EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
@@ -155,6 +157,8 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
     echo 'Saved';
   }
   else { echo 'Autosave write error'; }
+  
+  StopWatch('HandleAutoSave end');
 }
 
 // Get the indexOf the nth occurrence of either "pat1" or "pat2"
