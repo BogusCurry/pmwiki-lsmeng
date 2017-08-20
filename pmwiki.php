@@ -41,6 +41,8 @@ session_start();
 
 /****************************************************************************************/
 
+$EnableStopWatch = 1;
+
 StopWatch('PmWiki');
 @ini_set('magic_quotes_runtime', 0);
 @ini_set('magic_quotes_sybase', 0);
@@ -58,6 +60,8 @@ SDV($FarmD,dirname(__FILE__));
 
 // Meng. Move the working directory setting to "config.php".
 //SDV($WorkDir,'wiki.d');
+
+$isAJAX = isset($_SERVER["HTTP_X_REQUESTED_WITH"]) ? true : false;
 
 define('PmWiki',1);
 if (preg_match('/\\w\\w:/', $FarmD)) exit();
@@ -378,8 +382,16 @@ $action = strtolower($action);
 // $actionStr = ($action == "browse") ? "" : "?action=$action";
 $actionStr = ($action == "browse") ? "" : "/$action";
 
+// $actualLoadPagename is the name of the actually loaded file, i.e., when requesting 
+// Main.Homepage and Site.Sidebar is being loaded, $actualLoadPagename refers to 
+// Site.Sidebar.
+// $actualRequestPagename is the name of the page being requested, i.e., the name of 
+// the page typed in the url
+// The purpose of declaring these two seemingly redundant stuff is because the param
+// "$pagename" passed around in functions sometimes lacks a clear defn.
 $actualLoadPagename;
 $pagename = @$_REQUEST['n'];
+$actualRequestPagename = str_replace("/", ".", $_REQUEST["n"]);
 if (!$pagename) $pagename = @$_REQUEST['pagename'];
 if (!$pagename && preg_match('!^'.preg_quote($_SERVER['SCRIPT_NAME'],'!').'/?([^?]*)!', $_SERVER['REQUEST_URI'],$match))
 $pagename = urldecode($match[1]);
@@ -464,6 +476,9 @@ if (!@$HandleActions[$action] || !function_exists($HandleActions[$action]))
 
 if (IsEnabled($EnableActions, 1)) HandleDispatch($pagename, $action);
 Lock(0);
+
+consoleLog($StopWatch);
+
 return;
 
 ##  HandleDispatch() is used to dispatch control to the appropriate
@@ -1450,13 +1465,47 @@ function ReadPage($pagename, $since=0)
 {
   # read a page from the appropriate directories given by $WikiReadDirsFmt.
   global $WikiLibDirs,$Now;
-  foreach ($WikiLibDirs as $dir)
+
+  /**************************************************************************************/
+  // Implement a page cache in SESSION to store the most recently accessed page
+  // Check if the currently requested page matches (name & time stamp)the one cached in
+  // SESSION. If there is a match, return the cache; otherwise perform the usual builtin
+  // routine
+  
+  // If it's a match
+  global $actualRequestPagename, $WorkDir;
+  if (strcasecmp($actualRequestPagename, $pagename) === 0 &&
+  strcasecmp($pagename, $_SESSION["PAGE_CACHE"]["page"]["name"]) === 0 &&
+  @filemtime("$WorkDir/$pagename") === $_SESSION["PAGE_CACHE"]["mtime"])
   {
-    $page = $dir->read($pagename, $since);
-    if ($page) break;
+    consoleLog("cache used for page $pagename");
+    $page = $_SESSION["PAGE_CACHE"]["page"];
   }
+  
+  // Else perform the old routine, and cache this page if it's an actually requested page
+  else
+  {
+    foreach ($WikiLibDirs as $dir)
+    {
+      $page = $dir->read($pagename, $since);
+      if ($page) break;
+    }
+
+    if (strcasecmp($actualRequestPagename, $pagename) === 0 &&
+    file_exists("$WorkDir/$pagename"))
+    {
+      $_SESSION["PAGE_CACHE"] = [
+      "page" => $page,
+      "mtime" => filemtime("$WorkDir/$pagename")
+      ];
+    }
+  }
+  
+  /**************************************************************************************/
+
   if (@!$page) $page['ctime'] = $Now;
   if (@!$page['time']) $page['time'] = $Now;
+
   return $page;
 }
 
@@ -2105,6 +2154,10 @@ function BuildMarkupRules()
 
 function MarkupToHTML($pagename, $text, $opt = NULL)
 {
+  // For autosaving using AJAX, there is no need to perform MarkupToHTML()!!
+  global $isAJAX;
+  if ($isAJAX) { return; }
+
   # convert wiki markup text to HTML output
   global $MarkupRules, $MarkupFrame, $MarkupFrameBase, $WikiWordCount,
   $K0, $K1, $RedoMarkupLine, $MarkupToHTML;
@@ -2386,9 +2439,28 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL)
   }
   StopWatch("UpdatePage: end $pagename");
 
-  // Meng. Handle the pageindex process on editing
+  /**************************************************************************************/
+	// On page update, store the whole page in SESSION as a cache
+	// Only pagename matching the actually requested one (the one typed in url) will be
+	// handled
+	
+  global $actualRequestPagename, $WorkDir;
+  if (strcasecmp($actualRequestPagename, $pagename) === 0 &&
+  file_exists("$WorkDir/$pagename"))
+  {
+    $_SESSION["PAGE_CACHE"] = [
+    "page" => $new,
+    "mtime" => filemtime("$WorkDir/$pagename")
+    ];
+  }
+  
+  /**************************************************************************************/
+  // Handle the pageindex process on editing
+  
   handlePageindex();
 
+	/**************************************************************************************/
+	
   return $IsPagePosted;
 }
 
