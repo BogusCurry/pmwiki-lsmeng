@@ -1467,23 +1467,11 @@ function ReadPage($pagename, $since=0)
   global $WikiLibDirs,$Now;
 
   /**************************************************************************************/
-  // Implement a page cache in SESSION to store the most recently accessed page
-  // Check if the currently requested page matches (name & time stamp)the one cached in
-  // SESSION. If there is a match, return the cache; otherwise perform the usual builtin
-  // routine
-  
-  // If it's a match
-  global $actualRequestPagename, $WorkDir;
-  if (strcasecmp($actualRequestPagename, $pagename) === 0 &&
-  strcasecmp($pagename, $_SESSION["PAGE_CACHE"]["page"]["name"]) === 0 &&
-  @filemtime("$WorkDir/$pagename") === $_SESSION["PAGE_CACHE"]["mtime"])
-  {
-    consoleLog("cache used for page $pagename");
-    $page = $_SESSION["PAGE_CACHE"]["page"];
-  }
-  
-  // Else perform the old routine, and cache this page if it's an actually requested page
-  else
+  // Get $page from cache if it's there. Otherwise do the usual stuff then try to cache
+  // the page
+
+  $page = getCachedPage($pagename);
+  if (!isset($page))
   {
     foreach ($WikiLibDirs as $dir)
     {
@@ -1491,16 +1479,9 @@ function ReadPage($pagename, $since=0)
       if ($page) break;
     }
 
-    if (strcasecmp($actualRequestPagename, $pagename) === 0 &&
-    file_exists("$WorkDir/$pagename"))
-    {
-      $_SESSION["PAGE_CACHE"] = [
-      "page" => $page,
-      "mtime" => filemtime("$WorkDir/$pagename")
-      ];
-    }
+    cachePage($pagename, $page);
   }
-  
+
   /**************************************************************************************/
 
   if (@!$page) $page['ctime'] = $Now;
@@ -2160,10 +2141,10 @@ function MarkupToHTML($pagename, $text, $opt = NULL)
 
   # convert wiki markup text to HTML output
   global $MarkupRules, $MarkupFrame, $MarkupFrameBase, $WikiWordCount,
-  $K0, $K1, $RedoMarkupLine, $MarkupToHTML;
+  $K0, $K1, $RedoMarkupLine, $MarkupToHTML, $actualLoadPagename;
   $MarkupToHTML['pagename'] = $pagename;
 
-  StopWatch('MarkupToHTML begin');
+  StopWatch("MarkupToHTML begin for $actualLoadPagename");
   array_unshift($MarkupFrame, array_merge($MarkupFrameBase, (array)$opt));
   $MarkupFrame[0]['wwcount'] = $WikiWordCount;
   foreach((array)$text as $l)
@@ -2440,27 +2421,17 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL)
   StopWatch("UpdatePage: end $pagename");
 
   /**************************************************************************************/
-	// On page update, store the whole page in SESSION as a cache
-	// Only pagename matching the actually requested one (the one typed in url) will be
-	// handled
-	
-  global $actualRequestPagename, $WorkDir;
-  if (strcasecmp($actualRequestPagename, $pagename) === 0 &&
-  file_exists("$WorkDir/$pagename"))
-  {
-    $_SESSION["PAGE_CACHE"] = [
-    "page" => $new,
-    "mtime" => filemtime("$WorkDir/$pagename")
-    ];
-  }
-  
+  // On page update, store the whole page in SESSION as a cache
+
+  cachePage($pagename, $new);
+
   /**************************************************************************************/
   // Handle the pageindex process on editing
-  
+
   handlePageindex();
 
-	/**************************************************************************************/
-	
+  /**************************************************************************************/
+
   return $IsPagePosted;
 }
 
@@ -2729,6 +2700,8 @@ function PreviewPage($pagename,&$page,&$new)
 
 function HandleEdit($pagename, $auth = 'edit')
 {
+	StopWatch("HandleEdit begin for $pagename");
+	
   global $IsPagePosted, $EditFields, $ChangeSummary, $EditFunctions,
   $EnablePost, $FmtV, $Now, $EditRedirectFmt,
   $PageEditForm, $HandleEditFmt, $PageStartFmt, $PageEditFmt, $PageEndFmt;

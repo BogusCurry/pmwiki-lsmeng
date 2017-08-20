@@ -524,3 +524,75 @@ function syncFile($fromPath, $toPath)
     }
   }
 }
+
+// Recently visited/edited pages will be stored in SESSION
+// This function returns the whole array $page stored in SESSION for page named $pagename
+// null is returned if it's not in cache for whatever reason
+// SESSION is assumed to have been started
+function getCachedPage($pagename)
+{
+  // $pagename shall use . instead of /
+  $pagename = str_replace("/", ".", $pagename);
+
+  // Only file that exists will be processed
+  global $WorkDir, $Now;
+  if (!file_exists("$WorkDir/$pagename")) { return; }
+
+  // If pagename is not in the cache list, return null
+  $pageCacheList = $_SESSION["PAGE_CACHE"];
+  if (!isset($pageCacheList) || !isset($pageCacheList[$pagename])) { return; }
+
+  // Else it's in the cache list, check its time stamp; if it's up to date, return the
+  // cached page array. Otherwise return null
+  else
+  {
+    if (filemtime("$WorkDir/$pagename") === $pageCacheList[$pagename]["mtime"])
+    {
+      $_SESSION["PAGE_CACHE"][$pagename]["timeStamp"] = $Now;
+      return $pageCacheList[$pagename]["page"];
+    }
+    else { return; }
+  }
+}
+
+// Store the whole page array $page for page named $pagename in SESSION. This serves as
+// a cache mechanism.
+// Return true if successfully cached, false otherwise.
+function cachePage($pagename, $page)
+{
+  // $pagename shall use . instead of /
+  $pagename = str_replace("/", ".", $pagename);
+
+  // Only file that exists will be processed
+  global $WorkDir, $Now;
+  if (!file_exists("$WorkDir/$pagename")) { return false; }
+
+  $MAX_CACHE_LEN = 10;
+
+  // If the cache reaches max length, find the oldest entry and remove it
+  $pageCacheList = $_SESSION["PAGE_CACHE"];
+  if (isset($pageCacheList) && sizeof($pageCacheList) >= $MAX_CACHE_LEN)
+  {
+    $oldestKey = null;
+    $oldestTime = $Now;
+    foreach ($pageCacheList as $_pagename => $pageCache)
+    {
+      $timeStamp = $pageCache["timeStamp"];
+      if ($timeStamp < $oldestTime)
+      {
+        $oldestKey = $_pagename;
+        $oldestTime = $timeStamp;
+      }
+    }
+    unset($_SESSION["PAGE_CACHE"][$oldestKey]);
+  }
+
+  // Cache the page
+  $_SESSION["PAGE_CACHE"][$pagename] = [
+  "page" => $page,
+  "mtime" => filemtime("$WorkDir/$pagename"),
+  "timeStamp" => $Now
+  ];
+
+  return true;
+}
