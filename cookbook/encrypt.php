@@ -32,7 +32,7 @@ function isEncryptStr($text)
 // Return 1 if the page is a special site page that should not be encrypted.
 //        0 otherwise.
 // After numerous revision of the pmwiki src code, it turns out "SiteAdmin.Status" is
-// the only page that requires this function. Simply the original function to speed up.
+// the only page that requires this function. Simplify the original function to speed up.
 function noEncryptPage($pagename)
 {
   if (strcasecmp("$pagename","SiteAdmin.Status") == 0) { return 1; }
@@ -185,7 +185,7 @@ function encryptStr($text, $key = "")
 
   // Cache the AES key for quick access later. Using the concatenated string "$key.$salt"
   // as the array index.
-  cacheRecentPageAESKey($AES_KEY, $key.$salt);
+//   cacheRecentPageAESKey($AES_KEY, $key.$salt);
 
   return $encryptText;
 }
@@ -228,8 +228,8 @@ function decryptStr($text, $key = "")
 
   // Get the cached recently decrypted text using the salt as the array key.
   // Basically this trades memory off the CPU usage.
-  $decryptText = getRecentDecryptText($key.$salt);
-  if ($decryptText != "") { return $decryptText; }
+//   $decryptText = getRecentDecryptText($key.$salt);
+//   if ($decryptText != "") { return $decryptText; }
 
   // Retrieve the initialization vector.
   global $IV_LEN;
@@ -247,9 +247,9 @@ function decryptStr($text, $key = "")
 
   // Cache the decrypted text for some non-sensitive pmwiki builtin pages for speedup;
   // otherwise record the AES KEY as a recently used one
-  if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
-  else
-  { cacheRecentPageAESKey($AES_KEY, $key.$salt); }
+//   if (cacheRecentDecryptText($decryptText, $key.$salt) === true) {}
+//   else { cacheRecentPageAESKey($AES_KEY, $key.$salt); }
+	cacheRecentPageAESKey($AES_KEY, $key.$salt);
 
   // Insert data decompression here
   if (substr($decryptText,0,10) == 'GZCOMPRESS')
