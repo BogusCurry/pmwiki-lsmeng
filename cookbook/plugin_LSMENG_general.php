@@ -133,7 +133,7 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
   global $emailAddress2;
   $formatTime = getFormatTime();
 
-// Get browser and OS info.
+  // Get browser and OS info.
   $obj = new OS_BR();
   $browser = $obj->showInfo('browser');
   $browserVersion = $obj->showInfo('version');
@@ -144,7 +144,7 @@ function sendAlertEmail($subject = "Pmwiki Login Alert", $content = "")
   $country = @file_get_contents('http://ip-api.com/line/'.$IP);
   $str .= "\n\nLocation details: \n".$country."\n".$content;
 
-// Call shell script to send an email with the above info.
+  // Call shell script to send an email with the above info.
   shell_exec("echo \"".$str."\" | mail -s \"".$subject."\" ".$emailAddress1." ".$emailAddress2." -f donotreply");
 }
 
@@ -340,7 +340,7 @@ function addpageTimerJs($countdownTimer)
 // then use the master key to decrypt "Main.Homepage"
 // The decryption is successful if the string "version=pmwiki" has been found in the 
 // decrypted text. Upon decryption success, the password and the derived master key are
-//  cached to speed up later authentication requests. Set $cacheCorrectPw to false will
+// cached to speed up later authentication requests. Set $cacheCorrectPw to false will
 // skip the cache and force the password Return 
 // true if the input password is correct
 // false otherwise
@@ -352,7 +352,7 @@ function isPasswdCorrect($passwd)
     else { return false; }
   }
 
-// Derive MASTER_KEY using pbkdf2
+  // Derive MASTER_KEY using pbkdf2
   $MASTER_KEY = deriveMasterKey($passwd);
 
 // if ($HMAC_AUTH === true)
@@ -370,8 +370,8 @@ function isPasswdCorrect($passwd)
   $file = "$WorkDir/Main.HomePage";
   $text = file_get_contents($file);
   $decryptText = decryptStr($text, $MASTER_KEY);
-// If decryption is successful, or the homepage does not exist. The latter case should
-// only happen when initializing.
+  // If decryption is successful, or the homepage does not exist. The latter case should
+  // only happen when initializing.
   if (stripos($decryptText, "version=pmwiki") !== false || $text === false)
   {
     global $sysLogFile;
@@ -432,7 +432,6 @@ function httpAuth()
   }
   else
   {
-//die ("here");
     header('WWW-Authenticate: Basic realm="Restricted Section"');
     header('HTTP/1.0 401 Unauthorized');
     die ("Not Authorized!");
@@ -447,12 +446,12 @@ function httpAuth()
 // .htaccess to avoid providing username/password.
 function post_async($url)
 {
-// Parse the given url into host, path, etc.
+  // Parse the given url into host, path, etc.
   $parts = parse_url($url);
   $port = isset($parts['port']) ? $parts['port'] : (($parts['scheme']=='http') ? 80 : 443);
   $fp = fsockopen($parts['host'], $port);//, $errno, $errstr, 30);
 
-// Composing the message
+  // Composing the message
   $out = "POST ".$parts['path'].'?'.$parts['query']." HTTP/1.1\r\n";
   $out.= "Host: ".$parts['host']."\r\n";
   $out.= "Cookie: ".urlencode('PHPSESSID') .'='. urlencode($_COOKIE['PHPSESSID'])."; \r\n";
@@ -480,15 +479,15 @@ function getImgFileContent($file, $mime='image/png')
   if ($contents === false) { return ''; }
   $base64 = base64_encode($contents);
 
-// Parse the filename from the complete file path
+  // Parse the filename from the complete file path
   global $pagename;
   $groupname = substr($pagename,0,strpos($pagename,'.'));
   $pos = strrpos($file,'/');
   if ($pos !== false) { $filename = substr($file, $pos+1); }
   else { $filename = $file; }
 
-// Also insert the filename into the image data content. This serves a way to signify
-// the file name to the client side JS. Although it works, this is not a legal field.
+  // Also insert the filename into the image data content. This serves a way to signify
+  // the file name to the client side JS. Although it works, this is not a legal field.
   return ('data:' . $mime . ';filename='.$filename.';base64,' . $base64);
 }
 
@@ -497,12 +496,12 @@ function syncFile($fromPath, $toPath)
 {
   if (!file_exists($fromPath)) { return; }
 
-// For syncing a folder
+  // For syncing a folder
   if (!file_exists($toPath)) { mkdir($toPath, 0770); }
 
   $ignored = array('.', '..', '.htaccess');
 
-// for each file in from path
+  // for each file in from path
   foreach (scandir($fromPath) as $filename)
   {
     if (in_array($filename, $ignored)) { continue; }
@@ -548,15 +547,16 @@ function isPageCached($pagename)
 // SESSION is assumed to have been started
 function getCachedPage($pagename)
 {
-  // $pagename shall use . instead of /
-  $pagename = str_replace("/", ".", $pagename);
+  // $pagename shall be in a unified form
+  $pagename = strtolower(str_replace("/", ".", $pagename));
+
+  // Take care of siteadmin.status ...
+  global $WorkDir;
+  $pagefilePath = $WorkDir;
+  if ($pagename === "siteadmin.status") { $pagefilePath = getcwd()."/wiki.d"; }
 
   // Only file that exists will be processed
-  global $WorkDir, $Now;
-  if (!file_exists("$WorkDir/$pagename")) { return; }
-
-  // Unifiy the case
-  $pagename = strtolower($pagename);
+  if (!file_exists("$pagefilePath/$pagename")) { return; }
 
   // If pagename is not in the cache list, return null
   $pageCacheList = $_SESSION["PAGE_CACHE"];
@@ -566,8 +566,9 @@ function getCachedPage($pagename)
   // cached page array. Otherwise return null
   else
   {
-    if (filemtime("$WorkDir/$pagename") === $pageCacheList[$pagename]["mtime"])
+    if (filemtime("$pagefilePath/$pagename") === $pageCacheList[$pagename]["mtime"])
     {
+      global $Now;
       $_SESSION["PAGE_CACHE"][$pagename]["timeStamp"] = $Now;
       return $pageCacheList[$pagename]["page"];
     }
@@ -583,25 +584,27 @@ function cachePage($pagename, $page)
   global $AuthorLink;
   if ($AuthorLink !== "MBA") { return false; }
 
-  // $pagename shall use . instead of /
-  $pagename = str_replace("/", ".", $pagename);
+  // $pagename shall be in a unified form
+  $pagename = strtolower(str_replace("/", ".", $pagename));
+
+  // Take care of siteadmin.status ...
+  global $WorkDir;
+  $pagefilePath = $WorkDir;
+  if ($pagename === "siteadmin.status") { $pagefilePath = getcwd()."/wiki.d"; }
 
   // Only file that exists will be processed
-  global $WorkDir, $Now;
-  if (!file_exists("$WorkDir/$pagename")) { return false; }
-
-  // Unifiy the case
-  $pagename = strtolower($pagename);
+  if (!file_exists("$pagefilePath/$pagename")) { return false; }
 
   // If page already cached & up to date, leave
   $pageCacheList = $_SESSION["PAGE_CACHE"];
-  $pageMTime = filemtime("$WorkDir/$pagename");
+  $pageMTime = filemtime("$pagefilePath/$pagename");
   if (isPageCached($pagename) && $pageCacheList[$pagename]["mtime"] === $pageMTime)
   { return true; }
 
   $MAX_CACHE_LEN = 10;
 
   // If the cache reaches max length, find the oldest entry and remove it
+  global $Now;
   if (isset($pageCacheList) && sizeof($pageCacheList) >= $MAX_CACHE_LEN)
   {
     $oldestKey = null;
