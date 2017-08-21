@@ -580,6 +580,9 @@ function getCachedPage($pagename)
 // Return true if successfully cached, false otherwise.
 function cachePage($pagename, $page)
 {
+  global $AuthorLink;
+  if ($AuthorLink !== "MBA") { return false; }
+
   // $pagename shall use . instead of /
   $pagename = str_replace("/", ".", $pagename);
 

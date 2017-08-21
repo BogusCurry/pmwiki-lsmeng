@@ -1254,6 +1254,7 @@ class PageStore
     if (isEncryptStr($wholePageText) == true)
     {
       $isPageEncrypt = true;
+			consoleLog("Decrypt page $pagename");
       $wholePageText = decryptStr($wholePageText);
       if ($wholePageText === -1) { Abort("Page \"$pagename\" decryption failed. Possibly a wrong passphrase!"); }
     }
