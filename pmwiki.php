@@ -2210,6 +2210,8 @@ function MarkupToHTML($pagename, $text, $opt = NULL)
 
 function HandleBrowse($pagename, $auth = 'read')
 {
+  StopWatch("HandleBrowse begin for $pagename");
+
   # handle display of a page
   global $DefaultPageTextFmt, $PageNotFoundHeaderFmt, $HTTPHeaders,
   $EnableHTMLCache, $NoHTMLCache, $PageCacheFile, $LastModTime, $IsHTMLCached,
@@ -2258,6 +2260,8 @@ function HandleBrowse($pagename, $auth = 'read')
     $elapsedTime = (microtime(true) - $startMicroTime);
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
+
+    StopWatch("Custom page processing begin");
 
     // Meng. Handle the pageindex process on browsing
     handlePageindex();
@@ -2361,6 +2365,8 @@ function HandleBrowse($pagename, $auth = 'read')
 //			syncFileFromDropbox($text);
     }
 
+    StopWatch("Custom page processing end");
+
 /****************************************************************************************/
 
     $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt).'<br>';
@@ -2389,6 +2395,8 @@ function HandleBrowse($pagename, $auth = 'read')
   SDV($HandleBrowseFmt,array(&$PageStartFmt, &$PageRedirectFmt, '$PageText',
   &$PageEndFmt));
   PrintFmt($pagename,$HandleBrowseFmt);
+
+  StopWatch("HandleBrowse end for $pagename");
 }
 
 ## UpdatePage goes through all of the steps needed to update a page,
@@ -2423,7 +2431,8 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL)
   /**************************************************************************************/
   // On page update, store the whole page in SESSION as a cache
 
-  cachePage($pagename, $new);
+  if ($IsPagePosted) { cachePage($pagename, $new); }
+  else if (!isPageCached($pagename)) { cachePage($pagename, $page); }
 
   /**************************************************************************************/
   // Handle the pageindex process on editing
@@ -2700,8 +2709,8 @@ function PreviewPage($pagename,&$page,&$new)
 
 function HandleEdit($pagename, $auth = 'edit')
 {
-	StopWatch("HandleEdit begin for $pagename");
-	
+  StopWatch("HandleEdit begin for $pagename");
+
   global $IsPagePosted, $EditFields, $ChangeSummary, $EditFunctions,
   $EnablePost, $FmtV, $Now, $EditRedirectFmt,
   $PageEditForm, $HandleEditFmt, $PageStartFmt, $PageEditFmt, $PageEndFmt;

@@ -525,6 +525,23 @@ function syncFile($fromPath, $toPath)
   }
 }
 
+// Return true if the given pagename is currently in the cached page list.
+// False otherwise
+function isPageCached($pagename)
+{
+  // $pagename shall use . instead of /
+  $pagename = str_replace("/", ".", $pagename);
+  $pagename = strtolower($pagename);
+
+  if (isset($_SESSION["PAGE_CACHE"]))
+  {
+    $cachePageList = array_keys($_SESSION["PAGE_CACHE"]);
+    return in_array($pagename, $cachePageList);
+  }
+
+  return false;
+}
+
 // Recently visited/edited pages will be stored in SESSION
 // This function returns the whole array $page stored in SESSION for page named $pagename
 // null is returned if it's not in cache for whatever reason
@@ -537,6 +554,9 @@ function getCachedPage($pagename)
   // Only file that exists will be processed
   global $WorkDir, $Now;
   if (!file_exists("$WorkDir/$pagename")) { return; }
+
+  // Unifiy the case
+  $pagename = strtolower($pagename);
 
   // If pagename is not in the cache list, return null
   $pageCacheList = $_SESSION["PAGE_CACHE"];
@@ -567,10 +587,18 @@ function cachePage($pagename, $page)
   global $WorkDir, $Now;
   if (!file_exists("$WorkDir/$pagename")) { return false; }
 
+  // Unifiy the case
+  $pagename = strtolower($pagename);
+
+  // If page already cached & up to date, leave
+  $pageCacheList = $_SESSION["PAGE_CACHE"];
+  $pageMTime = filemtime("$WorkDir/$pagename");
+  if (isPageCached($pagename) && $pageCacheList[$pagename]["mtime"] === $pageMTime)
+  { return true; }
+
   $MAX_CACHE_LEN = 10;
 
   // If the cache reaches max length, find the oldest entry and remove it
-  $pageCacheList = $_SESSION["PAGE_CACHE"];
   if (isset($pageCacheList) && sizeof($pageCacheList) >= $MAX_CACHE_LEN)
   {
     $oldestKey = null;
@@ -590,7 +618,7 @@ function cachePage($pagename, $page)
   // Cache the page
   $_SESSION["PAGE_CACHE"][$pagename] = [
   "page" => $page,
-  "mtime" => filemtime("$WorkDir/$pagename"),
+  "mtime" => $pageMTime,
   "timeStamp" => $Now
   ];
 
