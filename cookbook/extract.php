@@ -139,12 +139,13 @@ function TextExtract($pagename, $list, $opt = NULL)
   {
     case 'sentence':  $opt['unit'] = 'sent'; break;
     case 'paragraph': $opt['unit'] = 'para'; break;
+    case 'bullet':    $opt['unit'] = 'bullet'; break;
     case 'dline':     $opt['unit'] = 'line'; $opt['double'] = 1; break;
     case 'dsent':     $opt['unit'] = 'sent'; $opt['double'] = 1; break;
   }
   ##DEBUG	echo "<pre>OPT array "; print_r($opt); echo "</pre>";
   //input parameter check
-  if (!in_array($opt['unit'], array('line','para','page','sent'))
+  if (!in_array($opt['unit'], array('line','para','page','sent','bullet'))
   OR !in_array($opt['markup'], array('code','cut','source','text','on')))
   return "%red%$[Error: check input parameters!]";
 
@@ -298,16 +299,19 @@ function TextExtract($pagename, $list, $opt = NULL)
         $new[$j]['rows'][] = $row; continue;
       }
       //skip rows which don't match
-      if ($opt['unit']=='line' || $opt['unit']=='para' || $opt['unit']=='sent')
+      if ($opt['unit']=='line' || $opt['unit']=='para' || $opt['unit']=='bullet' || $opt['unit']=='sent')
       {
         if(preg_match("($pat)".$qi, $row)) $hit = 1;
         else { if($opt['double']==1 && $hit==1) $hit=0; else continue; }
       }
 
       //use row 'as is' if markup=on or whole page, no futher row processing
-      if ($opt['markup']=='on' && ($pat=="." || $opt['unit']=='page' || $opt['unit']=='para'))
+      if ($opt['markup']=='on' && ($pat=="." || $opt['unit']=='page' || $opt['unit']=='para' || $opt['unit']=='bullet'))
       {
         $new[$j]['phead'] = TEPageHeader($pagename, $pn, $opt, $par);
+
+        if ($opt['unit'] == 'bullet') { $row = TEExtractBullet($row, $opt); }
+
         $new[$j]['rows'][] = $row;
         $par['rowcnt']++;
         continue; //start with next source row
@@ -358,9 +362,10 @@ function TextExtract($pagename, $list, $opt = NULL)
         $new[$j]['rows'][$rc] = $rownum.$row;
       }	else { $new[$j]['rows'][$rc-1] = trim($new[$j]['rows'][$rc-1]," ∂\t\n\r\0\x0B")." ".trim($row);  }
       //add vertical spacing to para and double
-      if (($opt['unit']=='para') && $opt['markup']!='source')
+      if (($opt['unit']=='para' || $opt['unit']=='bullet') && $opt['markup']!='source')
       $new[$j]['rows'][] = "\n∂∂";
-    } //end of page rows processing
+    }//end of page rows processing
+
     if (count($new[$j]['rows'])>0)
     {
       //add pagelink (prefix) row
@@ -430,7 +435,7 @@ function TextExtract($pagename, $list, $opt = NULL)
 } //}}}
 
 // Meng. The text replace routine.
-function replaceText($pagename, $page, &$par)
+function TEReplaceText($pagename, $page, &$par)
 {
   if (!$page) { return; }
 
@@ -506,6 +511,33 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
   return $rows;
 }
 
+// Extract the whole bullet, including its children, in which the first match is found. 
+function TEExtractBullet($text, $opt)
+{
+  $query = $opt["q"];
+
+  // Find the bullet markup right before the first match
+  preg_match("/(^|\n)(\*+|\++).*?$query/i", $text, $match, PREG_OFFSET_CAPTURE);
+
+  // Return the original text if a preceding bullet can't be found
+  if ($match === []) { return $text; }
+
+  // Get the char offset and level of the bullet right preceding the first match
+  $offset = $match[2][1];
+  $level = strlen($match[2][0]);
+
+  // Trucate the text then locate the next bullet markup with the same level or higher
+  // nesting level
+  $text = substr($text, $offset);
+  preg_match("/\n(\*{1,$level}[^\*]|\+{1,$level}[^\+])/", $text, $match, PREG_OFFSET_CAPTURE);
+
+  // Return the current text if the next bulllet can't be found
+  if ($match === []) { return $text; }
+
+  // Return the final text before the next bullet
+  return substr($text, 0, $match[0][1])."\n";
+}
+
 //make rows array from source page
 function TETextRows($pagename, $source, $opt, &$par )
 {
@@ -579,6 +611,18 @@ function TETextRows($pagename, $source, $opt, &$par )
     }
     $rows = $paras;
     break;
+
+    case 'bullet':
+    $paras = array(); $j=0;
+    foreach($rows as $i => $row)
+    {
+      $row = rtrim($row);
+      if ($row=='') { $j++; continue; }
+      $paras[$j] .= $row."\n";
+    }
+    $rows = $paras;
+    break;
+
     //unit=page: - combine rows into one row
     case 'page':
     $part = implode("\n",$rows);
@@ -587,7 +631,7 @@ function TETextRows($pagename, $source, $opt, &$par )
     break;
   }
 
-  replaceText($source, $page, $par);
+  TEReplaceText($source, $page, $par);
 
   return $rows;
 } //}}}
@@ -1030,7 +1074,7 @@ function MxTextExtract($pagename, $opt)
 // Parse the given string, and list all the pages matching the description
 // For example, $fieldValue = "Main/*, Site/testpage" lists all the pages in group Main, 
 // and the page Site/testpage
-function listPageByName($fieldValue)
+function TEListPageByName($fieldValue)
 {
   global $WorkDir;
   $pageList = [];
@@ -1119,7 +1163,7 @@ function FPLTextExtract($pagename, &$matches, $opt)
   }
 
   // Meng. Speed up regex search
-  if ($_REQUEST["regex"]) { $list = listPageByName($opt["name"]); }
+  if ($_REQUEST["regex"]) { $list = TEListPageByName($opt["name"]); }
   else { $list = MakePageList($pagename, $opt, 0); }
 
   //extract page subset according to 'count=' parameter

@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function()
     {
       linkElementList[i].textContent = "#" + id;
       linkElementList[i].href = location.origin + "/Site/SearchE?q=%23" + id +
-      "&unit=para&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
+      "&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
     }
   }
 });
