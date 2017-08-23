@@ -17,7 +17,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170807
+Version 20170823
 
 */
 
@@ -310,7 +310,8 @@ function TextExtract($pagename, $list, $opt = NULL)
       {
         $new[$j]['phead'] = TEPageHeader($pagename, $pn, $opt, $par);
 
-        if ($opt['unit'] == 'bullet') { $row = TEExtractBullet($row, $opt); }
+        // Extract the bullet from the paragraph is the unit is specified as "bullet"
+        if ($opt['unit'] == 'bullet') { $row = TEExtractBullet($row, $opt, $par); }
 
         $new[$j]['rows'][] = $row;
         $par['rowcnt']++;
@@ -512,30 +513,47 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
 }
 
 // Extract the whole bullet, including its children, in which the first match is found. 
-function TEExtractBullet($text, $opt)
+function TEExtractBullet($text, $opt, &$par)
 {
-  $query = $opt["q"];
+  // Get the query string and escape special char
+  $query = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
+  function($match) { return "\\$match[0]"; }, $opt["q"]);
+
+  // Find the complete tag
+  preg_match("/".$query."[^\|]*?\]\]/i", $text, $match);
+
+  // If the tag format can't be found, it's not a tag. Count-- then return nothing
+  if ($match === []) { $par["rowcnt"]--; return ""; }
+
+  $fullTag = $match[0];
+  $fullTag = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
+  function($match) { return "\\$match[0]"; }, $fullTag);
 
   // Find the bullet markup right before the first match
-  preg_match("/(^|\n)(\*+|\++).*?$query/i", $text, $match, PREG_OFFSET_CAPTURE);
+  preg_match("/[\s\S]*(^|\n)(\*+|\++)[\s\S]*?$fullTag/i", $text, $match, PREG_OFFSET_CAPTURE);
 
   // Return the original text if a preceding bullet can't be found
-  if ($match === []) { return $text; }
+  if ($match === []) {}
 
-  // Get the char offset and level of the bullet right preceding the first match
-  $offset = $match[2][1];
-  $level = strlen($match[2][0]);
+  else
+  {
+    // Get the char offset and level of the bullet right preceding the first match
+    $offset = $match[2][1];
+    $level = strlen($match[2][0]);
 
-  // Trucate the text then locate the next bullet markup with the same level or higher
-  // nesting level
-  $text = substr($text, $offset);
-  preg_match("/\n(\*{1,$level}[^\*]|\+{1,$level}[^\+])/", $text, $match, PREG_OFFSET_CAPTURE);
+    // Trucate the text then locate the next bullet markup with the same level or higher
+    // nesting level
+    $text = substr($text, $offset);
+    preg_match("/\n(\*{1,$level}[^\*]|\+{1,$level}[^\+])/", $text, $match, PREG_OFFSET_CAPTURE);
 
-  // Return the current text if the next bulllet can't be found
-  if ($match === []) { return $text; }
+    // Return the current text if the next bulllet can't be found
+    if ($match === []) {}
 
-  // Return the final text before the next bullet
-  return substr($text, 0, $match[0][1])."\n";
+    // Return the final text before the next bullet
+    else { $text = substr($text, 0, $match[0][1])."\n"; }
+  }
+
+  return "%bgcolor=DodgerBlue color=white%&nbsp;".substr($fullTag, 4, -4)."&nbsp;\n".$text;
 }
 
 //make rows array from source page
@@ -878,8 +896,8 @@ function TEHeader(&$opt, $par)
 // 			if ($par['pagecnt']>1)
     $from = "$[on] {$par['pagecnt']} ".$from;
 // 			$out .= "[[#extracttop]]%lfloat%[+ '''{$opt['title']}''' +]  %right%'''{$cnt} $[results]''' &nbsp;&nbsp; {$from} &nbsp;&nbsp; '''[@{$par['pattern']}@]''' &nbsp;&nbsp; {$time}";
-    $out .= "[[#extracttop]]%lfloat%[+ '''{$opt['title']}''' +]  %right%'''{$cnt} $[results]''' &nbsp;&nbsp; {$from} &nbsp;&nbsp; {$time}";
-    $opt['footer'] = "%center% '''$[End of] {$opt['title']}'''  &nbsp;&nbsp; [[#extracttop|$[(start)]]]";
+    $out .= "%lfloat%[+ '''{$opt['title']}''' +]  %right%'''{$cnt} $[results]''' &nbsp;&nbsp; {$from} &nbsp;&nbsp; {$time}";
+    $opt['footer'] = "%center% '''End'''";//'''$[End of] {$opt['title']}'''  &nbsp;&nbsp; [[#extracttop|$[(start)]]]";
     break;
   }
   if ($opt['header']) $out .= "\n(:div001end:)";

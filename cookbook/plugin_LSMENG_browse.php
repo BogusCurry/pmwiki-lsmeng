@@ -426,5 +426,5 @@ function getTagLink($tag)
 
   $host = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
 
-  return $host."/Site/SearchE?q=%23".$tag."&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
+  return $host."/Site/SearchE?q=%5B%5B%23".$tag."&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
 }
