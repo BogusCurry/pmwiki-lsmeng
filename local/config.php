@@ -393,11 +393,6 @@ if ($isBrowse)
     <script src='https://maps.googleapis.com/maps/api/js?key=AIzaSyBu_UeviWEEHI8-BwpJbG2OtsvI7z8TJPM'></script>
     <script src='$PubDirUrl/map/map.js'></script>";
   }
-
-  // A small script for showing & modifying the hash tag links so that they point to
-  // the internal search engine
-  $HTMLHeaderFmt["makeTagLink"] =
-  "<script type='text/javascript' src='$PubDirUrl/makeTagLink.js'></script>";
 }
 
 if ($isEdit || isset($_GET["updatePageIndex"]))
@@ -453,6 +448,14 @@ if ($action == 'upload')
   uploadAux.trashOpenImgUrl = '$trashOpenImgUrl';
   </script>
   <script src='$PubDirUrl/uploadAux.js'></script>";
+}
+
+// A small script for showing & modifying the hash tag links so that they point to
+// the internal search engine
+if ($isBrowse || $action === "search")
+{
+  $HTMLHeaderFmt["makeTagLink"] =
+  "<script type='text/javascript' src='$PubDirUrl/makeTagLink.js'></script>";
 }
 
 // if ($isBrowse)
