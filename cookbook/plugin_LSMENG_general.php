@@ -608,7 +608,7 @@ function cachePage($pagename, $page)
   if (isset($pageCacheList) && sizeof($pageCacheList) >= $MAX_CACHE_LEN)
   {
     $oldestKey = null;
-    $oldestTime = $Now;
+    $oldestTime = $Now + 86400;
     foreach ($pageCacheList as $_pagename => $pageCache)
     {
       $timeStamp = $pageCache["timeStamp"];
