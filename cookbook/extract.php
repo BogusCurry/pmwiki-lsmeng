@@ -808,7 +808,11 @@ function TEHeader(&$opt, $par)
 {
   // Meng.
   if (isset($_REQUEST["replace"])) { $cnt = $_REQUEST["replaceCount"]; }
-  else { $cnt = $par['matchnum']; }
+  else
+  {
+    $cnt = $par['matchnum'];
+    if ($cnt === 0 && $par["rowcnt"] > 0) { $cnt = $par["rowcnt"]; }
+  }
 
   $out = "";
   if ($opt['header']) $out .= "(:div001 class='te-header':)\n";

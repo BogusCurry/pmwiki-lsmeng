@@ -41,7 +41,7 @@ session_start();
 
 /****************************************************************************************/
 
-$EnableStopWatch = 1;
+if (defined("DEBUG")) { $EnableStopWatch = 1; }
 
 StopWatch('PmWiki');
 @ini_set('magic_quotes_runtime', 0);
@@ -477,7 +477,7 @@ if (!@$HandleActions[$action] || !function_exists($HandleActions[$action]))
 if (IsEnabled($EnableActions, 1)) HandleDispatch($pagename, $action);
 Lock(0);
 
-consoleLog($StopWatch);
+if (defined("DEBUG")) { consoleLog($StopWatch); }
 
 return;
 
