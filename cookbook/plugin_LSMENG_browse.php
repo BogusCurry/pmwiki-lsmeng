@@ -414,17 +414,3 @@ function runPHP($pagename)
   $result = shell_exec("php -r '$text'");
   return $result;
 }
-
-// Compose the link for searching the given tag string using the "Extract" module
-// This serves as a mechansim to list all the para that are marked with the given tag
-$FmtPV['$getTagLink'] = 'getTagLink($pn)';
-function getTagLink($tag)
-{
-  // $tag is actually treated by Pmwiki as a pagename; therefore it will be preceded by
-  // the current page group. Remove it
-  $tag = preg_replace("/^.*\./", "", $tag);
-
-  $host = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
-
-  return $host."/Site/SearchE?q=%5B%5B%23".$tag."&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
-}

@@ -473,11 +473,14 @@ file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata
 
 // Configurations for PmWiki plugins/enhancements written by other developers.
 
-if ($isBrowse)
+if ($isBrowse || $action === "search")
 {
   # Latex
   include_once("$FarmD/cookbook/MathJax.php");
+}
 
+if ($isBrowse)
+{
   // Embed youtube, TED, facebook, and vimeo videos, as well as pdfs.
   $HTMLHeaderFmt['ape'] = '<script type="text/javascript"
   src="$PubDirUrl/ape/ape.js"></script>';
