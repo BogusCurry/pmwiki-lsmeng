@@ -7,6 +7,18 @@ document.addEventListener('DOMContentLoaded', function()
   var linkElementListLen = linkElementList.length;
   for (var i = 0; i < linkElementListLen; i++)
   {
+    var id = linkElementList[i].id;
+
+    // Hide tags begin with numbers; tags that begin with numbers can't be a hash tag,
+    // and will be compiled into a hyperlink jump by wiki. Hide it in this case.
+    if (id === "" && linkElementList[i].name === "" &&
+    linkElementList[i].href === (location.href + linkElementList[i].textContent))
+    {
+      if (linkElementList[i].textContent[0] === "#")
+      { linkElementList[i].style.display = "none"; }
+    }
+
+/*
     // A hash tag is identified by the following condition
     var id = linkElementList[i].id;
     if (id !== "" && id === linkElementList[i].name && linkElementList[i].href === "")
@@ -36,5 +48,6 @@ document.addEventListener('DOMContentLoaded', function()
         }
       }
     }
+*/
   }
 });

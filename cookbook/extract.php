@@ -40,10 +40,22 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
     $_REQUEST["regexModifier"] = $match[2];
   }
 
+  // Tag search
+  else if (preg_match("/^tag:(.*)$/i", trim($query), $match))
+  {
+    $tagList = explode(" ", preg_replace("/ {2,}/", " ", trim($match[1])));
+    $_REQUEST["q"] = "[[#".implode(" [[#", $tagList);
+    $_REQUEST["unit"] = "bullet";
+    $_REQUEST["tagSearch"] = 1;
+  }
+
   // Meng. When replacing without using a regex pattern, prepare a fully escaped version
   // of the query string.
   if (isset($_REQUEST["replace"]))
   {
+    if ($_REQUEST["tagSearch"])
+    { echo "Replace with tag search pattern is forbidden!"; exit; }
+
     $_REQUEST["replaceCount"] = 0;
 
     if (!isset($_REQUEST["regex"]))
@@ -512,25 +524,40 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
   return $rows;
 }
 
-// Extract the whole bullet, including its children, in which the first match is found. 
+// Extract the whole bullet, including its children, in which the first tag match is found
+// Turns out this is used exclusively for tag search
 function TEExtractBullet($text, $opt, &$par)
 {
-  // Get the query string and escape special char
-  $query = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
-  function($match) { return "\\$match[0]"; }, $opt["q"]);
+  // Get the queried tag list
+  $queryList = explode(" ", $opt["q"]);
 
-  // Find the complete tag
-  preg_match("/".$query."[^\|]*?\]\]/i", $text, $match);
+  // Grab all the tags in this paragraph, and see if the queried tags are all present in
+  // the list. If not, count-- & return empty text. Otherwise, find the first occurrence
+  // of the queried tags in this paragraph
+  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
+  $fullTagList = $match[1];
+  consoleLog($fullTagList);
 
-  // If the tag format can't be found, it's not a tag. Count-- then return nothing
-  if ($match === []) { $par["rowcnt"]--; return ""; }
+  $smallestKey = sizeof($fullTagList);
+  foreach ($queryList as $query)
+  {
+    // Get the text part of the tag query
+    $query = substr($query, 3);
 
-  $fullTag = $match[0];
-  $fullTag = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
-  function($match) { return "\\$match[0]"; }, $fullTag);
+    // This tag query not in the tag list
+    $key = preg_grep("/^$query/i", $fullTagList);
+    if (empty($key)) { $par["rowcnt"]--; return ""; }
 
-  // Find the bullet markup right before the first match
-  preg_match("/[\s\S]*(^|\n)(\*+|\++)[\s\S]*?$fullTag/i", $text, $match, PREG_OFFSET_CAPTURE);
+    // Find the first occurrence
+    $key = array_keys($key)[0];
+    if ($key < $smallestKey) { $smallestKey = $key; }
+  }
+
+  // Get the first occurrence of the queried tags in this paragraph
+  $fullTag = $fullTagList[$smallestKey];
+
+  // Find the bullet markup right before the first tag match
+  preg_match("/[\s\S]*(^|\n)(\*+|\++)[\s\S]*?\[\[#$fullTag\]\]/i", $text, $match, PREG_OFFSET_CAPTURE);
 
   // Return the original text if a preceding bullet can't be found
   if ($match === []) {}
@@ -553,7 +580,16 @@ function TEExtractBullet($text, $opt, &$par)
     else { $text = substr($text, 0, $match[0][1])."\n"; }
   }
 
-  return "%bgcolor=DodgerBlue color=white%&nbsp;".substr($fullTag, 4, -4)."&nbsp;\n".$text;
+  // Find all the tags again as the text has been trucated to extract the bullet
+  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
+  $fullTagList = $match[1];
+
+  // Format the output; list all the tags at the first line
+  $fullTagStr = "";
+  foreach ($fullTagList as $fullTag)
+  { $fullTagStr .= "%bgcolor=DodgerBlue color=white%&nbsp;#".$fullTag."&nbsp;%%&nbsp;"; }
+
+  return $fullTagStr."\n".$text;
 }
 
 //make rows array from source page
