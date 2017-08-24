@@ -11,12 +11,10 @@ document.addEventListener('DOMContentLoaded', function()
 
     // Hide tags begin with numbers; tags that begin with numbers can't be a hash tag,
     // and will be compiled into a hyperlink jump by wiki. Hide it in this case.
+    // Also hash tags with Chinese char pose the same problem.
     if (id === "" && linkElementList[i].name === "" &&
-    linkElementList[i].href === (location.href + linkElementList[i].textContent))
-    {
-      if (linkElementList[i].textContent[0] === "#")
-      { linkElementList[i].style.display = "none"; }
-    }
+    linkElementList[i].href.replace(location.href, "")[0] === "#" && linkElementList[i].textContent[0] === "#")
+    { linkElementList[i].style.display = "none"; }
 
 /*
     // A hash tag is identified by the following condition

@@ -44,7 +44,7 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
   else if (preg_match("/^tag:(.*)$/i", trim($query), $match))
   {
     $tagList = explode(" ", preg_replace("/ {2,}/", " ", trim($match[1])));
-    $_REQUEST["q"] = "[[#".implode(" [[#", $tagList);
+    $_REQUEST["q"] = "[[#".implode("]] [[#", $tagList)."]]";
     $_REQUEST["unit"] = "bullet";
     $_REQUEST["tagSearch"] = 1;
   }
@@ -546,7 +546,7 @@ function TEExtractBullet($text, $opt, &$par)
   foreach ($queryList as $query)
   {
     // Get the text part of the tag query
-    $query = substr($query, 3);
+    $query = substr($query, 3, -2);
 
     // This tag query not in the tag list
     $keyList = preg_grep("/^$query/i", $fullTagList);
