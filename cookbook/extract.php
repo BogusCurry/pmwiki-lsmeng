@@ -17,7 +17,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170823
+Version 20170824
 
 */
 
@@ -536,8 +536,6 @@ function TEExtractBullet($text, $opt, &$par)
   // of the queried tags in this paragraph
   preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
   $fullTagList = $match[1];
-  consoleLog($fullTagList);
-
   $smallestKey = sizeof($fullTagList);
   foreach ($queryList as $query)
   {

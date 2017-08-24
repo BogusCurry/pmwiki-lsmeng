@@ -999,12 +999,22 @@ function PageVar($pagename, $var, $pn = '')
     return sprintf("Pageindex size: %.2f MB, last updated: %s",
     filesize($PageIndexFile)/1000000, date("Y/m/d H:i:s", filemtime($PageIndexFile)));
   }
+
+  // Compose the link for searching the given tag string using the "Text extract" module
+  // This serves as a mechansim to list all the paragraphs that are marked with the given
+  // tags. Multi tags should be joined by _
+  if ($var === "\$getTagLink")
+  {
+    $tag = "tag%3A".implode("+", explode("_", trim($pn)));
+    $host = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
+    return $host."/Site/SearchE?q=".$tag."&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
+  }
+
   /**************************************************************************************/
 
-  if ($pn)
-  {
-    $pn = isset($Cursor[$pn]) ? $Cursor[$pn] : MakePageName($pagename, $pn);
-  } else $pn = $pagename;
+  if ($pn) { $pn = isset($Cursor[$pn]) ? $Cursor[$pn] : MakePageName($pagename, $pn); }
+  else { $pn = $pagename; }
+
   if ($pn)
   {
     if (preg_match('/^(.+)[.\\/]([^.\\/]+)$/', $pn, $match)
