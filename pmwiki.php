@@ -1003,11 +1003,35 @@ function PageVar($pagename, $var, $pn = '')
   // Compose the link for searching the given tag string using the "Text extract" module
   // This serves as a mechansim to list all the paragraphs that are marked with the given
   // tags. Multi tags should be joined by _
+  // If a tag contains a dot, it's parsed as the page to search in. To search in a whole
+  // page group, append the group name with a dot
+  // For example, the following pattern searches for tag #LTE and #RLM in page groups
+  // HTC and 3GPPRAN1
+  // [[{LTE_RLM_htc._3gppran1.$getTagLink} | Title]]
   if ($var === "\$getTagLink")
   {
-    $tag = "tag%3A".implode("+", explode("_", trim($pn)));
+    $tagList = explode("_", trim($pn));
+    $pageList = [];
+    foreach ($tagList as $key => $tag)
+    {
+      // This is a page/group specified to search in
+      if (strpos($tag, '.') !== false)
+      {
+        // Remove it from the tag list
+        unset($tagList[$key]);
+
+        // Add it to teh pagename list; append a start to page group search
+        $pageList[] = urlencode((substr($tag, -1) === ".") ? $tag."*" : $tag);
+      }
+    }
+
+    // Compose the page name string
+    $name = "";
+    if (sizeof($pageList) > 0) { $name = "&name=".implode(",", $pageList); }
+
+    $tag = "tag%3A".implode("+", $tagList);
     $host = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
-    return $host."/Site/SearchE?q=".$tag."&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
+    return $host."/Site/SearchE?q=".$tag.$name."&unit=bullet&markup=on&header=full&title=Search+Results%3A&matchnum=1&timer=1&action=search&fmt=extract";
   }
 
   /**************************************************************************************/
