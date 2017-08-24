@@ -532,30 +532,42 @@ function TEExtractBullet($text, $opt, &$par)
   $queryList = explode(" ", $opt["q"]);
 
   // Grab all the tags in this paragraph, and see if the queried tags are all present in
-  // the list. If not, count-- & return empty text. Otherwise, find the first occurrence
-  // of the queried tags in this paragraph
-  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
-  $fullTagList = $match[1];
+  // the list. If not, count-- & return empty text. Otherwise, find the first & last
+  // occurrence of the queried tags in this paragraph
+  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match, PREG_OFFSET_CAPTURE);
+  $fullTagList = []; $offsetList = [];
+  foreach ($match[1] as $tag)
+  {
+    $fullTagList[] = $tag[0];
+    $offsetList[] = $tag[1];
+  }
   $smallestKey = sizeof($fullTagList);
+  $largestKey = 0;
   foreach ($queryList as $query)
   {
     // Get the text part of the tag query
     $query = substr($query, 3);
 
     // This tag query not in the tag list
-    $key = preg_grep("/^$query/i", $fullTagList);
-    if (empty($key)) { $par["rowcnt"]--; return ""; }
+    $keyList = preg_grep("/^$query/i", $fullTagList);
+    if (empty($keyList)) { $par["rowcnt"]--; return ""; }
 
-    // Find the first occurrence
-    $key = array_keys($key)[0];
+    // Find the first & last occurrence
+    $key = array_keys($keyList)[0];
     if ($key < $smallestKey) { $smallestKey = $key; }
+    $arrayKeys = array_keys($keyList);
+    $key = end($arrayKeys);
+    if ($key > $largestKey) { $largestKey = $key; }
   }
 
-  // Get the first occurrence of the queried tags in this paragraph
-  $fullTag = $fullTagList[$smallestKey];
+  // Get the first & last occurrence of the queried tags in this paragraph
+  $firstTag = $fullTagList[$smallestKey];
+  $firstTagOffset = $offsetList[$smallestKey];
+  $lastTagOffset = $offsetList[$largestKey];
 
   // Find the bullet markup right before the first tag match
-  preg_match("/[\s\S]*(^|\n)(\*+|\++)[\s\S]*?\[\[#$fullTag\]\]/i", $text, $match, PREG_OFFSET_CAPTURE);
+  preg_match("/[\s\S]*(^|\n)(\*+|\++)[\s\S]*?\[\[#$firstTag\]\]/i",
+  substr($text, 0, $firstTagOffset + strlen($firstTag) + 2), $match, PREG_OFFSET_CAPTURE);
 
   // Return the original text if a preceding bullet can't be found
   if ($match === []) {}
@@ -566,21 +578,22 @@ function TEExtractBullet($text, $opt, &$par)
     $offset = $match[2][1];
     $level = strlen($match[2][0]);
 
-    // Trucate the text then locate the next bullet markup with the same level or higher
-    // nesting level
-    $text = substr($text, $offset);
-    preg_match("/\n(\*{1,$level}[^\*]|\+{1,$level}[^\+])/", $text, $match, PREG_OFFSET_CAPTURE);
+    // Locate the bullet markup with the same level or higher nesting level AFTER the
+    // last occurrence of queried tags
+    preg_match("/\n(\*{1,$level}[^\*]|\+{1,$level}[^\+])/", substr($text, $lastTagOffset),
+    $match, PREG_OFFSET_CAPTURE);
 
-    // Return the current text if the next bulllet can't be found
-    if ($match === []) {}
+    // Return the text with the part before the first bullet truncated if the next bulllet
+    // can't be found
+    if ($match === []) { $text = substr($text, $offset); }
 
-    // Return the final text before the next bullet
-    else { $text = substr($text, 0, $match[0][1])."\n"; }
+    // Otherwise return the text extracted between the starting and ending bullet markup
+    else { $text = substr($text, $offset, $lastTagOffset - $offset + $match[0][1])."\n"; }
   }
 
-  // Find all the tags again as the text has been trucated to extract the bullet
+  // Find all the tags again as the text has been truncated to extract the bullet
   preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
-  $fullTagList = $match[1];
+  $fullTagList = array_unique($match[1]);
 
   // Format the output; list all the tags at the first line
   $fullTagStr = "";
