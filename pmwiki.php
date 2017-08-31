@@ -1505,16 +1505,17 @@ function ReadPage($pagename, $since=0)
   // Get $page from cache if it's there. Otherwise do the usual stuff then try to cache
   // the page
 
-  $page = getCachedPage($pagename);
+  $page = getCachedPage($pagename, $since);
   if (!isset($page))
   {
+    consoleLog("reading live page $pagename");
     foreach ($WikiLibDirs as $dir)
     {
       $page = $dir->read($pagename, $since);
       if ($page) break;
     }
 
-    cachePage($pagename, $page);
+    cachePage($pagename, $page, $since);
   }
 
   /**************************************************************************************/
@@ -2296,6 +2297,11 @@ function HandleBrowse($pagename, $auth = 'read')
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
 
+// $page1 = ReadPage($pagename, READPAGE_CURRENT);
+// $page2 = ReadPage($pagename, 0);
+// consoleLog($page1);
+// consoleLog($page2);
+
     StopWatch("Custom page processing begin");
 
     // Meng. Handle the pageindex process on browsing
@@ -2466,8 +2472,7 @@ function UpdatePage(&$pagename, &$page, &$new, $fnlist = NULL)
   /**************************************************************************************/
   // On page update, store the whole page in SESSION as a cache
 
-  if ($IsPagePosted) { cachePage($pagename, $new); }
-  else if (!isPageCached($pagename)) { cachePage($pagename, $page); }
+  if ($IsPagePosted) { cachePage($pagename, $new, 0); }
 
   /**************************************************************************************/
   // Handle the pageindex process on editing
@@ -2935,15 +2940,16 @@ function PmWikiAuth($pagename, $level, $authprompt=true, $since=0)
   SDV($GroupAttributesFmt,'$Group/GroupAttributes');
   SDV($AllowPassword,'nopass');
 
-  // Meng. ReadPage() was here. Move it to somewhere after the authorization process.
-  // Move it back now. I can't remember why I move it after the authorization process.
-  $page = ReadPage($pagename, $since);
-  if (!$page) { return false; }
-
   if (!isset($acache))
   SessionAuth($pagename, (@$_POST['authpw'])
   ? array('authpw' => array($_POST['authpw'] => 1))
   : '');
+
+  // Meng. ReadPage() was here. Move it to somewhere after the authorization process.
+  // Move it back now. I can't remember why I move it after the authorization process.
+  // Move it down here again. SessionAuth() should be something that's done first.
+  $page = ReadPage($pagename, $since);
+  if (!$page) { return false; }
 
   if (@$AuthId)
   {

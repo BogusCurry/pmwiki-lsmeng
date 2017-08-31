@@ -524,67 +524,67 @@ function syncFile($fromPath, $toPath)
   }
 }
 
-// Return true if the given pagename is currently in the cached page list.
-// False otherwise
+// Return true if the given pagename with the given since is currently in the cached page
+// list. False otherwise
 function isPageCached($pagename)
 {
-  // $pagename shall use . instead of /
-  $pagename = str_replace("/", ".", $pagename);
-  $pagename = strtolower($pagename);
-
-  if (isset($_SESSION["PAGE_CACHE"]))
-  {
-    $cachePageList = array_keys($_SESSION["PAGE_CACHE"]);
-    return in_array($pagename, $cachePageList);
-  }
-
-  return false;
+  if (isset($_SESSION["PAGE_CACHE"][$pagename])) { return true; }
+  else { return false; }
 }
 
 // Recently visited/edited pages will be stored in SESSION
 // This function returns the whole array $page stored in SESSION for page named $pagename
 // null is returned if it's not in cache for whatever reason
 // SESSION is assumed to have been started
-function getCachedPage($pagename)
+function getCachedPage($pagename, $since)
 {
-  // $pagename shall be in a unified form
+  if (session_status() !== PHP_SESSION_ACTIVE) { return; }
+
+  // $pagename shall be in a canonical form
   $pagename = strtolower(str_replace("/", ".", $pagename));
+
+  if (!isPageCached($pagename)) { return; }
 
   // Take care of siteadmin.status ...
   global $WorkDir;
   $pagefilePath = $WorkDir;
   if ($pagename === "siteadmin.status") { $pagefilePath = getcwd()."/wiki.d"; }
 
-  // Only file that exists will be processed
-  if (!file_exists("$pagefilePath/$pagename")) { return; }
-
-  // If pagename is not in the cache list, return null
-  $pageCacheList = $_SESSION["PAGE_CACHE"];
-  if (!isset($pageCacheList) || !isset($pageCacheList[$pagename])) { return; }
-
-  // Else it's in the cache list, check its time stamp; if it's up to date, return the
-  // cached page array. Otherwise return null
-  else
+  // This is to account for pages that have been deleted but still in the cache
+  if (!file_exists("$pagefilePath/$pagename"))
   {
-    if (filemtime("$pagefilePath/$pagename") === $pageCacheList[$pagename]["mtime"])
-    {
-      global $Now;
-      $_SESSION["PAGE_CACHE"][$pagename]["timeStamp"] = $Now;
-      return $pageCacheList[$pagename]["page"];
-    }
-    else { return; }
+    unset($_SESSION["PAGE_CACHE"][$pagename]);
+    return;
   }
+
+  // Check its time stamp; if it's up to date, and the cached page is an earlier verion
+  // (i.e., a superset, with a smaller $since) return the cached page array.
+  // Otherwise return null
+  if (filemtime("$pagefilePath/$pagename") === $_SESSION["PAGE_CACHE"][$pagename]["mtime"]
+  && $_SESSION["PAGE_CACHE"][$pagename]["since"] <= $since)
+  {
+    global $Now;
+    $_SESSION["PAGE_CACHE"][$pagename]["timeStamp"] = $Now;
+
+    consoleLog("Using cache for $pagename");
+
+    return $_SESSION["PAGE_CACHE"][$pagename]["page"];
+  }
+
+  return;
 }
 
 // Store the whole page array $page for page named $pagename in SESSION. This serves as
 // a cache mechanism.
 // Return true if successfully cached, false otherwise.
-function cachePage($pagename, $page)
+function cachePage($pagename, $page, $since)
 {
   global $AuthorLink;
   if ($AuthorLink !== "MBA") { return false; }
 
-  // $pagename shall be in a unified form
+  if (session_status() !== PHP_SESSION_ACTIVE) { return false; }
+
+  // $pagename shall be in a canonical form
   $pagename = strtolower(str_replace("/", ".", $pagename));
 
   // Take care of siteadmin.status ...
@@ -592,15 +592,21 @@ function cachePage($pagename, $page)
   $pagefilePath = $WorkDir;
   if ($pagename === "siteadmin.status") { $pagefilePath = getcwd()."/wiki.d"; }
 
-  // Only file that exists will be processed
-  if (!file_exists("$pagefilePath/$pagename")) { return false; }
-
-  // If page already cached & up to date, leave
+  $isPageCached = isPageCached($pagename);
   $pageCacheList = $_SESSION["PAGE_CACHE"];
-  $pageMTime = filemtime("$pagefilePath/$pagename");
-  if (isPageCached($pagename) && $pageCacheList[$pagename]["mtime"] === $pageMTime)
-  { return true; }
+  $pageMTime = @filemtime("$pagefilePath/$pagename");
 
+  // If page already cached, has not been modified, cached version retraces to an earlier
+  // version, leave satisfactorily
+  if ($isPageCached)
+  {
+    if ($pageCacheList[$pagename]["mtime"] === $pageMTime)
+    { if ($pageCacheList[$pagename]["since"] <= $since) { return true; } }
+  }
+  // Else leave if file does not even exist
+  else { if (!file_exists("$pagefilePath/$pagename")) { return false; } }
+
+  // At this point we know we have to cache this page
   $MAX_CACHE_LEN = 10;
 
   // If the cache reaches max length, find the oldest entry and remove it
@@ -618,15 +624,18 @@ function cachePage($pagename, $page)
         $oldestTime = $timeStamp;
       }
     }
+    
+    consoleLog("Removing cache $pagename");
     unset($_SESSION["PAGE_CACHE"][$oldestKey]);
   }
 
+  consoleLog("Caching $pagename at $since");
+
   // Cache the page
-  $_SESSION["PAGE_CACHE"][$pagename] = [
-  "page" => $page,
-  "mtime" => $pageMTime,
-  "timeStamp" => $Now
-  ];
+  $_SESSION["PAGE_CACHE"][$pagename]["page"] = $page;
+  $_SESSION["PAGE_CACHE"][$pagename]["since"] = $since;
+  $_SESSION["PAGE_CACHE"][$pagename]["mtime"] = $pageMTime;
+  $_SESSION["PAGE_CACHE"][$pagename]["timeStamp"] = $Now;
 
   return true;
 }
