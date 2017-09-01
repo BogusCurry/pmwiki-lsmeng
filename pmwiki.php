@@ -32,13 +32,6 @@ if (!defined("INDEX_PMWIKI")) { echo "no direct access"; exit; }
 date_default_timezone_set('Asia/Taipei');
 ini_set("memory_limit","1024M");
 
-// Meng. Start the session early as encryption & timeStamp check all need to use sessions.
-// Also, start the session once only; refrain from starting/closing it multiple times as
-// multiple set-cookie headers will be sent from the server, and it seems that there is 
-// a performance hit by manipulating session like this.
-// session_start();
-session_start();
-
 /****************************************************************************************/
 
 if (defined("DEBUG")) { $EnableStopWatch = 1; }
@@ -58,10 +51,8 @@ foreach($_REQUEST as $k=>$v)
 $UnsafeGlobals = array_keys($GLOBALS); $GCount=0; $FmtV=array();
 SDV($FarmD,dirname(__FILE__));
 
-// Meng. Move the working directory setting to "config.php".
-//SDV($WorkDir,'wiki.d');
-
-$isAJAX = isset($_SERVER["HTTP_X_REQUESTED_WITH"]) ? true : false;
+$headerList = apache_request_headers();
+$isAJAX = isset($headerList["X_REQUESTED_WITH"]) ? true : false;
 
 define('PmWiki',1);
 if (preg_match('/\\w\\w:/', $FarmD)) exit();
@@ -205,8 +196,9 @@ $FmtPV = array(
 '$faviconPath'   => '$GLOBALS["faviconPath"]'
 );
 
-// Meng. Define the path for favicon.ico. In fact this is needed only if base is not /
-$faviconPath = $base."favicon.ico";
+// Meng. Define the path for favicon.ico. $base is the root uri path for pmwiki site.
+// For some reason, favicon can't be found if put direct under the root of pmwiki
+$faviconPath = $UrlScheme."://".$_SERVER["HTTP_HOST"].$base."pub/favicon.ico";
 
 $SaveProperties = array('title', 'description', 'keywords');
 $PageTextVarPatterns = array(
@@ -415,6 +407,14 @@ if (IsEnabled($EnableLocalConfig,1))
   elseif (file_exists('config.php'))
   include_once('config.php');
 }
+
+// Meng. Start the session right after config.php has been included; the session handler
+// on Mac is set to memcached, which is checked for in config.php
+// Encryption & timeStamp check all need sessions.
+// Also, start the session once only; refrain from starting/closing it multiple times as
+// multiple set-cookie headers will be sent from the server, and it seems that there is 
+// a performance hit by manipulating session like this.
+if (!session_start()) { die("Session start failed!"); }
 
 // On access, if the user is authenticated, and pmwiki hasn't been accessed for a
 // duration longer than a prespecified value, passwords are cleared or a full logout is

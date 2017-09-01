@@ -68,10 +68,19 @@ if ($action === "browse" || $action === "edit")
 function HandleAutoSave( $pagename, $auth = 'edit' )
 {
   StopWatch('HandleAutoSave begin');
-  
+
   global
   $EditFunctions,
   $EditFields, $Charset, $ChangeSummary, $Now, $IsPagePosted;
+
+  // Just in case $_SERVER is not automatcially populated with the basetime request header
+  // sent by autosave.js
+  if (isset($_SERVER['HTTP_BASETIME'])) { $baseTime = $_SERVER['HTTP_BASETIME']; }
+  else
+  {
+    global $headerList;
+    $baseTime = $headerList['BASETIME'];
+  }
 
   // Since I change the mechanism of Autosave from posting with content-type:
   // application/x-www-form-urlencoded to text/plain, the variable $_POST is not working
@@ -80,7 +89,7 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
   // the text content is then the raw input sent using text/plain
   $_POST['action'] = 'edit';
   $_POST['n'] = $pagename;
-  $_POST['basetime'] = $_SERVER['HTTP_BASETIME'];
+  $_POST['basetime'] = $baseTime;
   $postMsg = $_POST['text'] =  file_get_contents('php://input');
 
   Lock(2);
@@ -88,12 +97,14 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
   if (!$page) { echo 'Autosave read error'; return; }
 
   // Meng: The following controls simultaneous editing.
-  if ( ( $page['time'] != $Now) && ( $_POST['basetime'] < $page['time'] ) )
+  if (($page['time'] != $Now) && ( $_POST['basetime'] < $page['time'] ) )
   {
     echo 'Simultaneous editing';
     return;
   }
 
+  // I've pretty much given up on this
+/*
   // If "WYSIWYG" request header is present, this is from wysiwyg.js
   if (isset($_SERVER["HTTP_WYSIWYG"]))
   {
@@ -136,6 +147,7 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
 // 		    file_put_contents('/Volumes/wiki/www/blog/pmwiki/lsmeng/untitled.txt', "called\n".$_POST['text']."\nend");
 //     return;
   }
+*/
 
   PCache($pagename,$page);
 
@@ -157,7 +169,7 @@ function HandleAutoSave( $pagename, $auth = 'edit' )
     echo 'Saved';
   }
   else { echo 'Autosave write error'; }
-  
+
   StopWatch('HandleAutoSave end');
 }
 
