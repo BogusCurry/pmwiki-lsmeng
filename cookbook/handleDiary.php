@@ -22,16 +22,19 @@ function printOnThisDay()
 
     if ($today[mday] == 1)
     {
-      if (substr($textDateArray[0],0,4) == "* 1," || substr($textDateArray[0],0,6) == "* 1，")
+//       if (substr($textDateArray[0],0,4) == "* 1," || substr($textDateArray[0],0,6) == "* 1，")
+      if (preg_match("/^\* *(\[\[\#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
       { $onThisDayStr["$i"] .= $textDateArray[0]; }
     }
     else
     {
       for ($j=1; $j<=31; $j++)
       {
-        if (substr($textDateArray[$j],0,strlen($today[mday])) == $today[mday] &&
-        (substr($textDateArray[$j],strlen($today[mday]),1) == "," ||
-        substr($textDateArray[$j],strlen($today[mday]),3) == "，"))
+				$day = $today[mday];
+//         if (substr($textDateArray[$j],0,strlen($today[mday])) == $today[mday] &&
+//         (substr($textDateArray[$j],strlen($today[mday]),1) == "," ||
+//         substr($textDateArray[$j],strlen($today[mday]),3) == "，"))
+				if (preg_match("/^ *(\[\[\#[\w-]*\]\])* *$day(,|，)/", $textDateArray[j]))
         {
           $onThisDayStr["$i"] .= "* ".$textDateArray[$j];
           break;
