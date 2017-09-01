@@ -8,7 +8,7 @@ function printOnThisDay()
 
   $monStr = "$today[mon]";
 
-  for($i=$today[year]-1; $i>=2003; $i--)
+  for($i=$today[year]; $i>=2003; $i--)
   {
     $pageName = "Main.".$i;
     if ($today[mon]<10) { $pageName .= "0"; }
@@ -22,19 +22,15 @@ function printOnThisDay()
 
     if ($today[mday] == 1)
     {
-//       if (substr($textDateArray[0],0,4) == "* 1," || substr($textDateArray[0],0,6) == "* 1，")
-      if (preg_match("/^\* *(\[\[\#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
+      if (preg_match("/^\* *(\[\[#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
       { $onThisDayStr["$i"] .= $textDateArray[0]; }
     }
     else
     {
       for ($j=1; $j<=31; $j++)
       {
-				$day = $today[mday];
-//         if (substr($textDateArray[$j],0,strlen($today[mday])) == $today[mday] &&
-//         (substr($textDateArray[$j],strlen($today[mday]),1) == "," ||
-//         substr($textDateArray[$j],strlen($today[mday]),3) == "，"))
-				if (preg_match("/^ *(\[\[\#[\w-]*\]\])* *$day(,|，)/", $textDateArray[j]))
+        $day = $today[mday];
+        if (preg_match("/^ *(\[\[#[\w-]*\]\])* *$day(,|，)/", $textDateArray[$j]))
         {
           $onThisDayStr["$i"] .= "* ".$textDateArray[$j];
           break;
@@ -179,8 +175,8 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
     // If the filename has been explicitly typed on the page, skip format check &
     // skip auto pasting
     if (preg_match("/$imgName/i", $text)) { continue; }
-    
-		$imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);    
+
+    $imgUrl = getDiaryImgUrl($imgName, $diaryYear, $diaryMonth);
 
     // Get its date & hour
     // If element 8 is underscore, the filename format is YYYYMMDD_HHMMSS.jpg
@@ -190,6 +186,7 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
       // Except the page "Main.OnThisDay", check if the year/mon matches the page year/mon
       $imgYear = (int)substr($imgName,0,4);
       $imgMon = (int)substr($imgName,4,2);
+
       if (strcasecmp($pagename, "Main.OnThisDay") !== 0 && ($imgYear !== (int)$diaryYear || $imgMon !== (int)$diaryMonth))
       { echo_("Image year/mon does not match pagename: $imgName"); continue; }
 

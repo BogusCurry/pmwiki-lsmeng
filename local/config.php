@@ -166,15 +166,20 @@ include_once("$FarmD/scripts/xlpage-utf-8.php");
 
 // Set the station name and path for public wiki.d
 // On MAC, it appears the environment variable is not working.
-$AuthorLink = getenv('COMPUTERNAME');
-if ($AuthorLink == '')
+$AuthorLink = gethostname();
+if ($AuthorLink == 'MENG-MBA.local')
 {
   $AuthorLink = 'MBA';
   $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d';
 }
+else if ($AuthorLink == 'MENG-MBP.local')
+{
+  $AuthorLink = 'MBP';
+  $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d';
+}
 else if ($AuthorLink == 'SAM_MENG_W7N')
 { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
-else {}
+else { Abort("Unidentified machine!"); }
 
 if (!file_exists("$WorkDir"))
 { Abort("Create a folder named \"wiki.d\" following the specified path \"$WorkDir\"!"); }
@@ -250,8 +255,14 @@ require_once("$FarmD/cookbook/encrypt.php");
 require_once("$FarmD/cookbook/plugin_LSMENG_general.php");
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
-// only, prevent the memory from being paged, and set the memory to 10m (default is 1m)
-if ($AuthorLink === "MBA") { shell_exec("memcached -d -l localhost -k -I 10m"); }
+// only, prevent the memory from being paged, and set the memory size (default is 1m)
+// A small delay seems to be required for it to take effect
+if (($AuthorLink === "MBA" || $AuthorLink === "MBP") && empty(shell_exec("pgrep memcached")))
+{
+  echo "<span style='color:red;'>memcached is not running...<br>Starting memcached...</span>";
+  shell_exec("memcached -d -l localhost -k -I 5m");
+  sleep(1);
+}
 
 /************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
 if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) { return; }
@@ -290,11 +301,11 @@ else if (preg_match("/Main[\.\/]Runcode/i", $pagename))
 // Max allowable upload size in bytes. Currently set to 100 MB.
 $maxUploadSize = 100000000;
 // The folder for storing the uploaded files. Default to the "$WorkDir" in dropbox.
-// For diary pages, the uploaded files go to the diary photo folder if it's MBA.
+// For diary pages, the uploaded files go to the diary photo folder if it's MBA or MBP.
 preg_match("/(\w+)[\.\/]?/", $pagename, $match);
 $groupName = !$match[1] ? "Main" : $match[1];
 $UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
-if (isDiaryPage() === 2 && $AuthorLink == 'MBA')
+if (isDiaryPage() === 2 && ($AuthorLink == 'MBA' || $AuthorLink == 'MBP'))
 {
   preg_match("/[\.\/](\d{4})0?(\d+)$/", $pagename, $match);
   $year = $match[1];
@@ -319,7 +330,7 @@ pmwiki.consoleLog = function (){};
 if (DEBUG)
 { $HTMLHeaderFmt['pmwiki'] .= "<script> pmwiki.consoleLog = console.log; </script>"; }
 
-if ($AuthorLink === "MBA") { $ChromeExtPath = "/Users/Shared/Chrome extensions"; }
+if ($AuthorLink === "MBA" || $AuthorLink === "MBP") { $ChromeExtPath = "/Users/Shared/Chrome extensions"; }
 else { $ChromeExtPath = 'D:\Chrome extensions'; }
 
 // Some enhancements for both browse and edit pages
