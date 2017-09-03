@@ -239,16 +239,16 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
     if ($dayImgList[$iDay] !== "")
     {
       // Find on current processing date the first occurence of \n\n
-      $dayHeadPos = strpos($text,"* ".$iDay.", ");
-      if ($dayHeadPos !== false)
+      if (preg_match("/\* (\[\[#[\w-]*\]\])* *$iDay(,|，) /", $text, $match, PREG_OFFSET_CAPTURE))
       {
+				$dayHeadPos = $match[0][1];
         $dayEndPos = strpos($text,"\n\n",$dayHeadPos);
         if ($dayEndPos !== false)
         { $text = substr_replace($text, "\n-->".$dayImgList[$iDay]."\n", $dayEndPos, 0); }
       }
     }
   }
-
+  
   return $text.'(:groupfooter:)';
 }
 
