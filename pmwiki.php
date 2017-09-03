@@ -32,6 +32,29 @@ if (!defined("INDEX_PMWIKI")) { echo "no direct access"; exit; }
 date_default_timezone_set('Asia/Taipei');
 ini_set("memory_limit","1024M");
 
+$AuthorLink = gethostname();
+if ($AuthorLink == 'MENG-MBA.local') { $AuthorLink = 'MBA'; }
+else if ($AuthorLink == 'MENG-MBP.local') { $AuthorLink = 'MBP'; }
+else if ($AuthorLink == 'SAM_MENG_W7N') {}
+else { die("Unidentified machine!"); }
+
+// Run the memcached service for storing PHP session, and specify to listen to localhost
+// only, prevent the memory from being paged, and set the memory size (default is 1m)
+// A small delay seems to be required for it to take effect
+if (($AuthorLink === "MBA" || $AuthorLink === "MBP") && empty(shell_exec("pgrep memcached")))
+{
+  echo "<span style='color:red;'>memcached is not running...<br>Starting memcached...</span>";
+  shell_exec("memcached -d -l localhost -k -I 5m");
+  sleep(1);
+}
+
+// Meng. The session handler on Mac is set to memcached
+// Encryption & timeStamp check all need sessions.
+// Also, start the session once only; refrain from starting/closing it multiple times as
+// multiple set-cookie headers will be sent from the server, and it seems that there is 
+// a performance hit by manipulating session like this.
+if (!session_start()) { die("Session start failed!"); }
+
 /****************************************************************************************/
 
 if (defined("DEBUG")) { $EnableStopWatch = 1; }
@@ -407,14 +430,6 @@ if (IsEnabled($EnableLocalConfig,1))
   elseif (file_exists('config.php'))
   include_once('config.php');
 }
-
-// Meng. Start the session right after config.php has been included; the session handler
-// on Mac is set to memcached, which is checked for in config.php
-// Encryption & timeStamp check all need sessions.
-// Also, start the session once only; refrain from starting/closing it multiple times as
-// multiple set-cookie headers will be sent from the server, and it seems that there is 
-// a performance hit by manipulating session like this.
-if (!session_start()) { die("Session start failed!"); }
 
 // On access, if the user is authenticated, and pmwiki hasn't been accessed for a
 // duration longer than a prespecified value, passwords are cleared or a full logout is
