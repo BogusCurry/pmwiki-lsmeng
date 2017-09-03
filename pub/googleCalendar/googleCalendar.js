@@ -426,6 +426,7 @@
     // Get GC data and register with window on load event to append the event elements
     var req = new XMLHttpRequest();
     req.open('GET', url, true);
+    req.setRequestHeader("X_REQUESTED_WITH", "XMLHttpRequest");
     req.send();
     req.onreadystatechange = function()
     {
