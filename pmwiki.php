@@ -35,8 +35,8 @@ ini_set("memory_limit","1024M");
 $AuthorLink = gethostname();
 if ($AuthorLink == 'MENG-MBA.local') { $AuthorLink = 'MBA'; }
 else if ($AuthorLink == 'MENG-MBP.local') { $AuthorLink = 'MBP'; }
-else if ($AuthorLink == 'SAM_MENG_W7N') {}
-else { die("Unidentified machine!"); }
+else if ($AuthorLink == 'sam_meng_w7n') {}
+else { die("Unidentified machine: $AuthorLink"); }
 
 // Run the memcached service for storing PHP session, and specify to listen to localhost
 // only, prevent the memory from being paged, and set the memory size (default is 1m)

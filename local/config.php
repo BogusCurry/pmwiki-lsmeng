@@ -168,7 +168,7 @@ include_once("$FarmD/scripts/xlpage-utf-8.php");
 // On MAC, it appears the environment variable is not working.
 if ($AuthorLink == 'MBA') { $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d'; }
 else if ($AuthorLink == 'MBP') { $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d'; }
-else if ($AuthorLink == 'SAM_MENG_W7N') { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
+else if ($AuthorLink == 'sam_meng_w7n') { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
 
 if (!file_exists("$WorkDir"))
 { Abort("Create a folder named \"wiki.d\" following the specified path \"$WorkDir\"!"); }
