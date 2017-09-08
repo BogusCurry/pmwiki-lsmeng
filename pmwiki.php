@@ -2886,16 +2886,16 @@ function HandleEdit($pagename, $auth = 'edit')
   $FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
 */
 
-// !Important. a dummy height of 1234px has to be configured in forms.php.
+	// !Important. a dummy height of 1234px has to be configured in forms.php.
   $MIN_textAreaHeightPx = 500;
   $textAreaHeightPx = isset($_COOKIE['textAreaHeight']) ? $_COOKIE['textAreaHeight'] : MIN_textAreaHeightPx;
   $pos = strpos($FmtV['$EditForm'],'height:1234px');
   if ($pos !== false)
   $FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
 
-// Another crazy fix for Chrome's font problem.
-  if (preg_match("/Main[\.\/]vocabulary2/i", $pagename))
-  { $FmtV['$EditForm'] = str_replace('font-family:', 'font-family:Heiti TC', $FmtV['$EditForm']); }
+  // Another crazy fix for Chrome's font problem.
+//   if (preg_match("/Main[\.\/]vocabulary2/i", $pagename))
+//   { $FmtV['$EditForm'] = str_replace('font-family:', 'font-family:Heiti TC', $FmtV['$EditForm']); }
 
 /****************************************************************************************/
 
