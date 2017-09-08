@@ -17,7 +17,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170824
+Version 20170908
 
 */
 
@@ -322,11 +322,19 @@ function TextExtract($pagename, $list, $opt = NULL)
       {
         $new[$j]['phead'] = TEPageHeader($pagename, $pn, $opt, $par);
 
-        // Extract the bullet from the paragraph is the unit is specified as "bullet"
-        if ($opt['unit'] == 'bullet') { $row = TEExtractBullet($row, $opt, $par); }
+        // Extract the bullet from the paragraph if the unit is specified as "bullet"
+        if ($opt['unit'] == 'bullet')
+        {
+          $row = TEExtractBullet($row, $opt, $par);
+          if (!empty($row)) { $new[$j]['rows'][] = $row; }
+        }
 
-        $new[$j]['rows'][] = $row;
-        $par['rowcnt']++;
+        else
+        {
+          $new[$j]['rows'][] = $row;
+          $par['rowcnt']++;
+        }
+
         continue; //start with next source row
       }
 
@@ -402,6 +410,8 @@ function TextExtract($pagename, $list, $opt = NULL)
   $out = '';
   foreach ($new as $i => $ar)
   {
+    if ($new[$i]['rows'] == 0) { continue; }
+
     //markup pageheader
     if($opt['phead'])
     $out .= MarkupToHTML($pagename, $new[$i]['phead']);
@@ -524,169 +534,115 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
   return $rows;
 }
 
+// Check if the given $text satisfies the tag rule dictated by $queryTagList
+// Currently the rule is simply for $text to include every tag in $queryTagList
+// Return all the (unique) tags found in $text as a string if satified; false otherwise
 function containTag($text, $queryTagList)
 {
   preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
 
-  $fullTagList = $match[1];
+  $tagList = $match[1];
 
-/*
-  $fullTagList = [];
-  foreach ($match[1] as $tag)
-  {
-    $fullTagList[] = $tag;
-  }
-*/
+  // This has to be modified later when we support negative tags
+  $numReqTag = sizeof($queryTagList);
+
+  // If the number of tags in $text is smaller than the number of required tags, for sure
+  // it's not a match
+  if (sizeof($tagList) < $numReqTag) { return false; }
 
   foreach ($queryTagList as $queryTag)
   {
-    if (!in_array($queryTag, $fullTagList))
-    {
-      return false;
-    }
+    // Get the text part of the tag query
+    $queryTag = substr($queryTag, 3, -2);
+
+    // If we can't find this query tag not in the tag list, return false immediately
+    $keyList = preg_grep("/^$queryTag$/i", $tagList);
+    if (empty($keyList)) { return false; }
   }
 
-  return true;
+  return implode(array_unique($match[0]));
 }
 
 // Extract the whole bullet, including its children, in which the first tag match is found
 // Turns out this is used exclusively for tag search
 function TEExtractBullet($text, $opt, &$par)
 {
-
   // Get the queried tag list
   $queryList = explode(" ", $opt["q"]);
 
-  // Split based on bullets
+  // Split on bullets, also capturing the delimiter
   $bulletList = preg_split("/(\n\*|\n#)/", $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-  // Output string
+  // Used to store the output string
   $text = "";
 
   // Foreach bullet
-  foreach ($bulletList as $index => $bullet)
+  $bulletListLen = sizeof($bulletList);
+  for ($index = 0; $index < $bulletListLen; $index++)
   {
-    // Skip the bullet mark itself
+    $bullet = $bulletList[$index];
+
+    // Skip the bullet mark itself, i.e., the delimiter
     $first2Char = substr($bullet, 0, 2);
     if ($first2Char == "\n*" || $first2Char == "\n#") { continue; }
 
-    // if this bullet fulfills the queried tags
-    if (containTag($bullet, $queryList))
+    // If this bullet matches the queried tags, get the nest level of this bullet;
+    // push this bullet along with the following bullets which are its children into the
+    // output string
+    if ($tagList = containTag($bullet, $queryList))
     {
-      // Push this bullet along with the following bullets which are its children
-      // into the output string; unset those children
-      preg_match("/^\**/", $bullet, $match);
+      // The original match count is on "paragraph". Putting it here changes it to count
+      // the number of bullet matches
+      $par["rowcnt"]++;
+
+      // Calculate the nest level
+      preg_match("/^(\*|#)*/", $bullet, $match);
       $level = strlen($match[0]);
       if ($index > 0) { $level += 1; }
 
+      // First we format the tagList for printing later
+      $text .= "\n\n".preg_replace_callback("/\[\[#([^\|\[\]]+?)\]\]/i", function($match)
+      {
+        return $fullTagStr .= "%bgcolor=DodgerBlue color=white%&nbsp;#".$match[1]."&nbsp;%%&nbsp;";
+      }, $tagList);
+
+      // Push it into the output string
       if ($index > 0) { $text .= $bulletList[$index - 1]; }
       $text .= $bullet;
 
+      // Examine the following bullets
       for ($i = $index + 1; ; $i++)
       {
-        // End of loop
+        // Quit if it's the end of bullets
         $_bullet = $bulletList[$i];
         if (!isset($_bullet)) { break; }
 
-        // Skip the bullet mark itself
+        // Skip the bullet mark itself, i.e, the delimiter
         $first2Char = substr($_bullet, 0, 2);
         if ($first2Char == "\n*" || $first2Char == "\n#") { continue; }
 
-        // Get the level of this bullet
-        preg_match("/^\**/", $_bullet, $match);
+        // Get the nest level of this bullet
+        preg_match("/^(\*|#)*/", $_bullet, $match);
         $_level = strlen($match[0]) + 1;
 
-        // Include this bullet & its mark
+        // Include this bullet & its bullet mark if its level < the parent level, i.e.,
+        // this bullet is a child
         if ($_level > $level)
         {
           $text .= $bulletList[$i - 1];
           $text .= $_bullet;
         }
-        // Time to end this loop
-        else
-        {
-          $index = $i - 1;
-          break;
-        }
+        // Else it's time to leave this sub loop
+        else { break; }
       }
+
+      // Set the pointer to the last of the last one of the bullets examined above in the
+      // sub loop
+      $index = $i - 1;
     }
   }
-  
-  var_dump($text);
-  die;
 
-//////////////////////////////////////////////////////////////
-
-  // Grab all the tags in this paragraph, and see if the queried tags are all present in
-  // the list. If not, count-- & return empty text. Otherwise, find the first & last
-  // occurrence of the queried tags in this paragraph
-  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match, PREG_OFFSET_CAPTURE);
-  $fullTagList = []; $offsetList = [];
-  foreach ($match[1] as $tag)
-  {
-    $fullTagList[] = $tag[0];
-    $offsetList[] = $tag[1];
-  }
-  $smallestKey = sizeof($fullTagList);
-  $largestKey = 0;
-  foreach ($queryList as $query)
-  {
-    // Get the text part of the tag query
-    $query = substr($query, 3, -2);
-
-    // This tag query not in the tag list
-    $keyList = preg_grep("/^$query/i", $fullTagList);
-    if (empty($keyList)) { $par["rowcnt"]--; return ""; }
-
-    // Find the first & last occurrence
-    $key = array_keys($keyList)[0];
-    if ($key < $smallestKey) { $smallestKey = $key; }
-    $arrayKeys = array_keys($keyList);
-    $key = end($arrayKeys);
-    if ($key > $largestKey) { $largestKey = $key; }
-  }
-
-  // Get the first & last occurrence of the queried tags in this paragraph
-  $firstTag = $fullTagList[$smallestKey];
-  $firstTagOffset = $offsetList[$smallestKey];
-  $lastTagOffset = $offsetList[$largestKey];
-
-  // Find the bullet markup right before the first tag match
-  preg_match("/[\s\S]*(^|\n)(\*+|\++)[\s\S]*?\[\[#$firstTag\]\]/i",
-  substr($text, 0, $firstTagOffset + strlen($firstTag) + 2), $match, PREG_OFFSET_CAPTURE);
-
-  // Return the original text if a preceding bullet can't be found
-  if ($match === []) {}
-
-  else
-  {
-    // Get the char offset and level of the bullet right preceding the first match
-    $offset = $match[2][1];
-    $level = strlen($match[2][0]);
-
-    // Locate the bullet markup with the same level or higher nesting level AFTER the
-    // last occurrence of queried tags
-    preg_match("/\n(\*{1,$level}[^\*]|\+{1,$level}[^\+])/", substr($text, $lastTagOffset),
-    $match, PREG_OFFSET_CAPTURE);
-
-    // Return the text with the part before the first bullet truncated if the next bulllet
-    // can't be found
-    if ($match === []) { $text = substr($text, $offset); }
-
-    // Otherwise return the text extracted between the starting and ending bullet markup
-    else { $text = substr($text, $offset, $lastTagOffset - $offset + $match[0][1])."\n"; }
-  }
-
-  // Find all the tags again as the text has been truncated to extract the bullet
-  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
-  $fullTagList = array_unique($match[1]);
-
-  // Format the output; list all the tags at the first line
-  $fullTagStr = "";
-  foreach ($fullTagList as $fullTag)
-  { $fullTagStr .= "%bgcolor=DodgerBlue color=white%&nbsp;#".$fullTag."&nbsp;%%&nbsp;"; }
-
-  return $fullTagStr."\n".$text;
+  return $text;
 }
 
 //make rows array from source page
