@@ -147,7 +147,7 @@ function syncPageindex($flag = false)
   // "sensitive" pages which quickly get password locked. Use Site/Editform
   global $ScriptUrl;
 	$url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagelistStr";
-
+consoleLog($url);
   // Update pageindex. Note that there is a 2048 char limit to the url length
   if (strlen($url) > 2000)
   {
@@ -162,6 +162,8 @@ function syncPageindex($flag = false)
 // Detects async request for updating pageindex in the background
 function updatePageindex()
 {
+consoleLog($_GET);
+
 	if (!isset($_GET["updatePageIndex"])) { return; }
   $pagelistStr = $_GET["updatePageIndex"];  
 

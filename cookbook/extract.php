@@ -524,12 +524,98 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
   return $rows;
 }
 
+function containTag($text, $queryTagList)
+{
+  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
+
+  $fullTagList = $match[1];
+
+/*
+  $fullTagList = [];
+  foreach ($match[1] as $tag)
+  {
+    $fullTagList[] = $tag;
+  }
+*/
+
+  foreach ($queryTagList as $queryTag)
+  {
+    if (!in_array($queryTag, $fullTagList))
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // Extract the whole bullet, including its children, in which the first tag match is found
 // Turns out this is used exclusively for tag search
 function TEExtractBullet($text, $opt, &$par)
 {
+
   // Get the queried tag list
   $queryList = explode(" ", $opt["q"]);
+
+  // Split based on bullets
+  $bulletList = preg_split("/(\n\*|\n#)/", $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+  // Output string
+  $text = "";
+
+  // Foreach bullet
+  foreach ($bulletList as $index => $bullet)
+  {
+    // Skip the bullet mark itself
+    $first2Char = substr($bullet, 0, 2);
+    if ($first2Char == "\n*" || $first2Char == "\n#") { continue; }
+
+    // if this bullet fulfills the queried tags
+    if (containTag($bullet, $queryList))
+    {
+      // Push this bullet along with the following bullets which are its children
+      // into the output string; unset those children
+      preg_match("/^\**/", $bullet, $match);
+      $level = strlen($match[0]);
+      if ($index > 0) { $level += 1; }
+
+      if ($index > 0) { $text .= $bulletList[$index - 1]; }
+      $text .= $bullet;
+
+      for ($i = $index + 1; ; $i++)
+      {
+        // End of loop
+        $_bullet = $bulletList[$i];
+        if (!isset($_bullet)) { break; }
+
+        // Skip the bullet mark itself
+        $first2Char = substr($_bullet, 0, 2);
+        if ($first2Char == "\n*" || $first2Char == "\n#") { continue; }
+
+        // Get the level of this bullet
+        preg_match("/^\**/", $_bullet, $match);
+        $_level = strlen($match[0]) + 1;
+
+        // Include this bullet & its mark
+        if ($_level > $level)
+        {
+          $text .= $bulletList[$i - 1];
+          $text .= $_bullet;
+        }
+        // Time to end this loop
+        else
+        {
+          $index = $i - 1;
+          break;
+        }
+      }
+    }
+  }
+  
+  var_dump($text);
+  die;
+
+//////////////////////////////////////////////////////////////
 
   // Grab all the tags in this paragraph, and see if the queried tags are all present in
   // the list. If not, count-- & return empty text. Otherwise, find the first & last

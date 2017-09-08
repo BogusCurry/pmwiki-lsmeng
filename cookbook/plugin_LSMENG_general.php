@@ -455,7 +455,7 @@ function post_async($url)
   $out = "POST ".$parts['path'].'?'.$parts['query']." HTTP/1.1\r\n";
   $out.= "Host: ".$parts['host']."\r\n";
   $out.= "Cookie: ".urlencode('PHPSESSID') .'='. urlencode($_COOKIE['PHPSESSID'])."; \r\n";
-  $out.= "Connection: Close\r\n\n";
+  $out.= "Connection: Close\r\n\r\n";
 
   fwrite($fp, $out);
   fclose($fp);
