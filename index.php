@@ -78,4 +78,6 @@ else
   { $_REQUEST["action"] = $_GET["action"] = $match[3]; }
 }
 
+// var_dump($_REQUEST);die;
+
 include("pmwiki.php");

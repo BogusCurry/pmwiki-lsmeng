@@ -30,6 +30,11 @@ global $Extract; $Extract = 1;
 //initialisations
 if ($action=='search' && $_REQUEST['fmt']=='extract')
 {
+  // Pagenames are separated by space, but should be separated by commas to be processed
+  // internally; deal with it right from the start
+  if (!empty($_REQUEST["name"]))
+  { $_REQUEST["name"] = implode(",", explode(" ", preg_replace("/ {2,}/", " ", trim($_REQUEST["name"])))); }
+
   // Meng. Regex pattern is automatically identified by a beginning and ending forward
   // slash (and optionally some regex modifiers)
   $query = $_REQUEST["q"];
