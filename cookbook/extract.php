@@ -40,13 +40,26 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
     $_REQUEST["regexModifier"] = $match[2];
   }
 
-  // Tag search, grab all the queried tags, turn them into lower case, and 
+  // Tag search, grab all the queried tags, turn them into lower case, and
   // extract the unique ones
   else if (preg_match("/^tag:(.*)$/i", trim($query), $match))
   {
     $tagList = explode(" ", preg_replace("/ {2,}/", " ", trim($match[1])));
     $tagList = array_unique(array_map(strtolower, $tagList));
+
+    // Separate the including & excluding tags
+    foreach ($tagList as $idx => $tag)
+    {
+      if ($tag[0] === "-")
+      {
+        unset($tagList[$idx]);
+        $exTagList[] = substr($tag, 1);
+      }
+    }
+    $tagList = array_values($tagList);
+
     $_REQUEST["queryTagList"] = $tagList;
+    $_REQUEST["queryExTagList"] = $exTagList;
     $_REQUEST["q"] = "[[#".implode("]] [[#", $tagList)."]]";
     $_REQUEST["unit"] = "bullet";
     $_REQUEST["tagSearch"] = 1;
@@ -78,7 +91,7 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
   //add a space, so FmtPageList() will not transform 'foo/' to group='foo'
   if ($_REQUEST['group'] || $_REQUEST['name'] || $_REQUEST['page'])
   { $_REQUEST['q'] = " ".$_REQUEST['q']; }
-  
+
   //leave out the standard Pmwiki searchresult header and footer text
   $SearchResultsFmt = "\$MatchList";
 }
@@ -327,7 +340,7 @@ function TextExtract($pagename, $list, $opt = NULL)
         // Extract the bullet from the paragraph if the unit is specified as "bullet"
         if ($opt['unit'] == 'bullet')
         {
-          $row = TEExtractBullet($row, $_REQUEST["queryTagList"], $par);
+          $row = TEExtractBullet($row, $_REQUEST["queryTagList"], $_REQUEST["queryExTagList"], $par);
           if (!empty($row)) { $new[$j]['rows'][] = $row; }
         }
 
@@ -539,7 +552,7 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
 // Check if the given $text satisfies the tag rule dictated by $queryTagList
 // Currently the rule is simply for $text to include every tag in $queryTagList
 // Return all the (unique) tags found in $text as an array if satified; false otherwise
-function containTag($text, $queryTagList)
+function containTag($text, $queryTagList, $queryExTagList)
 {
   preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/", $text, $match);
   $tagList = array_unique(array_map(strtolower, $match[1]));
@@ -551,11 +564,15 @@ function containTag($text, $queryTagList)
   // it's not a match
   if (sizeof($tagList) < $numReqTag) { return false; }
 
+  // If we can't find this query tag in the tag list, return false immediately
   foreach ($queryTagList as $queryTag)
+  { if (!in_array($queryTag, $tagList)) { return false; } }
+
+  // If we find an excluding tag the tag list, return false immediately
+  if (!empty($queryExTagList))
   {
-    // If we can't find this query tag not in the tag list, return false immediately
-    $keyList = preg_grep("/^$queryTag$/", $tagList);
-    if (empty($keyList)) { return false; }
+    foreach ($queryExTagList as $queryExTag)
+    { if (in_array($queryExTag, $tagList)) { return false; } }
   }
 
   return array_unique($match[1]);
@@ -563,7 +580,7 @@ function containTag($text, $queryTagList)
 
 // Extract the whole bullet, including its children, in which the first tag match is found
 // Turns out this is used exclusively for tag search
-function TEExtractBullet($text, $queryTagList, &$par)
+function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
 {
   // Split on bullets, also capturing the delimiter
   $bulletList = preg_split("/(\n\*|\n#)/", $text, -1, PREG_SPLIT_DELIM_CAPTURE);
@@ -584,7 +601,7 @@ function TEExtractBullet($text, $queryTagList, &$par)
     // If this bullet matches the queried tags, get the nest level of this bullet;
     // push this bullet along with the following bullets which are its children into the
     // output string
-    if ($tagList = containTag($bullet, $queryTagList))
+    if ($tagList = containTag($bullet, $queryTagList, $queryExTagList))
     {
       // The original match count is on "paragraph". Putting it here changes it to count
       // the number of bullet matches
