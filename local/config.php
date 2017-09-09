@@ -246,11 +246,15 @@ require_once("$FarmD/cookbook/plugin_LSMENG_general.php");
 /************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
 if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) { return; }
 
-if ($action === "browse") { $isBrowse = true; } else { $isBrowse = false; }
-if ($action === "edit") { $isEdit = true; } else { $isEdit = false; }
+// Shorthand for actions
+$isBrowse = $isEdit = $isSearch = false;
+if ($action === "browse") { $isBrowse = true; }
+else if ($action === "edit") { $isEdit = true; }
+else if ($action === "search" && $_REQUEST["fmt"] === "extract" &&
+strtolower($pagename) === "site/searche") { $isSearch = true; }
 
 // Functions related to the browse/edit/diff action.
-if ($isBrowse)
+if ($isBrowse || $isSearch)
 {
   // The default image size and enlarged size on click.
   $imgHeightPx = 330;
@@ -264,14 +268,14 @@ $PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads", $WorkDir);
 $Photo = preg_replace("/\/$/", '', $_SERVER["DIARY_PHOTO_PATH"]);
 
 // Functions related to the diary pages.
-if (isDiaryPage() !== 0 || ($action === "search" && $_REQUEST["fmt"] === "extract"))
+if (isDiaryPage() !== 0 || $isSearch)
 {
   global $PubDirUrl;
   $diaryImgDirURL = preg_replace("/\/pub$/i", '/photo/', $PubDirUrl);
   require_once("$FarmD/cookbook/handleDiary.php");
 }
 // Functions related to the runCode page.
-else if (preg_match("/Main[\.\/]Runcode/i", $pagename))
+else if (strtolower($pagename) === "main/runcode")
 {
   $runCodePath = "pub/runCode";
   require_once("$FarmD/cookbook/runCode.php");
@@ -376,7 +380,7 @@ if ($isBrowse)
   }
 
   // Google map integration
-  if (preg_match("/Main[\.\/]Map/i", $pagename))
+  if (strtolower($pagename) === "main/map")
   {
     $HTMLHeaderFmt['map'] = "
     <script src='$PubDirUrl/map/OSC.js'></script>
@@ -442,7 +446,7 @@ if ($action == 'upload')
 
 // A small script for showing & modifying the hash tag links so that they point to
 // the internal search engine
-if ($isBrowse || ($action === "search" && $_REQUEST["fmt"] === "extract"))
+if ($isBrowse || $isSearch)
 {
   $HTMLHeaderFmt["makeTagLink"] =
   "<script type='text/javascript' src='$PubDirUrl/makeTagLink.js'></script>";
@@ -463,7 +467,7 @@ file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata
 
 // Configurations for PmWiki plugins/enhancements written by other developers.
 
-if ($isBrowse || ($action === "search" && $_REQUEST["fmt"] === "extract"))
+if ($isBrowse || $isSearch)
 {
   # Latex
   include_once("$FarmD/cookbook/MathJax.php");
@@ -486,13 +490,7 @@ if ($isBrowse || $action === "flipbox")
 }
 
 # Advanced global search & replace
-if (preg_match("/Site[\.\/]SearchE/i", $pagename))
-{
-  // The default image size and enlarged size on click.
-  $imgHeightPx = 330;
-  require_once("$FarmD/cookbook/plugin_LSMENG_browse.php");
-  require_once("$FarmD/cookbook/extract.php");
-}
+if ($isSearch) { require_once("$FarmD/cookbook/extract.php"); }
 
 if ($action === "autosave")
 {

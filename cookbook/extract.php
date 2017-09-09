@@ -1,4 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
+
 /* extract.php, an extension for PmWiki 2.2, copyright Hans Bracker 2009. 
 a general regex processor for extracting text from multiple pages
 using regular expressions and wildcard pagename patterns.
@@ -21,6 +22,9 @@ Version 20170909
 
 */
 
+if (!isset($isSearch) || $isSearch !== true)
+{ die("You shall not access text extract module!"); }
+
 $RecipeInfo['TextExtract']['Version'] = '2016-04-23';
 
 $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return version as a custom page variable
@@ -28,78 +32,76 @@ $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return
 global $Extract; $Extract = 1;
 
 //initialisations
-if ($action=='search' && $_REQUEST['fmt']=='extract')
+// Pagenames are separated by space, but should be separated by commas to be processed
+// internally; deal with it right from the start
+if (!empty($_REQUEST["name"]))
+{ $_REQUEST["name"] = implode(",", explode(" ", preg_replace("/ {2,}/", " ", trim($_REQUEST["name"])))); }
+
+// Meng. Regex pattern is automatically identified by a beginning and ending forward
+// slash (and optionally some regex modifiers)
+$query = $_REQUEST["q"];
+if (preg_match("/\/(.+)\/(\w*)/", $query, $match))
 {
-  // Pagenames are separated by space, but should be separated by commas to be processed
-  // internally; deal with it right from the start
-  if (!empty($_REQUEST["name"]))
-  { $_REQUEST["name"] = implode(",", explode(" ", preg_replace("/ {2,}/", " ", trim($_REQUEST["name"])))); }
-
-  // Meng. Regex pattern is automatically identified by a beginning and ending forward
-  // slash (and optionally some regex modifiers)
-  $query = $_REQUEST["q"];
-  if (preg_match("/\/(.+)\/(\w*)/", $query, $match))
-  {
-    $_REQUEST["regex"] = "1";
-    $_REQUEST["q"] = $match[1];
-    $_REQUEST["regexModifier"] = $match[2];
-  }
-
-  // Tag search, grab all the queried tags, turn them into lower case, and
-  // extract the unique ones
-  else if (preg_match("/^tag:(.*)$/i", trim($query), $match))
-  {
-    $tagList = explode(" ", preg_replace("/ {2,}/", " ", trim($match[1])));
-    $tagList = array_unique(array_map(strtolower, $tagList));
-
-    // Separate the including & excluding tags
-    foreach ($tagList as $idx => $tag)
-    {
-      if ($tag[0] === "-")
-      {
-        unset($tagList[$idx]);
-        $exTagList[] = substr($tag, 1);
-      }
-    }
-    $tagList = array_values($tagList);
-
-    $_REQUEST["queryTagList"] = $tagList;
-    $_REQUEST["queryExTagList"] = $exTagList;
-    $_REQUEST["q"] = "[[#".implode("]] [[#", $tagList)."]]";
-    $_REQUEST["unit"] = "bullet";
-    $_REQUEST["tagSearch"] = 1;
-  }
-
-  // Meng. When replacing without using a regex pattern, prepare a fully escaped version
-  // of the query string.
-  if (isset($_REQUEST["replace"]))
-  {
-    if ($_REQUEST["tagSearch"])
-    { echo "Replace with tag search pattern is forbidden!"; exit; }
-
-    $_REQUEST["replaceCount"] = 0;
-
-    if (!isset($_REQUEST["regex"]))
-    {
-      $_REQUEST["regex"] = 1;
-      $_REQUEST["q3"] = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
-      function($match) { return "\\$match[0]"; }, $query);
-    }
-  }
-
-  // Force multi-line mode. This is a compromisze as search eventually is performed line
-  // by line. Unexpected behavior arises if multi-line mode is not force. For example,
-  // when search/replace /^pattern/ without multi-line mode, if there is indeed a match at
-  // the beginning of the text, then every line begins with pattern is a match
-  if ($_REQUEST["regex"]) { $_REQUEST["regexModifier"] .= "m"; }
-
-  //add a space, so FmtPageList() will not transform 'foo/' to group='foo'
-  if ($_REQUEST['group'] || $_REQUEST['name'] || $_REQUEST['page'])
-  { $_REQUEST['q'] = " ".$_REQUEST['q']; }
-
-  //leave out the standard Pmwiki searchresult header and footer text
-  $SearchResultsFmt = "\$MatchList";
+  $_REQUEST["regex"] = "1";
+  $_REQUEST["q"] = $match[1];
+  $_REQUEST["regexModifier"] = $match[2];
 }
+
+// Tag search, grab all the queried tags, turn them into lower case, and
+// extract the unique ones
+else if (preg_match("/^tag:(.*)$/i", trim($query), $match))
+{
+  $tagList = explode(" ", preg_replace("/ {2,}/", " ", trim($match[1])));
+  $tagList = array_unique(array_map(strtolower, $tagList));
+
+  // Separate the including & excluding tags
+  foreach ($tagList as $idx => $tag)
+  {
+    if ($tag[0] === "-")
+    {
+      unset($tagList[$idx]);
+      $exTagList[] = substr($tag, 1);
+    }
+  }
+  $tagList = array_values($tagList);
+
+  $_REQUEST["queryTagList"] = $tagList;
+  $_REQUEST["queryExTagList"] = $exTagList;
+  $_REQUEST["q"] = "[[#".implode("]] [[#", $tagList)."]]";
+  $_REQUEST["unit"] = "bullet";
+  $_REQUEST["tagSearch"] = 1;
+}
+
+// Meng. When replacing without using a regex pattern, prepare a fully escaped version
+// of the query string.
+if (isset($_REQUEST["replace"]))
+{
+  if ($_REQUEST["tagSearch"])
+  { echo "Replace with tag search pattern is forbidden!"; exit; }
+
+  $_REQUEST["replaceCount"] = 0;
+
+  if (!isset($_REQUEST["regex"]))
+  {
+    $_REQUEST["regex"] = 1;
+    $_REQUEST["q3"] = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
+    function($match) { return "\\$match[0]"; }, $query);
+  }
+}
+
+// Force multi-line mode. This is a compromisze as search eventually is performed line
+// by line. Unexpected behavior arises if multi-line mode is not force. For example,
+// when search/replace /^pattern/ without multi-line mode, if there is indeed a match at
+// the beginning of the text, then every line begins with pattern is a match
+if ($_REQUEST["regex"]) { $_REQUEST["regexModifier"] .= "m"; }
+
+//add a space, so FmtPageList() will not transform 'foo/' to group='foo'
+if ($_REQUEST['group'] || $_REQUEST['name'] || $_REQUEST['page'])
+{ $_REQUEST['q'] = " ".$_REQUEST['q']; }
+
+//leave out the standard Pmwiki searchresult header and footer text
+$SearchResultsFmt = "\$MatchList";
+
 $HTMLStylesFmt['textextract'] = " .textextract {margin:0.5em;} ";
 
 // defaults for extractor search form
@@ -452,7 +454,7 @@ function TextExtract($pagename, $list, $opt = NULL)
       // Replace a public image with its file content
       $rnew = str_replace('{$PhotoPub}', "http://replaceWithImgData/", $rnew);
 
-			// For diary pages
+      // For diary pages
       global $Photo;
       if (file_exists($Photo))
       {

@@ -2258,7 +2258,8 @@ function MarkupToHTML($pagename, $text, $opt = NULL)
 
   // Meng. Special handling for the img markups
   global $action;
-  if ($action == "browse" || ($action == "search" && $_REQUEST["fmt"] == "extract"))
+  if (($action == "browse" || ($action == "search" && $_REQUEST["fmt"] == "extract")) &&
+  function_exists("formatImgSize"))
   {
     // Apply default image size.
     $out = formatImgSize($out);
