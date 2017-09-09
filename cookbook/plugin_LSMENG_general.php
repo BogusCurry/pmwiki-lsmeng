@@ -287,9 +287,9 @@ class OS_BR
 // Return 2 if this is a diary page
 // Return 1 if this is a diary year page
 // Return 0 otherwise
-function isDiaryPage()
+function isDiaryPage($pagename = null)
 {
-  global $pagename;
+  if (is_null($pagename)) { global $pagename; }
 
   if (preg_match("/^Main[\.\/]OnThisDay$/i", $pagename)) { return 3; }
 

@@ -630,15 +630,31 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
       // the number of bullet matches
       $par["rowcnt"]++;
 
-      // Calculate the nest level
-      preg_match("/^(\*|#)*/", $bullet, $match);
-      $level = strlen($match[0]);
-      if ($index > 0) { $level += 1; }
-
       // First we format the tagList for printing later
       $text .= "\n\n%bgcolor=DodgerBlue color=white%&nbsp;#".
       implode("&nbsp;%%&nbsp;%bgcolor=DodgerBlue color=white%&nbsp;#", $tagList).
       "&nbsp;%%&nbsp;";
+
+      // If this bullet is a date bullet from diary, call printOnThisDay() to
+      // parse the corresponding diary page to obain the associated list of diary photos
+      $pagename = $par["source"];
+      if (isDiaryPage($pagename) === 2)
+      {
+        // Parse the date of this date bullet from its text
+        preg_match("/^\*.*?(\d+),/", $bullet, $match);
+        $date = $match[1];
+
+        // Parse year/mon from its pagename
+        preg_match("/\.(\d{4})(\d{2})/", $pagename, $match);
+        $year = $match[1]; $mon = (int)$match[2];
+
+        return $text."\n".printOnThisDay($year, $mon, $date);
+      }
+
+      // Calculate the nest level
+      preg_match("/^(\*|#)*/", $bullet, $match);
+      $level = strlen($match[0]);
+      if ($index > 0) { $level += 1; }
 
       // Push this bullet along with the delimiter (if not the very first entry) into the
       // output text string

@@ -1,47 +1,56 @@
 <?php
 
-// Return a string containing past diary corresponding to today's date. 
-function printOnThisDay()
+// Return the date bullet appended by its associated list of diary images of the given 
+// date.
+// If the year/mon/date is not fully specified, a string of date bullets corresponding
+// to the date today for all past years is returned
+function printOnThisDay($year = null, $mon = null, $date = null)
 {
-  $today = getdate();
-  $onThisDayStr = "";
+  if (!is_null($year) && !is_null($mon) && !is_null($date)) { $isDesignateDate = true; }
+  else
+  {
+    $today = getdate();
+    $year = $today[year];
+    $mon = $today[mon];
+    $date = $today[mday];
+  }
 
-  $monStr = "$today[mon]";
-
-  for($i=$today[year]; $i>=2003; $i--)
+	$onThisDayStr = array();
+  for($i = $year; $i >= ($isDesignateDate ? $year : 2003); $i--)
   {
     $pageName = "Main.".$i;
-    if ($today[mon]<10) { $pageName .= "0"; }
-    $pageName .= $monStr;
+    if ($mon < 10) { $pageName .= "0"; }
+    $pageName .= $mon;
 
     $page = RetrieveAuthPage($pageName, 'read', false, READPAGE_CURRENT);
     $textContent = $page['text'];
     $textDateArray = explode("\n* ", $textContent);
 
-    $onThisDayStr["$i"] = "\n'''".$i."/".$today[mon]."'''\n\n";
+    // Preparing the year/mon header for printing onThisDay if it's not a designated date
+    // (mostly likely a call from text extract)
+    if (!$isDesignateDate) { $onThisDayStr[$i] = "\n'''".$i."/".$mon."'''\n\n"; }
 
-    if ($today[mday] == 1)
+    if ($date == 1)
     {
       if (preg_match("/^\* *(\[\[#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
-      { $onThisDayStr["$i"] .= $textDateArray[0]; }
+      { $onThisDayStr[$i] .= $textDateArray[0]; }
     }
     else
     {
       for ($j=1; $j<=31; $j++)
       {
-        $day = $today[mday];
-        if (preg_match("/^ *(\[\[#[\w-]*\]\])* *$day(,|，)/", $textDateArray[$j]))
+        if (preg_match("/^ *(\[\[#[\w-]*\]\])* *$date(,|，)/", $textDateArray[$j]))
         {
-          $onThisDayStr["$i"] .= "* ".$textDateArray[$j];
+          $onThisDayStr[$i] .= "* ".$textDateArray[$j];
           break;
         }
       }
     }
 
-    $onThisDayStr["$i"] = pasteImgURLToDiary($onThisDayStr["$i"]."\n", "$i", $monStr);
+    $onThisDayStr[$i] = pasteImgURLToDiary($onThisDayStr[$i]."\n", $i, $mon, $date);
   }
 
-  return join("",$onThisDayStr);
+  return join("", $onThisDayStr);
 }
 
 // Return a string of the pagename for editing today's diary.
@@ -136,7 +145,7 @@ function showDateTime($pagename)
 // names of all the images and videos under their recorded date.
 // The year and month of the file name of the image will be ignored actually.
 // This function is applied since Apr. 2015
-function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
+function pasteImgURLToDiary($text, $diaryYear = "", $diaryMonth = "", $date = "")
 {
   global $pagename;
 
@@ -228,28 +237,43 @@ function pasteImgURLToDiary($text, $diaryYear="", $diaryMonth="")
     else { $dayImgList[$imgDay] .= $imgUrl." "; }
   }
 
-  // Remove the ending mark added by default first, then remove all the empty spaces
-  // and newlines at the end of the text. Finally we add two newlines to facilitate
-  // the following script.
-  $text = rtrim(str_replace('(:groupfooter:)', '', $text));
-  $text .= "\n\n";
-
-  for ($iDay=1; $iDay<=31; $iDay++)
+  // If $date is specified, the input text is composed of a single date bullet of the 
+  // given date only. Simply append the text with its list of image urls if nonempty and
+  // return.
+  if (!empty($date))
   {
-    if ($dayImgList[$iDay] !== "")
+    if ($dayImgList[$date] !== "")
+    { $text = rtrim($text)."\n-->".$dayImgList[$date]."\n"; }
+
+    return $text;
+  }
+
+  // Else the input text contains date bullets from a whole month
+  else
+  {
+    // Remove the ending mark added by default first, then remove all the empty spaces
+    // and newlines at the end of the text. Finally we add two newlines to facilitate
+    // the following script.
+    $text = rtrim(str_replace('(:groupfooter:)', '', $text));
+    $text .= "\n\n";
+
+    for ($iDay=1; $iDay<=31; $iDay++)
     {
-      // Find on current processing date the first occurence of \n\n
-      if (preg_match("/\* (\[\[#[\w-]*\]\])* *$iDay(,|，) /", $text, $match, PREG_OFFSET_CAPTURE))
+      if ($dayImgList[$iDay] !== "")
       {
-				$dayHeadPos = $match[0][1];
-        $dayEndPos = strpos($text,"\n\n",$dayHeadPos);
-        if ($dayEndPos !== false)
-        { $text = substr_replace($text, "\n-->".$dayImgList[$iDay]."\n", $dayEndPos, 0); }
+        // Find on current processing date the first occurence of \n\n
+        if (preg_match("/\* (\[\[#[\w-]*\]\])* *$iDay(,|，) /", $text, $match, PREG_OFFSET_CAPTURE))
+        {
+          $dayHeadPos = $match[0][1];
+          $dayEndPos = strpos($text,"\n\n",$dayHeadPos);
+          if ($dayEndPos !== false)
+          { $text = substr_replace($text, "\n-->".$dayImgList[$iDay]."\n", $dayEndPos, 0); }
+        }
       }
     }
+
+    return $text.'(:groupfooter:)';
   }
-  
-  return $text.'(:groupfooter:)';
 }
 
 // Return the full URL of images put in the diary photo directory based on the image
