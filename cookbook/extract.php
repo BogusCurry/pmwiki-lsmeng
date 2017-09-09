@@ -446,10 +446,20 @@ function TextExtract($pagename, $list, $opt = NULL)
       $LinkFunctions[$k] = 'TELinkText';
     }
 
-    // Meng. Replace a public image with its file content if the request format is not
-    // source
+    // Meng. Handle image showing if the request format is not source
     if ($opt['markup'] != 'source')
-    { $rnew = str_replace('{$PhotoPub}', "http://replaceWithImgData/", $rnew); }
+    {
+      // Replace a public image with its file content
+      $rnew = str_replace('{$PhotoPub}', "http://replaceWithImgData/", $rnew);
+
+			// For diary pages
+      global $Photo;
+      if (file_exists($Photo))
+      {
+//         global $diaryImgDirURL;
+//         $rnew = str_replace('{$Photo}', $diaryImgDirURL, $rnew);
+      }
+    }
 
     $out .= ($opt['markup']=='source') ? "<code class='escaped'>".$rnew."</code>"
     : MarkupToHTML($pagename, $rnew);

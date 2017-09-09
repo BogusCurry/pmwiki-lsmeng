@@ -166,8 +166,8 @@ include_once("$FarmD/scripts/xlpage-utf-8.php");
 
 // Set the station name and path for public wiki.d
 // On MAC, it appears the environment variable is not working.
-if ($AuthorLink == 'MBA') { $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d'; }
-else if ($AuthorLink == 'MBP') { $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d'; }
+if ($AuthorLink === 'MBA') { $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d'; }
+else if ($AuthorLink === 'MBP') { $WorkDir = '/Users/Shared/Dropbox/pmwiki/wiki.d'; }
 else if ($AuthorLink == 'sam_meng_w7n') { $WorkDir = 'D:\Dropbox\pmwiki\wiki.d'; }
 
 if (!file_exists("$WorkDir"))
@@ -264,7 +264,7 @@ $PhotoPub = preg_replace("/[\/\\\]wiki\.d/i", "/uploads", $WorkDir);
 $Photo = preg_replace("/\/$/", '', $_SERVER["DIARY_PHOTO_PATH"]);
 
 // Functions related to the diary pages.
-if (isDiaryPage() !== 0)
+if (isDiaryPage() !== 0 || ($action === "search" && $_REQUEST["fmt"] === "extract"))
 {
   global $PubDirUrl;
   $diaryImgDirURL = preg_replace("/\/pub$/i", '/photo/', $PubDirUrl);
@@ -284,7 +284,7 @@ $maxUploadSize = 100000000;
 preg_match("/(\w+)[\.\/]?/", $pagename, $match);
 $groupName = !$match[1] ? "Main" : $match[1];
 $UploadDir = str_replace('wiki.d','uploads',$WorkDir)."/$groupName";
-if (isDiaryPage() === 2 && ($AuthorLink == 'MBA' || $AuthorLink == 'MBP'))
+if (isDiaryPage() === 2 && ($AuthorLink === 'MBA' || $AuthorLink === 'MBP'))
 {
   preg_match("/[\.\/](\d{4})0?(\d+)$/", $pagename, $match);
   $year = $match[1];
@@ -405,7 +405,7 @@ if ($isEdit || $action === "autosave")
   include_once("$FarmD/cookbook/autosave.php");
 }
 
-if ($isBrowse || $action === "upload" || ($action === "search" && $_REQUEST["fmt"] == "extract"))
+if ($isBrowse || $action === "upload" || ($action === "search" && $_REQUEST["fmt"] === "extract"))
 {
   $ImgfocusFadeInTime = 0;
   $ImgFocusFadeOutTime = 0;
@@ -442,7 +442,7 @@ if ($action == 'upload')
 
 // A small script for showing & modifying the hash tag links so that they point to
 // the internal search engine
-if ($isBrowse || $action === "search")
+if ($isBrowse || ($action === "search" && $_REQUEST["fmt"] === "extract"))
 {
   $HTMLHeaderFmt["makeTagLink"] =
   "<script type='text/javascript' src='$PubDirUrl/makeTagLink.js'></script>";
@@ -463,7 +463,7 @@ file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata
 
 // Configurations for PmWiki plugins/enhancements written by other developers.
 
-if ($isBrowse || $action === "search")
+if ($isBrowse || ($action === "search" && $_REQUEST["fmt"] === "extract"))
 {
   # Latex
   include_once("$FarmD/cookbook/MathJax.php");
