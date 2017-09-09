@@ -17,7 +17,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170129
+ * Version 20170909
  */
 
 $RecipeInfo['Imgfocus']['Version'] = '20170129';
@@ -42,18 +42,14 @@ SDV($ImgfocusAlwaysZoom, false);
 SDVA($ImgfocusExceptionList, array(''));
 $ImgfocusExceptionList = json_encode($ImgfocusExceptionList);
 
-if($action == "browse" || $action == "upload" || $_REQUEST['preview'])
-{
-  $HTMLHeaderFmt['imgfocus'] = "
-  <script src='$PubDirUrl/imgfocus/imgfocus.js'></script>
-  <script>
-  imgfocus.fadeInTime = $ImgfocusFadeInTime;
-  imgfocus.fadeOutTime = $ImgFocusFadeOutTime;
-  imgfocus.zoomToFitTime = $ImgfocusZoomToFitTime;
-  imgfocus.zoomScreenRatio = $ImgfocusZoomScreenRatio;
-  imgfocus.alwaysZoom = '$ImgfocusAlwaysZoom';
-  imgfocus.exceptionList = '$ImgfocusExceptionList';
-  </script>
-  <link rel='stylesheet' href='$PubDirUrl/imgfocus/imgfocus.css' type='text/css'>";
-}
-
+$HTMLHeaderFmt['imgfocus'] = "
+<script src='$PubDirUrl/imgfocus/imgfocus.js'></script>
+<script>
+imgfocus.fadeInTime = $ImgfocusFadeInTime;
+imgfocus.fadeOutTime = $ImgFocusFadeOutTime;
+imgfocus.zoomToFitTime = $ImgfocusZoomToFitTime;
+imgfocus.zoomScreenRatio = $ImgfocusZoomScreenRatio;
+imgfocus.alwaysZoom = '$ImgfocusAlwaysZoom';
+imgfocus.exceptionList = '$ImgfocusExceptionList';
+</script>
+<link rel='stylesheet' href='$PubDirUrl/imgfocus/imgfocus.css' type='text/css'>";

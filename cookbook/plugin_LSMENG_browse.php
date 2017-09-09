@@ -188,7 +188,7 @@ function replaceImgWithDataContent($HTML)
 {
   // Regex: match http://replaceWithImgData, then nongreedy match at least one arbitrary
   // char util the the ahead being ' or "
-  return preg_replace_callback("/http:\/\/replaceWithImgData\/.+?(?='|\")/",function($match)
+  return preg_replace_callback("/http:\/\/replaceWithImgData\/.+?(?='|\")/", function($match)
   {
     // Replace the dummy url with the img's file content
     global $PhotoPub;

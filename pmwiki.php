@@ -2256,6 +2256,17 @@ function MarkupToHTML($pagename, $text, $opt = NULL)
   array_shift($MarkupFrame);
   StopWatch('MarkupToHTML end');
 
+  // Meng. Special handling for the img markups
+  global $action;
+  if ($action == "browse" || ($action == "search" && $_REQUEST["fmt"] == "extract"))
+  {
+    // Apply default image size.
+    $out = formatImgSize($out);
+
+    // Replace a public image with its file content.
+    $out =  replaceImgWithDataContent($out);
+  }
+
   return $out;
 }
 
@@ -2311,11 +2322,6 @@ function HandleBrowse($pagename, $auth = 'read')
     $elapsedTime = (microtime(true) - $startMicroTime);
     echo 'Execution time: '.$elapsedTime." sec\n<br>";
 */
-
-// $page1 = ReadPage($pagename, READPAGE_CURRENT);
-// $page2 = ReadPage($pagename, 0);
-// consoleLog($page1);
-// consoleLog($page2);
 
     StopWatch("Custom page processing begin");
 
@@ -2426,15 +2432,6 @@ function HandleBrowse($pagename, $auth = 'read')
 /****************************************************************************************/
 
     $FmtV['$PageText'] = MarkupToHTML($pagename, $text, $opt).'<br>';
-
-    if (function_exists("formatImgSize"))
-    {
-      // Meng. Apply default image size.
-      $FmtV['$PageText'] = formatImgSize($FmtV['$PageText']);
-
-      // Meng. Replace a public image with its file content.
-      $FmtV['$PageText'] = replaceImgWithDataContent($FmtV['$PageText']);
-    }
 
     if (@$EnableHTMLCache > 0 && !$NoHTMLCache && $PageCacheFile
     && (time() - $t1 + 1) >= $EnableHTMLCache)
@@ -2886,7 +2883,7 @@ function HandleEdit($pagename, $auth = 'edit')
   $FmtV['$EditForm'] =  substr_replace($FmtV['$EditForm'],'height:'.$textAreaHeightPx.'px',$pos,strlen('height:1234px'));
 */
 
-	// !Important. a dummy height of 1234px has to be configured in forms.php.
+  // !Important. a dummy height of 1234px has to be configured in forms.php.
   $MIN_textAreaHeightPx = 500;
   $textAreaHeightPx = isset($_COOKIE['textAreaHeight']) ? $_COOKIE['textAreaHeight'] : MIN_textAreaHeightPx;
   $pos = strpos($FmtV['$EditForm'],'height:1234px');

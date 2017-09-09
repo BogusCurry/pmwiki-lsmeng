@@ -339,8 +339,8 @@ var pageCommand = pageCommand || (function()
 
     // Handle the enter key press when a link is selected; simply call the onmouseup routine
     // since the procedure is completely the same
-    else if (_action != 'edit' && event.keyCode == 13 && !event.altKey && _selectLink)
-    { handleGoToLink(event); }
+    else if (_action != 'edit' && event.keyCode == 13 && !event.altKey && _selectLink && 
+    document.activeElement.tagName == "A") { handleGoToLink(event); }
 
     // Fix for the page up/dn behavior on MAC
     // 30 seems to be the line height

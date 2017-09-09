@@ -405,7 +405,7 @@ if ($isEdit || $action === "autosave")
   include_once("$FarmD/cookbook/autosave.php");
 }
 
-if ($isBrowse || $action === "upload")
+if ($isBrowse || $action === "upload" || ($action === "search" && $_REQUEST["fmt"] == "extract"))
 {
   $ImgfocusFadeInTime = 0;
   $ImgFocusFadeOutTime = 0;
@@ -487,7 +487,12 @@ if ($isBrowse || $action === "flipbox")
 
 # Advanced global search & replace
 if (preg_match("/Site[\.\/]SearchE/i", $pagename))
-{ require_once("$FarmD/cookbook/extract.php"); }
+{
+  // The default image size and enlarged size on click.
+  $imgHeightPx = 330;
+  require_once("$FarmD/cookbook/plugin_LSMENG_browse.php");
+  require_once("$FarmD/cookbook/extract.php");
+}
 
 if ($action === "autosave")
 {

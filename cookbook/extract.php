@@ -445,6 +445,12 @@ function TextExtract($pagename, $list, $opt = NULL)
       foreach($LinkFunctions as $k => $v)
       $LinkFunctions[$k] = 'TELinkText';
     }
+
+    // Meng. Replace a public image with its file content if the request format is not
+    // source
+    if ($opt['markup'] != 'source')
+    { $rnew = str_replace('{$PhotoPub}', "http://replaceWithImgData/", $rnew); }
+
     $out .= ($opt['markup']=='source') ? "<code class='escaped'>".$rnew."</code>"
     : MarkupToHTML($pagename, $rnew);
     if ($opt['textlinks']==1)	$LinkFunctions = $lf;
