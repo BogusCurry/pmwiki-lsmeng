@@ -17,7 +17,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170908
+Version 20170909
 
 */
 
@@ -40,10 +40,13 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
     $_REQUEST["regexModifier"] = $match[2];
   }
 
-  // Tag search
+  // Tag search, grab all the queried tags, turn them into lower case, and 
+  // extract the unique ones
   else if (preg_match("/^tag:(.*)$/i", trim($query), $match))
   {
     $tagList = explode(" ", preg_replace("/ {2,}/", " ", trim($match[1])));
+    $tagList = array_unique(array_map(strtolower, $tagList));
+    $_REQUEST["queryTagList"] = $tagList;
     $_REQUEST["q"] = "[[#".implode("]] [[#", $tagList)."]]";
     $_REQUEST["unit"] = "bullet";
     $_REQUEST["tagSearch"] = 1;
@@ -74,9 +77,8 @@ if ($action=='search' && $_REQUEST['fmt']=='extract')
 
   //add a space, so FmtPageList() will not transform 'foo/' to group='foo'
   if ($_REQUEST['group'] || $_REQUEST['name'] || $_REQUEST['page'])
-  {
-    $_REQUEST['q'] = " ".$_REQUEST['q'];
-  }
+  { $_REQUEST['q'] = " ".$_REQUEST['q']; }
+  
   //leave out the standard Pmwiki searchresult header and footer text
   $SearchResultsFmt = "\$MatchList";
 }
@@ -325,7 +327,7 @@ function TextExtract($pagename, $list, $opt = NULL)
         // Extract the bullet from the paragraph if the unit is specified as "bullet"
         if ($opt['unit'] == 'bullet')
         {
-          $row = TEExtractBullet($row, $opt, $par);
+          $row = TEExtractBullet($row, $_REQUEST["queryTagList"], $par);
           if (!empty($row)) { $new[$j]['rows'][] = $row; }
         }
 
@@ -536,12 +538,11 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
 
 // Check if the given $text satisfies the tag rule dictated by $queryTagList
 // Currently the rule is simply for $text to include every tag in $queryTagList
-// Return all the (unique) tags found in $text as a string if satified; false otherwise
+// Return all the (unique) tags found in $text as an array if satified; false otherwise
 function containTag($text, $queryTagList)
 {
-  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/i", $text, $match);
-
-  $tagList = $match[1];
+  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/", $text, $match);
+  $tagList = array_unique(array_map(strtolower, $match[1]));
 
   // This has to be modified later when we support negative tags
   $numReqTag = sizeof($queryTagList);
@@ -552,24 +553,18 @@ function containTag($text, $queryTagList)
 
   foreach ($queryTagList as $queryTag)
   {
-    // Get the text part of the tag query
-    $queryTag = substr($queryTag, 3, -2);
-
     // If we can't find this query tag not in the tag list, return false immediately
-    $keyList = preg_grep("/^$queryTag$/i", $tagList);
+    $keyList = preg_grep("/^$queryTag$/", $tagList);
     if (empty($keyList)) { return false; }
   }
 
-  return implode(array_unique($match[0]));
+  return array_unique($match[1]);
 }
 
 // Extract the whole bullet, including its children, in which the first tag match is found
 // Turns out this is used exclusively for tag search
-function TEExtractBullet($text, $opt, &$par)
+function TEExtractBullet($text, $queryTagList, &$par)
 {
-  // Get the queried tag list
-  $queryList = explode(" ", $opt["q"]);
-
   // Split on bullets, also capturing the delimiter
   $bulletList = preg_split("/(\n\*|\n#)/", $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
@@ -589,7 +584,7 @@ function TEExtractBullet($text, $opt, &$par)
     // If this bullet matches the queried tags, get the nest level of this bullet;
     // push this bullet along with the following bullets which are its children into the
     // output string
-    if ($tagList = containTag($bullet, $queryList))
+    if ($tagList = containTag($bullet, $queryTagList))
     {
       // The original match count is on "paragraph". Putting it here changes it to count
       // the number of bullet matches
@@ -601,14 +596,16 @@ function TEExtractBullet($text, $opt, &$par)
       if ($index > 0) { $level += 1; }
 
       // First we format the tagList for printing later
-      $text .= "\n\n".preg_replace_callback("/\[\[#([^\|\[\]]+?)\]\]/i", function($match)
-      {
-        return $fullTagStr .= "%bgcolor=DodgerBlue color=white%&nbsp;#".$match[1]."&nbsp;%%&nbsp;";
-      }, $tagList);
+      $text .= "\n\n%bgcolor=DodgerBlue color=white%&nbsp;#".
+      implode("&nbsp;%%&nbsp;%bgcolor=DodgerBlue color=white%&nbsp;#", $tagList).
+      "&nbsp;%%&nbsp;";
 
-      // Push it into the output string
-      if ($index > 0) { $text .= $bulletList[$index - 1]; }
-      $text .= $bullet;
+      // Push this bullet along with the delimiter (if not the very first entry) into the
+      // output text string
+      if ($index > 0) { $completeBullet = $bulletList[$index - 1]; }
+      $completeBullet .= $bullet;
+      if ($completeBullet[0] != "\n") { $completeBullet = "\n".$completeBullet; }
+      $text .= $completeBullet;
 
       // Examine the following bullets
       for ($i = $index + 1; ; $i++)
