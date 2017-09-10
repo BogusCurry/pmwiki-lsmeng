@@ -1,4 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
+
 ##  This is a sample config.php file.  To use this file, copy it to
 ##  local/config.php, then edit it for whatever customizations you want.
 ##  Also, be sure to take a look at http://www.pmichaud.com/wiki/Cookbook
@@ -356,7 +357,7 @@ if ($isBrowse || $isEdit)
   "<script src='$PubDirUrl/scrollPositioner.js'></script>";
 }
 
-if ($isBrowse)
+if ($isBrowse || $isSearch)
 {
   $fromPath = "$ChromeExtPath/html5avctrl";
   $toPath = "$FarmD/pub/html5avctrl";

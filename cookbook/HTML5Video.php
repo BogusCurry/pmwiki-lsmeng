@@ -1,4 +1,5 @@
 <?php if (!defined('PmWiki')) exit();
+
 /*
 This file is HTML5Video.php; you
 can redistribute it and/or modify it under the
@@ -21,6 +22,13 @@ http://gnuzoo.org/GNUZooPayPal/
 
 $RecipeInfo['HTML5Video']['Version'] = '20151004';
 
+// Whether to include this module is controled in config.php
+if (function_exists('Markup_e'))
+{ Markup_e('HTML5Video', 'fulltext', '/\\(:(html5video)(\\s.*?)?:\\)/i', "HTML5Video(\$m[1],\$m[2])"); }
+else
+{ Markup('HTML5Video', 'fulltext', '/\\(:(html5video)(\\s.*?)?:\\)/ie', "HTML5Video('$1',PSS('$2'))"); }
+
+/*
 switch ($action)
 {
   case "edit"   :
@@ -35,6 +43,8 @@ switch ($action)
     Markup('HTML5Video', 'fulltext', '/\\(:(html5video)(\\s.*?)?:\\)/ie', "HTML5Video('$1',PSS('$2'))");
   }
 }
+*/
+
 function HTML5Video($name, $args)
 {
   global $HTML5VideoDir;
@@ -46,7 +56,7 @@ function HTML5Video($name, $args)
   if ($dotPos !== false) { $filename = substr($filename, 0, $dotPos); }
 
 //	$poster   = "http://localhost/pmwiki/pub/html5avctrl/videoPoster.png";
-	$poster	= "";
+  $poster	= "";
   $width = isset($args['width']) ? $args['width'] : "";
   $height = isset($args['height']) ? $args['height'] : "";
 
