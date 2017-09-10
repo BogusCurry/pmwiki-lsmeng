@@ -458,8 +458,8 @@ function TextExtract($pagename, $list, $opt = NULL)
       global $Photo;
       if (file_exists($Photo))
       {
-//         global $diaryImgDirURL;
-//         $rnew = str_replace('{$Photo}', $diaryImgDirURL, $rnew);
+        global $diaryImgDirURL;
+        $rnew = str_replace('{$Photo}', $diaryImgDirURL, $rnew);
       }
     }
 
