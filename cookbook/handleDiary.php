@@ -2,9 +2,12 @@
 
 // Return the date bullet appended by its associated list of diary images of the given 
 // date.
+// If $dateBulletText is provided, the bullet text of the given date is assumed to be the
+// given value (this is mainly for the text extract module, and avoid some unnecessary
+// processing)
 // If the year/mon/date is not fully specified, a string of date bullets corresponding
 // to the date today for all past years is returned
-function printOnThisDay($year = null, $mon = null, $date = null)
+function printOnThisDay($year = null, $mon = null, $date = null, $dateBulletText = null)
 {
   if (!is_null($year) && !is_null($mon) && !is_null($date)) { $isDesignateDate = true; }
   else
@@ -15,7 +18,8 @@ function printOnThisDay($year = null, $mon = null, $date = null)
     $date = $today[mday];
   }
 
-	$onThisDayStr = array();
+  // Note that if year/mon/date has been assigned, the loop is executed only once
+  $onThisDayStr = array();
   for($i = $year; $i >= ($isDesignateDate ? $year : 2003); $i--)
   {
     $pageName = "Main.".$i;
@@ -23,31 +27,42 @@ function printOnThisDay($year = null, $mon = null, $date = null)
     $pageName .= $mon;
 
     $page = RetrieveAuthPage($pageName, 'read', false, READPAGE_CURRENT);
-    $textContent = $page['text'];
-    $textDateArray = explode("\n* ", $textContent);
+		$text = $page['text'];
+		
+    // If year/mon/date has been assigned, and the bullet text is provided, skip further
+    // processing (for extracting the date bullet text)
+    if ($isDesignateDate && !is_null($dateBulletText))
+    { $onThisDayStr[$i] = $dateBulletText; }
 
-    // Preparing the year/mon header for printing onThisDay if it's not a designated date
-    // (mostly likely a call from text extract)
-    if (!$isDesignateDate) { $onThisDayStr[$i] = "\n'''".$i."/".$mon."'''\n\n"; }
-
-    if ($date == 1)
-    {
-      if (preg_match("/^\* *(\[\[#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
-      { $onThisDayStr[$i] .= $textDateArray[0]; }
-    }
+		// Else parse the the page text to extract the date bullet text
     else
     {
-      for ($j=1; $j<=31; $j++)
+      // Preparing a header for showing the year/mon
+      $onThisDayStr[$i] = "\n'''".$i."/".$mon."'''\n\n";
+      
+      $textDateArray = explode("\n* ", $text);
+
+      if ($date == 1)
       {
-        if (preg_match("/^ *(\[\[#[\w-]*\]\])* *$date(,|，)/", $textDateArray[$j]))
+        if (preg_match("/^\* *(\[\[#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
+        { $onThisDayStr[$i] .= $textDateArray[0]; }
+      }
+
+      else
+      {
+        for ($j=1; $j<=31; $j++)
         {
-          $onThisDayStr[$i] .= "* ".$textDateArray[$j];
-          break;
+          if (preg_match("/^ *(\[\[#[\w-]*\]\])* *$date(,|，)/", $textDateArray[$j]))
+          {
+            $onThisDayStr[$i] .= "* ".$textDateArray[$j];
+            break;
+          }
         }
       }
     }
-
-    $onThisDayStr[$i] = pasteImgURLToDiary($onThisDayStr[$i]."\n", $i, $mon, $date);
+		
+    $result = pasteImgURLToDiary($text, $i, $mon, $date, $onThisDayStr[$i]."\n");
+    if ($result !== false) { $onThisDayStr[$i] = $result; }
   }
 
   return join("", $onThisDayStr);
@@ -141,31 +156,37 @@ function showDateTime($pagename)
   return "[[Main.onThisDay|".$today[year]."\\\\\n".$today[mon]."/".$today[mday]."\\\\\n".$today[hours].":".$minStr."]]";
 }
 
-// For diary pages, automatically read the corresponding photo directory and list the file
-// names of all the images and videos under their recorded date.
-// The year and month of the file name of the image will be ignored actually.
+// Read the image folder corresponding to the given year/mon/date; parse the image
+// file names to determine their dates, compose the appropriate image urls, and insert the
+// image urls under their respective date in $text
+// If $bulletText is provided (supposedly the date bullet text corresponding to the given
+// $date), insert the appropriate image urls in it instead of $text
+// If year/mon is not fully specified, year/mon of "today" is assumed
+// Return the text with image urls inserted. Return false if the operation is not
+// performed for whatever reasons.
+// The year and month of the image file names do not matter.
 // This function is applied since Apr. 2015
-function pasteImgURLToDiary($text, $diaryYear = "", $diaryMonth = "", $date = "")
+function pasteImgURLToDiary($text, $diaryYear = "", $diaryMonth = "", $date = "", $bulletText = "")
 {
   global $pagename;
 
-  if ($diaryYear == "")
+  if (empty($diaryYear) || empty($diaryMonth))
   {
     $diaryYear = substr($pagename,5,4);
     $diaryMonth = (string)(int)substr($pagename,9,2);
   }
 
   // This function is applied since Apr. 2015
-  if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+4)) { return $text; }
+  if ((int)$diaryYear*12+(int)$diaryMonth < (2015*12+4)) { return false; }
 
   // Read the photo directory of this month
   global $Photo;
   $dir = "$Photo/$diaryYear/$diaryMonth";
 
-  if (!file_exists($dir)) { return $text; }
+  if (!file_exists($dir)) { return false; }
 
   if (!isFolderReadableByUserWWW($dir))
-  { echo "Permission for diary photo folder incorrect. It has to be readable by user \"_www\"!<br>"; return $text; }
+  { echo "Permission for diary photo folder incorrect. It has to be readable by user \"_www\"!<br>"; return false; }
 
   $file = @scandir($dir);
   $N_FILE = count($file);
@@ -195,9 +216,6 @@ function pasteImgURLToDiary($text, $diaryYear = "", $diaryMonth = "", $date = ""
       // Except the page "Main.OnThisDay", check if the year/mon matches the page year/mon
       $imgYear = (int)substr($imgName,0,4);
       $imgMon = (int)substr($imgName,4,2);
-
-      if (strcasecmp($pagename, "Main.OnThisDay") !== 0 && ($imgYear !== (int)$diaryYear || $imgMon !== (int)$diaryMonth))
-      { echo_("Image year/mon does not match pagename: $imgName"); continue; }
 
       $imgDay = (int)substr($imgName,6,2);
       $imgHour = (int)substr($imgName,9,2);
@@ -237,18 +255,18 @@ function pasteImgURLToDiary($text, $diaryYear = "", $diaryMonth = "", $date = ""
     else { $dayImgList[$imgDay] .= $imgUrl." "; }
   }
 
-  // If $date is specified, the input text is composed of a single date bullet of the 
-  // given date only. Simply append the text with its list of image urls if nonempty and
-  // return.
-  if (!empty($date))
+  // If $bulletText is provided, the text in question (to be inserted with its img list)
+  // is a single date bullet corresponding to the given date. Simply append the it with
+  // its list of image urls if nonempty then return.
+  if (!empty($bulletText))
   {
     if ($dayImgList[$date] !== "")
-    { $text = rtrim($text)."\n-->".$dayImgList[$date]."\n"; }
+    { $bulletText = rtrim($bulletText)."\n-->".$dayImgList[$date]."\n"; }
 
-    return $text;
+    return $bulletText;
   }
 
-  // Else the input text contains date bullets from a whole month
+  // Else we are dealing with date bullets for a whole month
   else
   {
     // Remove the ending mark added by default first, then remove all the empty spaces

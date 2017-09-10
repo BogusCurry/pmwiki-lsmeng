@@ -2413,7 +2413,8 @@ function HandleBrowse($pagename, $auth = 'read')
         global $UrlScheme;
         if ($UrlScheme == 'http' && ($pageType == 2 || $pageType == 3))
         {
-          $text = pasteImgURLToDiary($text);
+          $result = pasteImgURLToDiary($text);
+          if ($result !== false) { $text = $result; }
           global $diaryImgDirURL;
           $text = str_replace('{$Photo}',$diaryImgDirURL,$text);
         }

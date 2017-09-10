@@ -609,7 +609,7 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
   $bulletList = preg_split("/(\n\*|\n#)/", $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
   // Used to store the output string
-  $text = "";
+  $output = "";
 
   // Foreach bullet
   $bulletListLen = sizeof($bulletList);
@@ -631,12 +631,14 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
       $par["rowcnt"]++;
 
       // First we format the tagList for printing later
-      $text .= "\n\n%bgcolor=DodgerBlue color=white%&nbsp;#".
+      $output .= "\n\n%bgcolor=DodgerBlue color=white%&nbsp;#".
       implode("&nbsp;%%&nbsp;%bgcolor=DodgerBlue color=white%&nbsp;#", $tagList).
       "&nbsp;%%&nbsp;";
 
       // If this bullet is a date bullet from diary, call printOnThisDay() to
       // parse the corresponding diary page to obain the associated list of diary photos
+      // Note also this utilizes the fact that if this is a date bullet, it will be an 
+      // standalone paragraph (therefore we can skip the processing below)
       $pagename = $par["source"];
       if (isDiaryPage($pagename) === 2)
       {
@@ -648,7 +650,7 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
         preg_match("/\.(\d{4})(\d{2})/", $pagename, $match);
         $year = $match[1]; $mon = (int)$match[2];
 
-        return $text."\n".printOnThisDay($year, $mon, $date);
+        return $output."\n".printOnThisDay($year, $mon, $date, $text);
       }
 
       // Calculate the nest level
@@ -661,7 +663,7 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
       if ($index > 0) { $completeBullet = $bulletList[$index - 1]; }
       $completeBullet .= $bullet;
       if ($completeBullet[0] != "\n") { $completeBullet = "\n".$completeBullet; }
-      $text .= $completeBullet;
+      $output .= $completeBullet;
 
       // Examine the following bullets
       for ($i = $index + 1; ; $i++)
@@ -682,8 +684,8 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
         // this bullet is a child
         if ($_level > $level)
         {
-          $text .= $bulletList[$i - 1];
-          $text .= $_bullet;
+          $output .= $bulletList[$i - 1];
+          $output .= $_bullet;
         }
         // Else it's time to leave this sub loop
         else { break; }
@@ -695,7 +697,7 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
     }
   }
 
-  return $text;
+  return $output;
 }
 
 //make rows array from source page
