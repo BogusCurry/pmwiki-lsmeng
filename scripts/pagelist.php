@@ -999,12 +999,14 @@ function PageIndexGrep($terms, $invert = false)
   // Meng. If the content is encrypted, decrypt to get its content.
   // On decryption error, simply delete the pageindex file and regenerate one.
   $wholePageText = file_get_contents($PageIndexFile);
+StopWatch('Just got pageindex file content');
   if (isEncryptStr($wholePageText) == true)
   {
     $isPageEncrypt = true;
     $wholePageText = decryptStr($wholePageText);
   }
   else { $isPageEncrypt = false; }
+StopWatch('Just got pageindex file content');
 
   // Pagefile does not exist or decryption fails. Delete the pageindex and
   // regenerate one.
@@ -1022,11 +1024,16 @@ function PageIndexGrep($terms, $invert = false)
 
   // Meng. Change the original read file line by line to read a string line by line,
   // so that I can encrypt it directly without writing it to a file first.
-  if (file_exists($PageIndexFile))
+  if (!empty($wholePageText))
   {
     $terms = (array)$terms;
 
-    foreach(preg_split("/((\r?\n)|(\r\n?))/", $wholePageText) as $line)
+		// After a little test it turns out \r can't even be written or recorded on my
+		// wiki page; the following preg_split is then functionally equivalent to a 
+		// simple explode
+//     foreach(preg_split("/((\r?\n)|(\r\n?))/", $wholePageText) as $line)
+    $lineList = explode("\n", $wholePageText);
+    foreach ($lineList as $line)
     {
       $i = strpos($line, ':');
       if (!$i) continue;
@@ -1041,7 +1048,7 @@ function PageIndexGrep($terms, $invert = false)
   StopWatch('PageIndexGrep end');
 
 /****************************************************************************************/
-// Encrypt the pagefile if encryption is on and the content was not encrypted
+	// Encrypt the pagefile if encryption is on and the content was not encrypted
   global $EnableEncryption;
   if ($EnableEncryption==1 && $isPageEncrypt==false)
   {
@@ -1050,8 +1057,8 @@ function PageIndexGrep($terms, $invert = false)
     { filePutContentsWait($PageIndexFile, $wholePageText); }
   }
 
-// Replace the page with a decrypted one if encryption is off and the page has been
-// encrypted.
+	// Replace the page with a decrypted one if encryption is off and the page has been
+	// encrypted.
   else if ($EnableEncryption == 0 && $isPageEncrypt == true)
   { filePutContentsWait($PageIndexFile, $wholePageText); }
 /****************************************************************************************/
