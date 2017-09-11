@@ -460,8 +460,8 @@ if ($isBrowse || $isSearch)
 
 /*
 // For debugging
-// file_put_contents('/Users/Shared/www/pmwiki/lsmeng/untitled.txt', "called\n");
-file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent);
+// file_put_contents('/Users/Shared/www/pmwiki/lsmeng/untitled.txt', "called\n", FILE_APPEND);
+file_put_contents('C:\Apache24\htdocs\pmWiki\untitled.txt', "called\n".$postdata.$fileName.' '.$fileType.' '.$fileContent,  FILE_APPEND);
 */
 
 /****************************************************************************************/

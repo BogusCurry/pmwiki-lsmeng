@@ -29,7 +29,8 @@ Script maintained by Petko YOTOV www.pmwiki.org/petko
 ## $PageIndexFile is the index file for term searches and link= option
 if (IsEnabled($EnablePageIndex, 1))
 {
-  SDV($PageIndexFile, "wiki.d/.pageindex");
+  SDV($pageindex, ".pageindex");
+  SDV($PageIndexFile, "wiki.d/".$pageindex);
   $EditFunctions[] = 'PostPageIndex';
 }
 
@@ -220,6 +221,7 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
   if ($searchText == " ")
   {
     $text = file_get_contents($PageIndexFile);
+
     $isPageEncrypt = isEncryptStr($text);
     if ($EnableEncryption==1 && $isPageEncrypt==false)
     {
@@ -875,17 +877,23 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 /****************************************************************************************/
   // Meng. If the content is encrypted, decrypt to get its content.
   // On decryption error, simply delete the pageindex file and regenerate one.
-  $pageIndexContent = @file_get_contents($PageIndexFile);
-  $pageIndexContent = decryptStr($pageIndexContent);
-  if ($pageIndexContent === -1)
+  $pageIndexContent = getCachedPage($pageindex);
+  if (!isset($pageIndexContent))
   {
-    global $pageindexTimeDir;
-    file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Decryption Error!\n", FILE_APPEND);
-    Abort("PageIndex Decrytion Error!");
+    consoleLog("reading live pageindex");
+
+    $pageIndexContent = @file_get_contents($PageIndexFile);
+    $pageIndexContent = decryptStr($pageIndexContent);
+    if ($pageIndexContent === -1)
+    {
+      global $pageindexTimeDir;
+      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Decryption Error!\n", FILE_APPEND);
+      Abort("PageIndex Decrytion Error!");
 
 //     @unlink($PageIndexFile);
 //     global $pagename;
 //     redirect($pagename);
+    }
   }
 /****************************************************************************************/
 
@@ -919,6 +927,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     // execution time will be capped by the setting in php.ini anyway
 //    if (time() > $timeout) continue;
     $page = ReadPage($pn, READPAGE_CURRENT);
+
     if ($page)
     {
       $targets = str_replace(',', ' ', @$page['targets']);
@@ -972,7 +981,8 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   chmodForPageFile($PageIndexFile);
 
   // Write to cache on pageindex update
-  cachePage(".pageindex", $updatedPageIndexContent_plainText);
+  global $pageindex;
+  cachePage($pageindex, $updatedPageIndexContent_plainText);
 
   StopWatch("PageIndexUpdate end ($updatecount updated)");
 
@@ -1000,11 +1010,11 @@ function PageIndexQueueUpdate($pagelist)
 ## (MakePageList above already knows how to deal with this.)
 function PageIndexGrep($terms, $invert = false)
 {
-  global $PageIndexFile;
+  global $pageindex, $PageIndexFile;
   if (!$PageIndexFile) return array();
 
   // First try to get pageindex file content from cache
-  $wholePageText = getCachedPage(".pageindex");
+  $wholePageText = getCachedPage($pageindex);
   if (!isset($wholePageText))
   {
     consoleLog("reading live pageindex");
@@ -1030,10 +1040,10 @@ function PageIndexGrep($terms, $invert = false)
       redirect($pagename);
     }
 
-    cachePage(".pageindex", $wholePageText);
+    cachePage($pageindex, $wholePageText);
   }
   else { $isCacheUsed = true; }
-  
+
   StopWatch('PageIndexGrep begin');
 
   $pagelist = array();

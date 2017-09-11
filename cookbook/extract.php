@@ -704,7 +704,11 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
 function TETextRows($pagename, $source, $opt, &$par )
 {
   if ($source==$pagename) return '';
-  $page = ReadPage($source);
+  
+  $since = READPAGE_CURRENT;
+  if (isset($_REQUEST["replace"])) { $since = 0; }
+  $page = ReadPage($source, $since);
+  
   if (!$page) return '';
   $text = $page['text'];
 

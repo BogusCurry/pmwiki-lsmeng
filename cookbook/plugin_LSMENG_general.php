@@ -583,10 +583,10 @@ function cachePage($pagename, $page, $since = 0)
   global $AuthorLink;
   if ($AuthorLink !== "MBA" && $AuthorLink !== "MBP") { return false; }
 
-  if (session_status() !== PHP_SESSION_ACTIVE) { return false; }
-
   // $pagename shall be in a canonical form
   $pagename = strtolower(str_replace("/", ".", $pagename));
+
+  if (substr($pagename, -13) === "recentchanges") { return false; }
 
   // Take care of siteadmin.status ...
   global $WorkDir;
@@ -608,8 +608,10 @@ function cachePage($pagename, $page, $since = 0)
   // Else leave if file does not even exist
   else { if (!file_exists("$pagefilePath/$pagename")) { return false; } }
 
+  if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+
   // At this point we know we have to cache this page
-  $MAX_CACHE_LEN = 10;
+  $MAX_CACHE_LEN = 15;
 
   // If the cache reaches max length, find the oldest entry and remove it
   global $Now;
@@ -630,7 +632,7 @@ function cachePage($pagename, $page, $since = 0)
       }
     }
 
-    consoleLog("Removing cache $pagename");
+    consoleLog("Removing cache $oldestKey");
     unset($_SESSION["PAGE_CACHE"][$oldestKey]);
   }
 

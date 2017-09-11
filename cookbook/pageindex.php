@@ -163,7 +163,7 @@ function syncPageindex($flag = false)
 function updatePageindex()
 {
 	if (!isset($_GET["updatePageIndex"])) { return; }
-  $pagelistStr = $_GET["updatePageIndex"];  
+  $pagelistStr = $_GET["updatePageIndex"];
 
   // The 1st case is explict update request from the client
   //     2nd case is due to page index sync process
