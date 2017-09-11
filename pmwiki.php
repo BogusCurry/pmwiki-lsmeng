@@ -44,7 +44,7 @@ else { die("Unidentified machine: $AuthorLink"); }
 if (($AuthorLink === "MBA" || $AuthorLink === "MBP") && empty(shell_exec("pgrep memcached")))
 {
   echo "<span style='color:red;'>memcached is not running...<br>Starting memcached...</span>";
-  shell_exec("memcached -d -l localhost -k -I 5m");
+  shell_exec("memcached -d -l localhost -k -I 10m");
   sleep(1);
 }
 

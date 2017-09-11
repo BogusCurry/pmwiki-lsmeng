@@ -536,7 +536,7 @@ function isPageCached($pagename)
 // This function returns the whole array $page stored in SESSION for page named $pagename
 // null is returned if it's not in cache for whatever reason
 // SESSION is assumed to have been started
-function getCachedPage($pagename, $since)
+function getCachedPage($pagename, $since = 0)
 {
   if (session_status() !== PHP_SESSION_ACTIVE) { return; }
 
@@ -545,10 +545,11 @@ function getCachedPage($pagename, $since)
 
   if (!isPageCached($pagename)) { return; }
 
-  // Take care of siteadmin.status ...
+  // Take care of special local pages
   global $WorkDir;
   $pagefilePath = $WorkDir;
-  if ($pagename === "siteadmin.status") { $pagefilePath = getcwd()."/wiki.d"; }
+  if ($pagename === "siteadmin.status" || $pagename === ".pageindex")
+  { $pagefilePath = getcwd()."/wiki.d"; }
 
   // This is to account for pages that have been deleted but still in the cache
   if (!file_exists("$pagefilePath/$pagename"))
@@ -577,10 +578,10 @@ function getCachedPage($pagename, $since)
 // Store the whole page array $page for page named $pagename in SESSION. This serves as
 // a cache mechanism.
 // Return true if successfully cached, false otherwise.
-function cachePage($pagename, $page, $since)
+function cachePage($pagename, $page, $since = 0)
 {
   global $AuthorLink;
-  if ($AuthorLink !== "MBA") { return false; }
+  if ($AuthorLink !== "MBA" && $AuthorLink !== "MBP") { return false; }
 
   if (session_status() !== PHP_SESSION_ACTIVE) { return false; }
 
@@ -590,7 +591,8 @@ function cachePage($pagename, $page, $since)
   // Take care of siteadmin.status ...
   global $WorkDir;
   $pagefilePath = $WorkDir;
-  if ($pagename === "siteadmin.status") { $pagefilePath = getcwd()."/wiki.d"; }
+  if ($pagename === "siteadmin.status" || $pagename === ".pageindex")
+  { $pagefilePath = getcwd()."/wiki.d"; }
 
   $isPageCached = isPageCached($pagename);
   $pageCacheList = $_SESSION["PAGE_CACHE"];
@@ -617,6 +619,9 @@ function cachePage($pagename, $page, $since)
     $oldestTime = $Now + 86400;
     foreach ($pageCacheList as $_pagename => $pageCache)
     {
+      // Once entered, pageindex stays in the cache forever
+      if ($_pagename === ".pageindex") { continue; }
+
       $timeStamp = $pageCache["timeStamp"];
       if ($timeStamp < $oldestTime)
       {
@@ -624,7 +629,7 @@ function cachePage($pagename, $page, $since)
         $oldestTime = $timeStamp;
       }
     }
-    
+
     consoleLog("Removing cache $pagename");
     unset($_SESSION["PAGE_CACHE"][$oldestKey]);
   }

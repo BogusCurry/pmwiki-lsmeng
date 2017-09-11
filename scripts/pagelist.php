@@ -282,7 +282,7 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
 
   // Meng: If there is only one match, and it's not the enhanced search page, go to that
   // page directly.
-  if (count($matches) === 1 && !preg_match("/site[\.\/]searche/i", $pagename)) 
+  if (count($matches) === 1 && !preg_match("/site[\.\/]searche/i", $pagename))
   { Redirect($matches[0]); }
 
   StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
@@ -932,7 +932,9 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   }
 
   // Meng. Change the original read file line by line to read a string line by line
-  foreach(preg_split("/((\r?\n)|(\r\n?))/", $pageIndexContent) as $line)
+//   foreach(preg_split("/((\r?\n)|(\r\n?))/", $pageIndexContent) as $line)
+  $lineList = explode("\n", $pageIndexContent);
+  foreach ($lineList as $line)
   {
     $i = strpos($line, ':');
     if ($i === false) continue;
@@ -942,6 +944,8 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     $updatedPageIndexContent .= $line."\n";
   }
 
+  $updatedPageIndexContent_plainText = $updatedPageIndexContent;
+
   // Encrypt, put to file, then close file.
   global $EnableEncryption;
   if ($EnableEncryption === 1)
@@ -950,7 +954,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     if ($updatedPageIndexContent === false)
     {
       global $pageindexTimeDir;
-      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Encryption Error!\n", FILE_APPEND);      
+      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." PageIndex Encryption Error!\n", FILE_APPEND);
       Abort("PageIndex Encryption Error!");
     }
   }
@@ -967,7 +971,11 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   // Set appropriate permission. This fails sometimes. No clue.
   chmodForPageFile($PageIndexFile);
 
+  // Write to cache on pageindex update
+  cachePage(".pageindex", $updatedPageIndexContent_plainText);
+
   StopWatch("PageIndexUpdate end ($updatecount updated)");
+
   ignore_user_abort($abort);
 }
 
@@ -995,31 +1003,39 @@ function PageIndexGrep($terms, $invert = false)
   global $PageIndexFile;
   if (!$PageIndexFile) return array();
 
-/****************************************************************************************/     
-  // Meng. If the content is encrypted, decrypt to get its content.
-  // On decryption error, simply delete the pageindex file and regenerate one.
-  $wholePageText = file_get_contents($PageIndexFile);
-StopWatch('Just got pageindex file content');
-  if (isEncryptStr($wholePageText) == true)
+  // First try to get pageindex file content from cache
+  $wholePageText = getCachedPage(".pageindex");
+  if (!isset($wholePageText))
   {
-    $isPageEncrypt = true;
-    $wholePageText = decryptStr($wholePageText);
-  }
-  else { $isPageEncrypt = false; }
-StopWatch('Just got pageindex file content');
+    consoleLog("reading live pageindex");
 
-  // Pagefile does not exist or decryption fails. Delete the pageindex and
-  // regenerate one.
-  if ($wholePageText === false || $wholePageText === -1)
-  {
-//    @unlink($PageIndexFile);
-    Abort("PageIndex Decrytion Error!");
-    global $pagename;
-    redirect($pagename);
-  }
-/****************************************************************************************/
+    // If the content is encrypted, decrypt to get its content.
+    // On decryption error, simply delete the pageindex file and regenerate one.
+    $wholePageText = file_get_contents($PageIndexFile);
 
+    if (isEncryptStr($wholePageText) == true)
+    {
+      $isPageEncrypt = true;
+      $wholePageText = decryptStr($wholePageText);
+    }
+    else { $isPageEncrypt = false; }
+
+    // Pagefile does not exist or decryption fails. Delete the pageindex and
+    // regenerate one.
+    if ($wholePageText === false || $wholePageText === -1)
+    {
+// 	   @unlink($PageIndexFile);
+      Abort("PageIndex Decrytion Error!");
+      global $pagename;
+      redirect($pagename);
+    }
+
+    cachePage(".pageindex", $wholePageText);
+  }
+  else { $isCacheUsed = true; }
+  
   StopWatch('PageIndexGrep begin');
+
   $pagelist = array();
 
   // Meng. Change the original read file line by line to read a string line by line,
@@ -1028,9 +1044,9 @@ StopWatch('Just got pageindex file content');
   {
     $terms = (array)$terms;
 
-		// After a little test it turns out \r can't even be written or recorded on my
-		// wiki page; the following preg_split is then functionally equivalent to a 
-		// simple explode
+    // After a little test it turns out \r can't even be written or recorded on my
+    // wiki page; the following preg_split is then functionally equivalent to a
+    // simple explode
 //     foreach(preg_split("/((\r?\n)|(\r\n?))/", $wholePageText) as $line)
     $lineList = explode("\n", $wholePageText);
     foreach ($lineList as $line)
@@ -1048,19 +1064,24 @@ StopWatch('Just got pageindex file content');
   StopWatch('PageIndexGrep end');
 
 /****************************************************************************************/
-	// Encrypt the pagefile if encryption is on and the content was not encrypted
-  global $EnableEncryption;
-  if ($EnableEncryption==1 && $isPageEncrypt==false)
+  // Encrypt the pagefile if reading live pageindex, encryption is on, and the content was
+  // not encrypted
+
+  if (!$isCacheUsed)
   {
-    $wholePageText = encryptStr($wholePageText);
-    if ($wholePageText !== false)
+    global $EnableEncryption;
+    if ($EnableEncryption==1 && $isPageEncrypt==false)
+    {
+      $wholePageText = encryptStr($wholePageText);
+      if ($wholePageText !== false)
+      { filePutContentsWait($PageIndexFile, $wholePageText); }
+    }
+
+    // Replace the page with a decrypted one if encryption is off and the page has been
+    // encrypted.
+    else if ($EnableEncryption == 0 && $isPageEncrypt == true)
     { filePutContentsWait($PageIndexFile, $wholePageText); }
   }
-
-	// Replace the page with a decrypted one if encryption is off and the page has been
-	// encrypted.
-  else if ($EnableEncryption == 0 && $isPageEncrypt == true)
-  { filePutContentsWait($PageIndexFile, $wholePageText); }
 /****************************************************************************************/
 
   return $pagelist;
