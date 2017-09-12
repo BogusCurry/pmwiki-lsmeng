@@ -295,6 +295,9 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
   if ($retpages)
   for($i=0; $i<count($list); $i++)
   $list[$i] = &$PCache[$list[$i]];
+
+// 	$list[$i] = strtolower($list[$i]);
+
   StopWatch('MakePageList end');
 
   // Meng. It's kind of a trick. If a special flag added by me is set, then update
@@ -368,11 +371,14 @@ function PageListSources(&$list, &$opt, $pn, &$page)
   else if (!@$opt['=cached'])
   { $list = ListPages($opt['=pnfilter'], 1); }
 
-  // Remove the specified list of pages to be excluded
+  // Meng. Work in lower case
+  $list = array_map("strtolower", $list);
+
+  // Meng. Remove the specified list of pages to be excluded
   $exList = array();
   if (!empty($_REQUEST["exName"]))
   {
-    $exList = TEListPageByName($_REQUEST["exName"]);
+    $exList = listPageBySpec($_REQUEST["exName"]);
     $list = array_values(array_diff($list, $exList));
   }
 
@@ -914,6 +920,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   $c = count($pagelist); $updatecount = 0;
   StopWatch("PageIndexUpdate begin ($c pages to update)");
   $pagelist = (array)$pagelist;
+
   $timeout = time() + $PageIndexTime;
   $cmpfn = create_function('$a,$b', 'return strlen($b)-strlen($a);');
   Lock(2);
@@ -927,6 +934,9 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   // Meng. Change the original write file line by line to append a string line by line
   foreach($pagelist as $pn)
   {
+  	// Meng. Work in lower case
+  	$pn = strtolower($pn);
+  	
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
     // Meng. The default maximum time for updating pageindex is 10 seconds. This causes
@@ -1017,6 +1027,8 @@ function PageIndexQueueUpdate($pagelist)
 ## (MakePageList above already knows how to deal with this.)
 function PageIndexGrep($terms, $invert = false, $list = null)
 {
+//   var_dump($list);
+
   global $pageindex, $PageIndexFile;
   if (!$PageIndexFile) return array();
 
@@ -1062,7 +1074,7 @@ function PageIndexGrep($terms, $invert = false, $list = null)
     $terms = (array)$terms;
 
     // A flag signifying whether the user specifies a list of pages to search in
-    $isPageSpecify = empty($_REQUEST["name"]) ? false : true;
+    $hasPageSpec = (empty($_REQUEST["name"]) && empty($_REQUEST["exName"])) ? false : true;
 
     // After a little test it turns out \r can't even be written or recorded on my
     // wiki page; the following preg_split is then functionally equivalent to a
@@ -1076,12 +1088,15 @@ function PageIndexGrep($terms, $invert = false, $list = null)
 
       $pagename = substr($line, 0, $i);
 
+// if (strtolower($pagename) == "main.testpage") { var_dump($line); }
+
       // Skip this line if a page list to search in has been specified, and the page is
       // not included in the list
-      if ($isPageSpecify && !in_array(strtolower($pagename), $list))
-      { continue; }
+      if ($hasPageSpec && !in_array($pagename, $list)) { continue; }
 
       $add = true;
+
+// var_dump($pagename);
 
       // Meng. Change strpos to stripos to fix the bug for searching links
       foreach($terms as $t)
@@ -1112,6 +1127,8 @@ function PageIndexGrep($terms, $invert = false, $list = null)
     { filePutContentsWait($PageIndexFile, $wholePageText); }
   }
 /****************************************************************************************/
+
+// var_dump($pagelist);
 
   return $pagelist;
 }

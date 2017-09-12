@@ -18,7 +18,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170909
+Version 20170913
 
 */
 
@@ -41,6 +41,7 @@ if (!empty($_REQUEST["name"]))
   $_REQUEST["name"] = strtolower(str_replace("/", ".", $_REQUEST["name"]));
 
   $pageList = explode(" ", preg_replace("/ {2,}/", " ", $_REQUEST["name"]));
+  $exPageList = [];
 
   foreach ($pageList as $idx => $page)
   {
@@ -57,8 +58,6 @@ if (!empty($_REQUEST["name"]))
   $_REQUEST["name"] = implode(",", $pageList);
   $_REQUEST["exName"] = implode(",", $exPageList);
   $_REQUEST["exNameList"] = $exPageList;
-//   var_dump($_REQUEST["name"]);
-//   var_dump($_REQUEST["exNameList"]);
 }
 
 // Meng. Regex pattern is automatically identified by a beginning and ending forward
@@ -1261,54 +1260,71 @@ function MxTextExtract($pagename, $opt)
   return $out;
 } //}}}
 
-// Parse the given string, and list all the pages matching the description
-// For example, $fieldValue = "Main/*, Site/testpage" lists all the pages in group Main, 
+// Parse the given string, and return an array of all the pagenames matching the
+// specification
+// For example, $specStr = "Main/*, Site/testpage" lists all the pages in group Main, 
 // and the page Site/testpage
-function TEListPageByName($fieldValue)
+// The returned pagenames will all be in lower case.
+function listPageBySpec($specStr)
 {
+  // Work with lower case
+  $specStr = strtolower(trim($specStr));
+
+  $pageSpecList = explode(",", $specStr);
+  $pageList = $groupSpecList = [];
   global $WorkDir;
-  $pageList = [];
-  $pageDescriptionList = explode(",", $fieldValue);
-  foreach ($pageDescriptionList as $pageDescription)
+
+  // For each specification
+  foreach ($pageSpecList as $idx => $pageSpec)
   {
-    $pageDescription = trim($pageDescription);
+    $pageSpecList[$idx] = $pageSpec = trim($pageSpec);
 
-    // If this pattern matches group/* or group.*
-    // or a special case if $fieldValue is empty
-    if (preg_match("/^(\w+)[\/\.]\*$/", $pageDescription, $match) ||
-    $pageDescription === "")
-    {
-      // Insert all the pages with group name matching it, and its pagename is neither
-      // RecentChanges nor AllRecentChanges into $pageList
-      $groupName = $match[1];
-      $file = scandir($WorkDir);
-      $N_FILE = count($file);
-      for ($iFile = 0; $iFile < $N_FILE; $iFile++)
-      {
-        // Skip system files
-        $fileName = $file[$iFile];
-        if ($fileName === "." || $fileName === ".." || $fileName === ".htaccess" ||
-        $fileName === ".lastmod") { continue; }
-
-        // Parse group/page name of this file
-        preg_match("/(\w+)\.(\w+)/i", $file[$iFile], $match);
-        $_groupName = $match[1]; $_pageName = $match[2];
-
-        // If $fieldValue is empty or the groupname matches what we are looking for
-        // and this file is not the recentChange stuff, insert it into the list
-        if (($pageDescription === "" || strcasecmp($groupName, $_groupName) === 0) &&
-        strcasecmp($_pageName,"RecentChanges") !== 0 &&
-        strcasecmp($_pageName,"AllRecentChanges") !== 0)
-        { $pageList[] = $file[$iFile]; }
-      }
-    }
-
-    // Else if the filename looks like a valid pagename, insert it into $pageList
-    else if (preg_match("/^(\w+)[\/\.](\w+)$/", $pageDescription, $match))
+    // First we include every page that's specifically listed
+    if (preg_match("/^(\w+)[\/\.](\w+)$/", $pageSpec, $match))
     {
       $standardPageName = $match[1].".".$match[2];
-      if (file_exists("$WorkDir/$standardPageName"))
-      { $pageList[] = $standardPageName; }
+      if (file_exists("$WorkDir/$standardPageName")) { $pageList[] = $standardPageName; }
+    }
+
+    // This spec specifies a group, push the parsed groupname into a list for later use
+    else if (preg_match("/^(\w+)[\/\.]\*$/", $pageSpec, $match))
+    { $groupSpecList[] = $match[1]; }
+  }
+
+  // Return if we have dealth with all the spec
+  if (!empty($specStr) && empty($groupSpecList)) { return $pageList; }
+
+  // Remove duplicated group spec
+  $groupSpecList = array_unique($groupSpecList);
+
+	// For each pagefile
+  $file = scandir($WorkDir);
+  $N_FILE = count($file);
+  for ($iFile = 0; $iFile < $N_FILE; $iFile++)
+  {
+    // Work with lower case
+    $fileName = strtolower($file[$iFile]);
+
+    // Skip system files
+    if ($fileName === "." || $fileName === ".." || $fileName === ".htaccess" ||
+    $fileName === ".lastmod") { continue; }
+
+    // Parse group/page name of this file
+    preg_match("/(\w+)\.(\w+)/", $fileName, $match);
+    $groupName = $match[1]; $pageName = $match[2];
+
+    // Skip special pages
+    if (substr($pageName, -13) === "recentchanges") { continue; }
+    if (substr($pageName, -15) === "groupattributes") { continue; }
+
+    // If no spec is provided, include every page
+    if (empty($specStr)) { $pageList[] = $fileName; }
+
+    // Else include this page if it matches one of the specified groups
+    else
+    {
+      foreach ($groupSpecList as $_groupName)
+      { if ($_groupName === $groupName) { $pageList[] = $fileName; break; } }
     }
   }
 
@@ -1356,12 +1372,12 @@ function FPLTextExtract($pagename, &$matches, $opt)
   if ($_REQUEST["regex"])
   {
     // List all the requested page
-    $list = TEListPageByName($opt["name"]);
+    $list = listPageBySpec($opt["name"]);
 
     // Then remove the specified list of pages to be excluded
     if (!empty($_REQUEST["exName"]))
     {
-      $exList = TEListPageByName($_REQUEST["exName"]);
+      $exList = listPageBySpec($_REQUEST["exName"]);
       $list = array_values(array_diff($list, $exList));
     }
   }

@@ -245,7 +245,7 @@ require_once("$FarmD/cookbook/encrypt.php");
 require_once("$FarmD/cookbook/plugin_LSMENG_general.php");
 
 /************************DO NOT LOAD THE FOLLOWING IF PAGE LOCKED************************/
-if (strcasecmp(substr($pagename, 0, 4), "LOCK") === 0) { return; }
+if (strtoupper(substr($pagename, 0, 4)) === "LOCK") { return; }
 
 // Shorthand for actions
 $isBrowse = $isEdit = $isSearch = false;
