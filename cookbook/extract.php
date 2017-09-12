@@ -31,11 +31,20 @@ $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return
 # declare $Extract for (:if enabled Extract:) recipe installation check
 global $Extract; $Extract = 1;
 
-//initialisations
 // Pagenames are separated by space, but should be separated by commas to be processed
 // internally; deal with it right from the start
+// Also if both . / are absent from a pagename, it's the name of a group
 if (!empty($_REQUEST["name"]))
-{ $_REQUEST["name"] = implode(",", explode(" ", preg_replace("/ {2,}/", " ", trim($_REQUEST["name"])))); }
+{
+  $pageList = explode(" ", preg_replace("/ {2,}/", " ", trim($_REQUEST["name"])));
+  foreach ($pageList as $idx => $page)
+  {
+    if (strpos($page, ".") === false && strpos($page, "/") === false)
+    { $pageList[$idx] .= "/*"; }
+  }
+
+  $_REQUEST["name"] = implode(",", $pageList);
+}
 
 // Meng. Regex pattern is automatically identified by a beginning and ending forward
 // slash (and optionally some regex modifiers)
@@ -637,7 +646,7 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
 
       // If this bullet is a date bullet from diary, call printOnThisDay() to
       // parse the corresponding diary page to obain the associated list of diary photos
-      // Note also this utilizes the fact that if this is a date bullet, it will be an 
+      // Note also this utilizes the fact that if this is a date bullet, it will be an
       // standalone paragraph (therefore we can skip the processing below)
       $pagename = $par["source"];
       if (isDiaryPage($pagename) === 2)
@@ -704,11 +713,11 @@ function TEExtractBullet($text, $queryTagList, $queryExTagList, &$par)
 function TETextRows($pagename, $source, $opt, &$par )
 {
   if ($source==$pagename) return '';
-  
+
   $since = READPAGE_CURRENT;
   if (isset($_REQUEST["replace"])) { $since = 0; }
   $page = ReadPage($source, $since);
-  
+
   if (!$page) return '';
   $text = $page['text'];
 
