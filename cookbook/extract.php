@@ -46,9 +46,19 @@ if (!empty($_REQUEST["name"]))
   {
     if (strpos($page, ".") === false && strpos($page, "/") === false)
     { $pageList[$idx] .= ".*"; }
+
+    if ($page[0] === "-")
+    {
+      $exPageList[] = substr($pageList[$idx], 1);
+      unset($pageList[$idx]);
+    }
   }
 
   $_REQUEST["name"] = implode(",", $pageList);
+  $_REQUEST["exName"] = implode(",", $exPageList);
+  $_REQUEST["exNameList"] = $exPageList;
+//   var_dump($_REQUEST["name"]);
+//   var_dump($_REQUEST["exNameList"]);
 }
 
 // Meng. Regex pattern is automatically identified by a beginning and ending forward
@@ -1342,8 +1352,21 @@ function FPLTextExtract($pagename, &$matches, $opt)
     $opt['name'] = substr($opt['name'],0,$sa);
   }
 
-  // Meng. Speed up regex search
-  if ($_REQUEST["regex"]) { $list = TEListPageByName($opt["name"]); }
+  // Meng. Use my own function to list the pages to speed up regex search
+  if ($_REQUEST["regex"])
+  {
+    // List all the requested page
+    $list = TEListPageByName($opt["name"]);
+
+    // Then remove the specified list of pages to be excluded
+    if (!empty($_REQUEST["exName"]))
+    {
+      $exList = TEListPageByName($_REQUEST["exName"]);
+      $list = array_values(array_diff($list, $exList));
+    }
+  }
+
+  // Else call the original built-in method
   else { $list = MakePageList($pagename, $opt, 0); }
 
   //extract page subset according to 'count=' parameter

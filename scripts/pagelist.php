@@ -368,6 +368,14 @@ function PageListSources(&$list, &$opt, $pn, &$page)
   else if (!@$opt['=cached'])
   { $list = ListPages($opt['=pnfilter'], 1); }
 
+  // Remove the specified list of pages to be excluded
+  $exList = array();
+  if (!empty($_REQUEST["exName"]))
+  {
+    $exList = TEListPageByName($_REQUEST["exName"]);
+    $list = array_values(array_diff($list, $exList));
+  }
+
   StopWatch("PageListSources end count=".count($list));
   return 0;
 }
@@ -1052,7 +1060,7 @@ function PageIndexGrep($terms, $invert = false, $list = null)
   if (!empty($wholePageText))
   {
     $terms = (array)$terms;
-    
+
     // A flag signifying whether the user specifies a list of pages to search in
     $isPageSpecify = empty($_REQUEST["name"]) ? false : true;
 
