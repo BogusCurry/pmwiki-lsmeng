@@ -263,7 +263,6 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
     if ($ret & PAGELIST_ITEM) $itemfilters[] = $fn;
     if ($ret & PAGELIST_POST) $postfilters[] = $fn;
   }
-
   StopWatch("MakePageList items count=".count($list).", filters=".implode(',',$itemfilters));
   $opt['=phase'] = PAGELIST_ITEM;
   $matches = array(); $opt['=readc'] = 0;
@@ -442,7 +441,7 @@ function PageListTermsTargets(&$list, &$opt, $pn, &$page)
     if ($indexterms)
     {
       StopWatch("PageListTermsTargets begin count=".count($list));
-      $xlist = PageIndexGrep($indexterms, true);
+      $xlist = PageIndexGrep($indexterms, true, array_map("strtolower", $list));
       $list = array_diff($list, $xlist);
       StopWatch("PageListTermsTargets end count=".count($list));
     }
@@ -1008,7 +1007,7 @@ function PageIndexQueueUpdate($pagelist)
 ## Also note that this just works for the index; if the index is
 ## incomplete, then so are the results returned by this list.
 ## (MakePageList above already knows how to deal with this.)
-function PageIndexGrep($terms, $invert = false)
+function PageIndexGrep($terms, $invert = false, $list = null)
 {
   global $pageindex, $PageIndexFile;
   if (!$PageIndexFile) return array();
@@ -1053,6 +1052,9 @@ function PageIndexGrep($terms, $invert = false)
   if (!empty($wholePageText))
   {
     $terms = (array)$terms;
+    
+    // A flag signifying whether the user specifies a list of pages to search in
+    $isPageSpecify = empty($_REQUEST["name"]) ? false : true;
 
     // After a little test it turns out \r can't even be written or recorded on my
     // wiki page; the following preg_split is then functionally equivalent to a
@@ -1064,11 +1066,20 @@ function PageIndexGrep($terms, $invert = false)
       $i = strpos($line, ':');
       if (!$i) continue;
 
+      $pagename = substr($line, 0, $i);
+
+      // Skip this line if a page list to search in has been specified, and the page is
+      // not included in the list
+      if ($isPageSpecify && !in_array(strtolower($pagename), $list))
+      { continue; }
+
       $add = true;
-      foreach($terms as $t)
+
       // Meng. Change strpos to stripos to fix the bug for searching links
+      foreach($terms as $t)
       { if (stripos($line, $t) === false) { $add = false; break; } }
-      if ($add xor $invert) $pagelist[] = substr($line, 0, $i);
+
+      if ($add xor $invert) { $pagelist[] = $pagename; }
     }
   }
   StopWatch('PageIndexGrep end');

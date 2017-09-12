@@ -32,15 +32,20 @@ $FmtPV['$TextExtractVersion'] = $RecipeInfo['TextExtract']['Version']; // return
 global $Extract; $Extract = 1;
 
 // Pagenames are separated by space, but should be separated by commas to be processed
-// internally; deal with it right from the start
-// Also if both . / are absent from a pagename, it's the name of a group
+// internally; if both . / are absent from a pagename, it's the name of a group
+// Finally turn them into a standard form: lower case and replace / with .
+// $_REQUEST["nameList"] is a thing used for performance improvement in extract.php
+$_REQUEST["name"] = trim($_REQUEST["name"]);
 if (!empty($_REQUEST["name"]))
 {
-  $pageList = explode(" ", preg_replace("/ {2,}/", " ", trim($_REQUEST["name"])));
+  $_REQUEST["name"] = strtolower(str_replace("/", ".", $_REQUEST["name"]));
+
+  $pageList = explode(" ", preg_replace("/ {2,}/", " ", $_REQUEST["name"]));
+
   foreach ($pageList as $idx => $page)
   {
     if (strpos($page, ".") === false && strpos($page, "/") === false)
-    { $pageList[$idx] .= "/*"; }
+    { $pageList[$idx] .= ".*"; }
   }
 
   $_REQUEST["name"] = implode(",", $pageList);
