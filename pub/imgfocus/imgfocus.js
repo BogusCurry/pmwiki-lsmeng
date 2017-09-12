@@ -15,7 +15,7 @@
 * https://www.gnu.org/licenses/gpl.txt
 *
 * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
-* Version 20170709
+* Version 20170912
 */
 
 var imgfocus = {};
@@ -504,11 +504,11 @@ imgfocus.wheelZoom = function(e)
     // It turns out for track pad, direct associating the pixel change with wheelDelta gives
     // the best user experience
     var stepPx = e.wheelDelta;
-    //   var stepPx = -e.deltaY;
+    var scale = stepPx > 0 ? 1.1 : 0.9;
 
     // Call zoomElement() to smooth the size transition. The minimum possible width is
     // set to 50px.
-    var newW = currentWidth + stepPx;
+    var newW = currentWidth*scale;
     var minWidth = 50;
     if (newW > minWidth)
     // 	{ imgfocus.zoomElement(imgfocus.popupImgElement, 'width', newW, 20, 0, 'none'); }
