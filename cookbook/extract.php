@@ -18,7 +18,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170913
+Version 20170922
 
 */
 
@@ -600,7 +600,8 @@ function TETextRows_regex($pagename, $source, $opt, &$par)
 // Return all the (unique) tags found in $text as an array if satified; false otherwise
 function containTag($text, $queryTagList, $queryExTagList)
 {
-  preg_match_all("/\[\[#([^\|\[\]]+?)\]\]/", $text, $match);
+  preg_match_all("/\[\[#([\w-]+)\]\]/", $text, $match);
+
   $tagList = array_unique(array_map(strtolower, $match[1]));
 
   // This has to be modified later when we support negative tags
@@ -1297,7 +1298,7 @@ function listPageBySpec($specStr)
   // Remove duplicated group spec
   $groupSpecList = array_unique($groupSpecList);
 
-	// For each pagefile
+  // For each pagefile
   $file = scandir($WorkDir);
   $N_FILE = count($file);
   for ($iFile = 0; $iFile < $N_FILE; $iFile++)

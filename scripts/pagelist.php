@@ -848,6 +848,22 @@ function FPLExpandItemVars($item, $matches, $idx, $psvars)
   return $item;
 }
 
+// Remove all tags from the given text, and return a string of extracted tags
+// The passed text will be modified directly
+function PageIndexExtractTag(&$text)
+{
+  $tags = array();
+
+  // Note how a local variable is passed into closure for modification
+  $text = preg_replace_callback("/\[\[#([\w-]*)\]\]/", function($match) use (&$tags)
+  {
+    $tags[] = strtolower($match[1]);
+    return "";
+  }, $text);
+
+  return join(' ', array_unique($tags));
+}
+
 ########################################################################
 ## The functions below optimize searches by maintaining a file of
 ## words and link cross references (the "page index").
@@ -934,9 +950,9 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   // Meng. Change the original write file line by line to append a string line by line
   foreach($pagelist as $pn)
   {
-  	// Meng. Work in lower case
-  	$pn = strtolower($pn);
-  	
+    // Meng. Work in lower case
+    $pn = strtolower($pn);
+
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
     // Meng. The default maximum time for updating pageindex is 10 seconds. This causes
@@ -948,11 +964,15 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
     if ($page)
     {
       $targets = str_replace(',', ' ', @$page['targets']);
+
+      // Mend. Add one more procedure to remove & extract all tags from the page text
+      $tags = PageIndexExtractTag($page["text"]);
+
       $terms = PageIndexTerms(array(@$page['text'], $targets, $pn));
       usort($terms, $cmpfn);
       $x = '';
       foreach($terms as $t) { if (strpos($x, $t) === false) $x .= " $t"; }
-      $updatedPageIndexContent .= "$pn:$Now: $targets :$x\n";
+      $updatedPageIndexContent .= "$pn:$Now: $targets :$tags:$x\n";
     }
     $updatecount++;
   }
@@ -1076,6 +1096,11 @@ function PageIndexGrep($terms, $invert = false, $list = null)
     // A flag signifying whether the user specifies a list of pages to search in
     $hasPageSpec = (empty($_REQUEST["name"]) && empty($_REQUEST["exName"])) ? false : true;
 
+    // A flag to tell whether this is a tag search instead of regular text search
+    $isTagSearch = !empty($_REQUEST["queryTagList"]);
+
+//  var_dump($tagList);die;
+
     // After a little test it turns out \r can't even be written or recorded on my
     // wiki page; the following preg_split is then functionally equivalent to a
     // simple explode
@@ -1097,6 +1122,11 @@ function PageIndexGrep($terms, $invert = false, $list = null)
       $add = true;
 
 // var_dump($pagename);
+
+      // Lines in pageindex are formatted as pagename:timeStamp: links :tags:words
+      $segmentList = explode(":", $line);
+      if ($isTagSearch) { $line = $segmentList[3]; }
+      else { $line = $segmentList[4]; }
 
       // Meng. Change strpos to stripos to fix the bug for searching links
       foreach($terms as $t)
