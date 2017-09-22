@@ -298,8 +298,9 @@ var scrollPositioner = scrollPositioner || (function()
     // This is for the editing today mechanism
     if (numBullet[0] == '*')
     {
-      // Calculate its char offset
-      var pos = HTML.indexOf(numBullet);
+      // Calculate its char offset; the regex is to account for tags
+			var exp = new RegExp("\\* *(\\[\\[#[\\w-]*\\]\\])* *" + numBullet.slice(1).trim());
+   		var pos = HTML.match(exp)["index"];
       var pos2 = HTML.indexOf("\n\n", pos);
     }
     // Else, this is for editing the selected text
