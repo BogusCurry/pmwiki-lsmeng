@@ -855,9 +855,10 @@ function PageIndexExtractTag(&$text)
   $tags = array();
 
   // Note how a local variable is passed into closure for modification
-  $text = preg_replace_callback("/\[\[#([\w-]*)\]\]/", function($match) use (&$tags)
+  $text = preg_replace_callback("/\[\[#(.*?)\]\]/", function($match) use (&$tags)
   {
-    $tags[] = strtolower($match[1]);
+    $tag = strtolower(trim($match[1]));
+    if (!empty($tag)) { $tags[] = $tag; }
     return "";
   }, $text);
 
@@ -1114,6 +1115,7 @@ function PageIndexGrep($terms, $invert = false, $list = null)
       $pagename = substr($line, 0, $i);
 
 // if (strtolower($pagename) == "main.testpage") { var_dump($line); }
+// if (strtolower($pagename) == "main.201708") { var_dump($line); }
 
       // Skip this line if a page list to search in has been specified, and the page is
       // not included in the list

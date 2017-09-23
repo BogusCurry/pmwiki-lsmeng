@@ -44,7 +44,7 @@ function printOnThisDay($year = null, $mon = null, $date = null, $dateBulletText
 
       if ($date == 1)
       {
-        if (preg_match("/^\* *(\[\[#[\w-]*\]\])* *1(,|，)/", $textDateArray[0]))
+        if (preg_match("/^\* *(\[\[#.*?\]\])* *1(,|，)/", $textDateArray[0]))
         { $onThisDayStr[$i] .= $textDateArray[0]; }
       }
 
@@ -52,7 +52,7 @@ function printOnThisDay($year = null, $mon = null, $date = null, $dateBulletText
       {
         for ($j=1; $j<=31; $j++)
         {
-          if (preg_match("/^ *(\[\[#[\w-]*\]\])* *$date(,|，)/", $textDateArray[$j]))
+          if (preg_match("/^ *(\[\[#.*?\]\])* *$date(,|，)/", $textDateArray[$j]))
           {
             $onThisDayStr[$i] .= "* ".$textDateArray[$j];
             break;
@@ -280,7 +280,7 @@ function pasteImgURLToDiary($text, $diaryYear = "", $diaryMonth = "", $date = ""
       if ($dayImgList[$iDay] !== "")
       {
         // Find on current processing date the first occurence of \n\n
-        if (preg_match("/\* (\[\[#[\w-]*\]\])* *$iDay(,|，) /", $text, $match, PREG_OFFSET_CAPTURE))
+        if (preg_match("/\* (\[\[#.*?\]\])* *$iDay(,|，) /", $text, $match, PREG_OFFSET_CAPTURE))
         {
           $dayHeadPos = $match[0][1];
           $dayEndPos = strpos($text,"\n\n",$dayHeadPos);
