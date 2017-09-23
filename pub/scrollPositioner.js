@@ -130,7 +130,7 @@ var scrollPositioner = scrollPositioner || (function()
   function setScrollPos(y)
   {
     if (_action == 'edit') { _textElement.scrollTop = y; }
-    else { setTimeout(function() { document.body.scrollTop = y; }, 0); }
+    else { setTimeout(function() { document.documentElement.scrollTop = y; }, 0); }
   }
 
   // Get the scroll position. Depending on the current pmwiki action (browsing, editing,
@@ -138,7 +138,7 @@ var scrollPositioner = scrollPositioner || (function()
   function getScrollPos()
   {
     if (_action == 'edit') { return _textElement.scrollTop; }
-    else { return document.body.scrollTop; }
+    else { return document.documentElement.scrollTop; }
   }
 
   // Record the current scroll position in local storage. The scroll positions for
@@ -246,7 +246,7 @@ var scrollPositioner = scrollPositioner || (function()
 
     var screenHeightAdj = window.innerHeight/3;
     var idPosRelBrowser = bulletObj.getBoundingClientRect().top;
-    var pos = Math.round(idPosRelBrowser - screenHeightAdj + document.body.scrollTop);
+    var pos = Math.round(idPosRelBrowser - screenHeightAdj + document.documentElement.scrollTop);
     setScrollPos(pos);
   }
 
