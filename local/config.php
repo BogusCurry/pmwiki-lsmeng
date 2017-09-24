@@ -499,6 +499,7 @@ if ($action === "autosave")
   $ROSPatterns ['/＊/'] = "*";
   $ROSPatterns ['/＃/'] = "#"; // \uFF03
   $ROSPatterns ['/＋/'] = "+"; // \uFF0B
+  $ROSPatterns ['/﹍/'] = "_";
   $ROSPatterns ['/＼/'] = "\\"; // \uFF3C
   $ROSPatterns ['/，/'] = ", "; // \uFF0C
   $ROSPatterns ['/。/'] = ". "; // \u3002
