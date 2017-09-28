@@ -285,7 +285,9 @@ var pageCommand = pageCommand || (function()
         var screenHeightAdj = Math.round(window.innerHeight/3);
         var idPosRelBrowser = Math.floor(_selectLink.getBoundingClientRect().top);
         screenHeightAdj = Math.max(0, screenHeightAdj - idPosRelBrowser);
-        document.documentElement.scrollTop -= screenHeightAdj;
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        scrollTop -= screenHeightAdj;
+        document.body.scrollTop = document.documentElement.scrollTop = scrollTop;
 
         _selectLink.focus();
       }
@@ -360,7 +362,7 @@ var pageCommand = pageCommand || (function()
   function getScrollPos()
   {
     if (_action == 'edit') { return _textElement.scrollTop; }
-    else { return document.documentElement.scrollTop; }
+    else { return (document.documentElement.scrollTop || document.body.scrollTop); }
   }
 
   // Set the scroll position. Depending on the current pmwiki action (browsing, editing,
@@ -368,7 +370,7 @@ var pageCommand = pageCommand || (function()
   function setScrollPos(y)
   {
     if (_action == 'edit') { _textElement.scrollTop = y; }
-    else { document.documentElement.scrollTop = y; }
+    else { document.body.scrollTop = document.documentElement.scrollTop = y; }
   }
 
   // This is really stupid. Appending a custom property to a given "buddyWin" window

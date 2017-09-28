@@ -130,7 +130,11 @@ var scrollPositioner = scrollPositioner || (function()
   function setScrollPos(y)
   {
     if (_action == 'edit') { _textElement.scrollTop = y; }
-    else { setTimeout(function() { document.documentElement.scrollTop = y; }, 0); }
+    else
+    {
+      setTimeout(function()
+      { document.body.scrollTop = document.documentElement.scrollTop = y; }, 0);
+    }
   }
 
   // Get the scroll position. Depending on the current pmwiki action (browsing, editing,
@@ -138,7 +142,7 @@ var scrollPositioner = scrollPositioner || (function()
   function getScrollPos()
   {
     if (_action == 'edit') { return _textElement.scrollTop; }
-    else { return document.documentElement.scrollTop; }
+    else { return (document.documentElement.scrollTop || document.body.scrollTop); }
   }
 
   // Record the current scroll position in local storage. The scroll positions for
@@ -246,7 +250,8 @@ var scrollPositioner = scrollPositioner || (function()
 
     var screenHeightAdj = window.innerHeight/3;
     var idPosRelBrowser = bulletObj.getBoundingClientRect().top;
-    var pos = Math.round(idPosRelBrowser - screenHeightAdj + document.documentElement.scrollTop);
+    var pos = Math.round(idPosRelBrowser - screenHeightAdj +
+    (document.documentElement.scrollTop || document.body.scrollTop));
     setScrollPos(pos);
   }
 
@@ -299,8 +304,8 @@ var scrollPositioner = scrollPositioner || (function()
     if (numBullet[0] == '*')
     {
       // Calculate its char offset; the regex is to account for tags
-			var exp = new RegExp("\\* *(\\[\\[#[\\w-]*\\]\\])* *" + numBullet.slice(1).trim());
-   		var pos = HTML.match(exp)["index"];
+      var exp = new RegExp("\\* *(\\[\\[#[\\w-]*\\]\\])* *" + numBullet.slice(1).trim());
+      var pos = HTML.match(exp)["index"];
       var pos2 = HTML.indexOf("\n\n", pos);
     }
     // Else, this is for editing the selected text

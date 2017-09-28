@@ -46,7 +46,8 @@
       for(var j=0;j<dayElement.nEvent;j++)
       {
         var infoDiv = dayElement.eventElementList[j];
-        infoDiv.style.top = dayElement.getBoundingClientRect().top + document.documentElement.scrollTop + 3 + 'px';
+        infoDiv.style.top = dayElement.getBoundingClientRect().top +
+        (document.documentElement.scrollTop || document.body.scrollTop) + 3 + 'px';
         infoDiv.style.left = hPosition + 'px';
         hPosition += infoDiv.clientWidth + 10;
       }
