@@ -453,6 +453,10 @@ if ($isBrowse || $isSearch)
   "<script type='text/javascript' src='$PubDirUrl/makeTagLink.js'></script>";
 }
 
+// These pages will neither be indexed into pageindex, nor show up in the search results
+// Must be in lower case
+$pageindexExceptionList = ["main.vocabulary", "main.vocabulary2", "main.accountandpassword"];
+
 // if ($isBrowse)
 // {
 //   $HTMLHeaderFmt['wysiwyg'] = "<script src='$PubDirUrl/wysiwyg.js'></script>";

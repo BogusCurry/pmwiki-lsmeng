@@ -374,15 +374,33 @@ function PageListSources(&$list, &$opt, $pn, &$page)
   // Meng. Work in lower case
   $list = array_map("strtolower", $list);
 
+  $isListModified = false;
+
   // Meng. Remove the specified list of pages to be excluded
   $exList = array();
   if (!empty($_REQUEST["exName"]))
   {
     $exList = listPageBySpec($_REQUEST["exName"]);
-    $list = array_values(array_diff($list, $exList));
+    $list = array_diff($list, $exList);
+///////////////////////////////////////////////////////////////////////////////////
+// Modify the list changes its array index; not sure whether this has any impact
+// Remove the following 3 commented lines INGW
+///////////////////////////////////////////////////////////////////////////////////
+//     $isListModified = true;
   }
 
+  // Skip pages specified in the exception list
+  global $pageindexExceptionList;
+  if (!empty($pageindexExceptionList))
+  {
+    $list = array_diff($list, $pageindexExceptionList);
+//     $isListModified = true;
+  }
+
+//   if ($isListModified) { $list = array_values($list); }
+
   StopWatch("PageListSources end count=".count($list));
+
   return 0;
 }
 
@@ -901,10 +919,21 @@ function PageIndexUpdate($pagelist = NULL, $dir = '')
 {}
 function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 {
+  // Do not update pageindex for pages specified in the exception list
+  global $pageindexExceptionList;
+  $pagelist = array_diff($pagelist, $pageindexExceptionList);
+
   global $EnableReadOnly, $PageIndexUpdateList, $PageIndexFile,
   $PageIndexTime, $Now;
 
-/****************************************************************************************/
+  if (IsEnabled($EnableReadOnly, 0)) return;
+  $abort = ignore_user_abort(true);
+  if ($dir) { flush(); chdir($dir); }
+  if (is_null($pagelist))
+  { $pagelist = (array)$PageIndexUpdateList; $PageIndexUpdateList = array(); }
+  if (!$pagelist || !$PageIndexFile) return;
+
+  /****************************************************************************************/
   // Meng. If the content is encrypted, decrypt to get its content.
   // On decryption error, simply delete the pageindex file and regenerate one.
   $pageIndexContent = getCachedPage($pageindex);
@@ -925,14 +954,8 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 //     redirect($pagename);
     }
   }
-/****************************************************************************************/
+  /**************************************************************************************/
 
-  if (IsEnabled($EnableReadOnly, 0)) return;
-  $abort = ignore_user_abort(true);
-  if ($dir) { flush(); chdir($dir); }
-  if (is_null($pagelist))
-  { $pagelist = (array)$PageIndexUpdateList; $PageIndexUpdateList = array(); }
-  if (!$pagelist || !$PageIndexFile) return;
   SDV($PageIndexTime, 10);
   $c = count($pagelist); $updatecount = 0;
   StopWatch("PageIndexUpdate begin ($c pages to update)");
@@ -1115,7 +1138,7 @@ function PageIndexGrep($terms, $invert = false, $list = null)
       $pagename = substr($line, 0, $i);
 
 // if (strtolower($pagename) == "main.testpage") { var_dump($line); }
-// if (strtolower($pagename) == "main.201708") { var_dump($line); }
+// if (strtolower($pagename) == "main.vocabulary2") { var_dump($line); }
 
       // Skip this line if a page list to search in has been specified, and the page is
       // not included in the list
