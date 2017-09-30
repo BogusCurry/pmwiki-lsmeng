@@ -8,7 +8,7 @@
  * https://www.gnu.org/licenses/gpl.txt
  *
  * Copyright 2017 Ling-San Meng (f95942117@gmail.com)
- * Version 20170709
+ * Version 20170930
  */
 
 "use strict";
@@ -42,7 +42,7 @@
   {
     if (dayElement.nEvent)
     {
-      var hPosition = dayElement.getBoundingClientRect().left + 85;
+      var hPosition = dayElement.getBoundingClientRect().left + 90;
       for(var j=0;j<dayElement.nEvent;j++)
       {
         var infoDiv = dayElement.eventElementList[j];
@@ -407,7 +407,7 @@
     var style = _GCImg.style;
     style.position = "fixed";
     style.top = "0px";
-    style.right = "80px";
+    style.right = "90px";
     style.width = "30px";
     style.height = "auto";
     style.zIndex = 2;
