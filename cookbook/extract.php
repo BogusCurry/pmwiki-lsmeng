@@ -1283,7 +1283,7 @@ function listPageBySpec($specStr)
     $groupName = $match[1]; $pageName = $match[2];
 
     // Skip special pages
-    if (substr($pageName, -13) === "recentchanges") { continue; }
+//     if (substr($pageName, -13) === "recentchanges") { continue; }
     if (substr($pageName, -15) === "groupattributes") { continue; }
 
     // If no spec is provided, include every page

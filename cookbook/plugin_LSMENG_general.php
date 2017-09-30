@@ -586,7 +586,7 @@ function cachePage($pagename, $page, $since = 0)
   // $pagename shall be in a canonical form
   $pagename = strtolower(str_replace("/", ".", $pagename));
 
-  if (substr($pagename, -13) === "recentchanges") { return false; }
+//   if (substr($pagename, -13) === "recentchanges") { return false; }
 
   // Take care of siteadmin.status ...
   global $WorkDir;

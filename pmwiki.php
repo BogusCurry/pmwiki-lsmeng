@@ -1412,8 +1412,8 @@ class PageStore
       {
         // Preserve a copy of the modified page. Plaintext is not allowed to be backed up.
         // Skip recentchange pages.
-        if (file_exists($pagefile) && $EnableEncryption &&
-        (strcasecmp(substr($pagename, -13), "recentchanges") !== 0))
+        if (file_exists($pagefile) && $EnableEncryption)
+//         && (strcasecmp(substr($pagename, -13), "recentchanges") !== 0))
         {
           if (!preservePageBackup($pagename,$pagefile))
           { Abort("Preserving backup failed for $pagename ($pagefile)"); }
@@ -2706,6 +2706,7 @@ function PostPage($pagename, &$page, &$new)
 
 function PostRecentChanges($pagename,$page,$new,$Fmt=null)
 {
+/*
   global $IsPagePosted, $RecentChangesFmt, $RCDelimPattern, $RCLinesMax;
 
   // Meng. Comment out the following line so that PostRecentChanges() can be called before
@@ -2732,6 +2733,7 @@ function PostRecentChanges($pagename,$page,$new,$Fmt=null)
 
     WritePage($rcname, $rcpage);
   }
+*/
 }
 
 function AutoCreateTargets($pagename, &$page, &$new)

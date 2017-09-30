@@ -130,7 +130,7 @@ function syncPageindex($flag = false)
     if ($pagemtime <= getPageindexUpdateTime($pagename)) { continue; }
 
     // Skip recentchanges pages
-    if (strcasecmp(substr($pagename, -13), "recentchanges") === 0) { continue; }
+//     if (strcasecmp(substr($pagename, -13), "recentchanges") === 0) { continue; }
 
     array_push($pagelist, $pagename);
   }
