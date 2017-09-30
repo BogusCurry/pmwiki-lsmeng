@@ -18,7 +18,7 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170923
+Version 20170930
 
 */
 
@@ -107,7 +107,7 @@ if (isset($_REQUEST["replace"]))
   if (!isset($_REQUEST["regex"]))
   {
     $_REQUEST["regex"] = 1;
-    $_REQUEST["q3"] = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
+    $_REQUEST["q"] = $_REQUEST["q3"] = preg_replace_callback("/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/",
     function($match) { return "\\$match[0]"; }, $query);
   }
 }
@@ -565,36 +565,6 @@ function TEReplaceText($pagename, $page, &$par)
   }
 }
 
-// A test function. Delete this afterwards if not used
-function TETextRows_regex($pagename, $source, $opt, &$par)
-{
-  $page = ReadPage($source);
-  if (!$page) { return ''; }
-
-  $text = $page['text'];
-
-  if ($opt['section'])
-  $text = TextSection($text, $source.$opt['section']);
-
-  // skip page if it has an exclude match
-  if ($opt['pat']['-']!='')
-  foreach ($opt['-'] as $pat)
-  { if (preg_match("($pat)".$par['qi'], $text)) return; }
-
-  //skip page if it has no match; all inclusive elements need to match (AND condition)
-  $pat = $opt[''][0];
-  if (!preg_match_all("($pat)".$par['qi'], $text, $match, PREG_OFFSET_CAPTURE))
-  { return; }
-
-  $rows = [];
-  foreach($match[0] as $m)
-  {
-    $rows[] = $m[0];
-  }
-
-  return $rows;
-}
-
 // Check if the given $text satisfies the tag rule dictated by $queryTagList
 // Currently the rule is simply for $text to include every tag in $queryTagList
 // Return all the (unique) tags found in $text as an array if satified; false otherwise
@@ -729,9 +699,7 @@ function TETextRows($pagename, $source, $opt, &$par )
 {
   if ($source==$pagename) return '';
 
-  $since = READPAGE_CURRENT;
-  if (isset($_REQUEST["replace"])) { $since = 0; }
-  $page = ReadPage($source, $since);
+  $page = ReadPage($source, READPAGE_CURRENT);
 
   if (!$page) return '';
   $text = $page['text'];
@@ -1375,12 +1343,29 @@ function FPLTextExtract($pagename, &$matches, $opt)
     // List all the requested page
     $list = listPageBySpec($opt["name"]);
 
+///////////////////////////////////////////////////////////////////////////////////
+// Modify the list changes its array index; not sure whether this has any impact
+// Remove the following 4 commented lines INGW
+///////////////////////////////////////////////////////////////////////////////////
+//     $isListModified = false;
+
     // Then remove the specified list of pages to be excluded
     if (!empty($_REQUEST["exName"]))
     {
       $exList = listPageBySpec($_REQUEST["exName"]);
-      $list = array_values(array_diff($list, $exList));
+      $list = array_diff($list, $exList);
+//     $isListModified = true;
     }
+
+    // Skip pages specified in the exception list
+    global $pageindexExceptionList;
+    if (!empty($pageindexExceptionList))
+    {
+      $list = array_diff($list, $pageindexExceptionList);
+//     $isListModified = true;
+    }
+
+//   if ($isListModified) { $list = array_values($list); }
   }
 
   // Else call the original built-in method

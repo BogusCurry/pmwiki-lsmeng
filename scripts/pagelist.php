@@ -374,18 +374,17 @@ function PageListSources(&$list, &$opt, $pn, &$page)
   // Meng. Work in lower case
   $list = array_map("strtolower", $list);
 
-  $isListModified = false;
+///////////////////////////////////////////////////////////////////////////////////
+// Modify the list changes its array index; not sure whether this has any impact
+// Remove the following 4 commented lines INGW
+///////////////////////////////////////////////////////////////////////////////////
+//   $isListModified = false;
 
   // Meng. Remove the specified list of pages to be excluded
-  $exList = array();
   if (!empty($_REQUEST["exName"]))
   {
     $exList = listPageBySpec($_REQUEST["exName"]);
     $list = array_diff($list, $exList);
-///////////////////////////////////////////////////////////////////////////////////
-// Modify the list changes its array index; not sure whether this has any impact
-// Remove the following 3 commented lines INGW
-///////////////////////////////////////////////////////////////////////////////////
 //     $isListModified = true;
   }
 
