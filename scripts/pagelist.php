@@ -971,6 +971,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
   $ofp = @fopen($file,"w");
 
   // Meng. Change the original write file line by line to append a string line by line
+  global $WorkDir;
   foreach($pagelist as $pn)
   {
     // Meng. Work in lower case
@@ -978,13 +979,18 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
+    
     // Meng. The default maximum time for updating pageindex is 10 seconds. This causes
     // incomplete pageindex at reconstruction. Remove this limit since the maximum php
     // execution time will be capped by the setting in php.ini anyway
 //    if (time() > $timeout) continue;
+
     $page = ReadPage($pn, READPAGE_CURRENT);
 
-    if ($page)
+		// The original condition is redundant; in ReadPage() something is always returned
+		// Check for existence to take care of deleted pages
+//     if ($page)
+    if (file_exists("$WorkDir/$pn"))
     {
       $targets = str_replace(',', ' ', @$page['targets']);
 
@@ -1137,6 +1143,7 @@ function PageIndexGrep($terms, $invert = false, $list = null)
       $pagename = substr($line, 0, $i);
 
 // if (strtolower($pagename) == "main.testpage") { var_dump($line); }
+// if (strtolower($pagename) == "testgroup.page1") { var_dump($line); }
 // if (strtolower($pagename) == "main.vocabulary2") { var_dump($line); }
 
       // Skip this line if a page list to search in has been specified, and the page is

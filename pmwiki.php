@@ -2694,8 +2694,13 @@ function PostPage($pagename, &$page, &$new)
         @unlink("$WorkDir/$pagename");
 
         // Meng. Call pageindex update here to remove the page's content from pageindex.
-        // Go to a special link address to perform pageindex update in a non-block way.
-        post_async("http://localhost".$_SERVER['SCRIPT_NAME']."?updatePageIndex=1");
+        // Go to a special link address to perform pageindex update in a non-blocking way.
+				// Since the handlePageindex procedure is embedded in the builtin browsing/editing
+				// procedure, we have to come up with a pagename that does not belong to the
+				// "sensitive" pages which quickly get password locked. Use Site/Editform
+				global $ScriptUrl;
+				$url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagename";
+        post_async($url);
       }
     }
     else { WritePage($pagename,$new); }

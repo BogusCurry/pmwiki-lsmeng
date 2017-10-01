@@ -119,7 +119,7 @@ function syncPageindex($flag = false)
   $pagelist = array();
   foreach (scandir($WorkDir) as $pagename)
   {
-    // Ignore not wiki-related pages
+    // Ignore non wiki-related pages
     if (in_array($pagename, $ignored)) { continue; }
     $pagemtime = filemtime("$WorkDir/$pagename");
 
@@ -169,16 +169,23 @@ function updatePageindex()
   //     2nd case is due to page index sync process
   if ($pagelistStr === "1") { global $pagename; $pagelist = array($pagename); }
   else { $pagelist = explode(",", $pagelistStr); }
-
+  
+  global $WorkDir, $pageindexTimeDir;
   foreach ($pagelist as $pagename)
   {
-    // Double check if the page is indeed modified after the last pageindex update
-    global $WorkDir;
-    $pagemtime = filemtime("$WorkDir/$pagename");
+    // If the explicitly requested page doesn't exist; it has just been deleted
+    if (!file_exists("$WorkDir/$pagename"))
+    {
+// DEBUG
+      file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Page deleted ".$pagename."\n", FILE_APPEND);
+      continue;
+    }
+    
+		// Double check if the page is indeed modified after the last pageindex update
+    $pagemtime = @filemtime("$WorkDir/$pagename");
     if ($pagemtime > getPageindexUpdateTime($pagename))
     {
 // DEBUG
-      global $pageindexTimeDir;
       file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Updating ".$pagename."\n", FILE_APPEND);
 
       // Meng. Record the pageindex update time for this page
@@ -188,11 +195,11 @@ function updatePageindex()
       // 3rd input parameters are not used at all in PostRecentChanges().
       PostRecentChanges($pagename, NULL, NULL);
     }
+    
     // Its pageindex is already up to date, remove it from the list
     else
     {
 // DEBUG
-      global $pageindexTimeDir;
       file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." ".$pagename." already up to date\n", FILE_APPEND);
 
       $key = array_search($pagename, $pagelist);

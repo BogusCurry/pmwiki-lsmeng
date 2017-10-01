@@ -1,3 +1,14 @@
+/**
+ * This is currently NOT used. Mainly b/c I think periodic pageindex
+ * update is enough.
+ * 
+ * It turns out updating page index cannot be done when requesting with
+ * a pagename that's currently being locked. This is solved in pageindex.php
+ * by always requesting with Site.Editform; then specify the pages to be
+ * updated in the get param pagelist.
+ *
+ */
+
 var pageindexUpdater = (function()
 {
   /* Dependencies */
