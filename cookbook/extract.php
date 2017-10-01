@@ -1367,7 +1367,6 @@ function FPLTextExtract($pagename, &$matches, $opt)
     }
 
 //   if ($isListModified) { $list = array_values($list); }
-
   }
 
   // Else call the original built-in method

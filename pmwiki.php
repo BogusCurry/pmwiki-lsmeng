@@ -2402,12 +2402,12 @@ function HandleBrowse($pagename, $auth = 'read')
       // past diary corresponding to today's date.
       // Use the existence of a local photo directory to determine whether diary related
       // stuff should be loaded or not.
+      $pageType = isDiaryPage();
+      if ($pageType == 3) { $text = printOnThisDay(); }
+
       global $Photo;
       if (file_exists($Photo))
       {
-        $pageType = isDiaryPage();
-        if ($pageType == 3) { $text = printOnThisDay(); }
-
         // Read in the diary photo directory to find all the diary images and videos, and then
         // paste their full URL to the diary pages
         global $UrlScheme;
@@ -2695,11 +2695,11 @@ function PostPage($pagename, &$page, &$new)
 
         // Meng. Call pageindex update here to remove the page's content from pageindex.
         // Go to a special link address to perform pageindex update in a non-blocking way.
-				// Since the handlePageindex procedure is embedded in the builtin browsing/editing
-				// procedure, we have to come up with a pagename that does not belong to the
-				// "sensitive" pages which quickly get password locked. Use Site/Editform
-				global $ScriptUrl;
-				$url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagename";
+        // Since the handlePageindex procedure is embedded in the builtin browsing/editing
+        // procedure, we have to come up with a pagename that does not belong to the
+        // "sensitive" pages which quickly get password locked. Use Site/Editform
+        global $ScriptUrl;
+        $url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagename";
         post_async($url);
       }
     }
