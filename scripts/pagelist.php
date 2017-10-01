@@ -256,47 +256,66 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
   $itemfilters = array(); $postfilters = array();
   asort($PageListFilters);
   $opt['=phase'] = PAGELIST_PRE; $list=array(); $pn=NULL; $page=NULL;
+  global $isSearchE;
   foreach($PageListFilters as $fn => $v)
   {
+		// For text extract module
+		// These are not necessary for filtering pages as far as pageindex is concerned
+		if ($isSearchE === true && 
+		in_array($fn, [
+		"PageListCache",
+		"PageListProtect",
+		"PageListPasswords",
+		"PageListIf",
+		"PageListVariables",
+		"PageListSort"
+		])) { continue; }
+
     if ($v<0) continue;
     $ret = $fn($list, $opt, $pagename, $page);
     if ($ret & PAGELIST_ITEM) $itemfilters[] = $fn;
     if ($ret & PAGELIST_POST) $postfilters[] = $fn;
   }
+
   StopWatch("MakePageList items count=".count($list).", filters=".implode(',',$itemfilters));
-  $opt['=phase'] = PAGELIST_ITEM;
-  $matches = array(); $opt['=readc'] = 0;
-  foreach((array)$list as $pn)
+
+  // Skip item filter in case of using text extract module; it's faster this way
+  if ($isSearchE !== true)
   {
-    $page = array();
-    foreach((array)$itemfilters as $fn)
-    if (!$fn($list, $opt, $pn, $page)) continue 2;
+    $opt['=phase'] = PAGELIST_ITEM;
+    $matches = array(); $opt['=readc'] = 0;
+    foreach((array)$list as $pn)
+    {
+      $page = array();
+      foreach((array)$itemfilters as $fn)
+      if (!$fn($list, $opt, $pn, $page)) continue 2;
 
-    // Meng: Exclude site.sidebar
-//     if (stripos($pn,'Site.SideBar') !== false) continue;
+      // Meng: Exclude site.sidebar
+      //     if (stripos($pn,'Site.SideBar') !== false) continue;
 
-    $page['pagename'] = $page['name'] = $pn;
-    PCache($pn, $page);
-    $matches[] = $pn;
+      $page['pagename'] = $page['name'] = $pn;
+      PCache($pn, $page);
+      $matches[] = $pn;
+    }
+    $list = $matches;
+  
+    // If there is only one match, and it's not the enhanced search page, go to that
+		// page directly.
+		if (count($matches) === 1) { Redirect($matches[0]); }
+		
+		StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
   }
-  $list = $matches;
-
-  // Meng: If there is only one match, and it's not the enhanced search page, go to that
-  // page directly.
-  if (count($matches) === 1 && !preg_match("/site[\.\/]searche/i", $pagename))
-  { Redirect($matches[0]); }
-
-  StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
-
-  $opt['=phase'] = PAGELIST_POST; $pn=NULL; $page=NULL;
-  foreach((array)$postfilters as $fn)
-  $fn($list, $opt, $pagename, $page);
-
-  if ($retpages)
-  for($i=0; $i<count($list); $i++)
-  $list[$i] = &$PCache[$list[$i]];
-
-// 	$list[$i] = strtolower($list[$i]);
+  
+  // Skip post filter in case of using text extract module
+  if ($isSearchE !== true)
+  {
+    $opt['=phase'] = PAGELIST_POST; $pn=NULL; $page=NULL;
+    foreach((array)$postfilters as $fn)
+    { $fn($list, $opt, $pagename, $page); }
+    if ($retpages)
+    for($i=0; $i<count($list); $i++)
+    $list[$i] = &$PCache[$list[$i]];
+  }
 
   StopWatch('MakePageList end');
 
@@ -979,7 +998,7 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 
     if (@$updated[$pn]) continue;
     @$updated[$pn]++;
-    
+
     // Meng. The default maximum time for updating pageindex is 10 seconds. This causes
     // incomplete pageindex at reconstruction. Remove this limit since the maximum php
     // execution time will be capped by the setting in php.ini anyway
@@ -987,8 +1006,8 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 
     $page = ReadPage($pn, READPAGE_CURRENT);
 
-		// The original condition is redundant; in ReadPage() something is always returned
-		// Check for existence to take care of deleted pages
+    // The original condition is redundant; in ReadPage() something is always returned
+    // Check for existence to take care of deleted pages
 //     if ($page)
     if (file_exists("$WorkDir/$pn"))
     {

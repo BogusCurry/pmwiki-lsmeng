@@ -390,6 +390,7 @@ function isPasswdCorrect($passwd)
     // unlocks everything, until the buffer is flushed by the pagelock timer
     // This has to work with IsAuthorized() in pmwiki.php
     $_SESSION['authpw'][base64_encode($passwd)] = 1;
+    $_SESSION['isPageUnlock'] = true;
 
 //     @session_write_close();
     return true;

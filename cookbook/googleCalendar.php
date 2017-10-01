@@ -54,9 +54,7 @@ if ($action =='browse' && isset($_GET["getGC"]))
     // if calendarID is a single char, translate it into the correct calendarid
     if ($calendarType != "undefined")
     {
-      $return = getCalendarIDSummary($client, $service);
-      $_calendarID = $return[0];
-      $_calendarSummary = $return[1];
+      list($_calendarID, $_calendarSummary) = getCalendarIDSummary($client, $service);
 
       $calendarListNum = sizeof($_calendarID);
       global $CALENDAR_TYPE;
@@ -217,9 +215,7 @@ function getGCByMon($authCode = "")
   $service = new Google_Service_Calendar($client);
 
   // Get all the calendar information
-  $return = getCalendarIDSummary($client, $service);
-  $calendarID = $return[0];
-  $calendarSummary = $return[1];
+  list($calendarID, $calendarSummary) = getCalendarIDSummary($client, $service);
 
   $calendarListNum = sizeof($calendarID);
 

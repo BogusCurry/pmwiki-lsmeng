@@ -18,11 +18,11 @@ Modified by Ling-San Meng (f95942117@gmail.com) to support unicode characters,
 and global replace. Regex search is automatically identified by a
 beginning and ending forward slash (and optionally some regex modifiers). Regex searh by
 default is case sensitive.
-Version 20170930
+Version 20171001
 
 */
 
-if (!isset($isSearch) || $isSearch !== true)
+if (!isset($isSearchE) || $isSearchE !== true)
 { die("You shall not access text extract module!"); }
 
 $RecipeInfo['TextExtract']['Version'] = '2016-04-23';
@@ -185,12 +185,14 @@ function TextExtract($pagename, $list, $opt = NULL)
   StopWatch('TextExtract start');
   if ($opt['stime']) $par['stime'] = $opt['stime'];
   else $par['stime'] = strtok(microtime(), ' ') + strtok('');
+
   //set default options
   foreach ($TEModeDefaults as $mode => $ar )
   {
     foreach ($ar as $k => $val)
     if ($opt['markup']==$mode && !$opt[$k]) $opt[$k] = $val;
   }
+
   $opt = array_merge($TextExtractOpt, $opt);
   switch ($opt['unit'])
   {
@@ -339,7 +341,7 @@ function TextExtract($pagename, $list, $opt = NULL)
     $hit = 0;
 
     //get rows from source page
-    $rows = TETextRows($pagename, $pn, $opt, $par);
+    list($rows, $pn_original) = TETextRows($pagename, $pn, $opt, $par);
 
     if (!$rows) continue;
     $j++;
@@ -436,10 +438,10 @@ function TextExtract($pagename, $list, $opt = NULL)
     {
       //add pagelink (prefix) row
       if($opt['phead'])
-      $new[$j]['phead'] = TEPageHeader($pagename, $pn, $opt, $par);
+      $new[$j]['phead'] = TEPageHeader($pagename, $pn_original, $opt, $par);
       $par['sorcnt']++;
       if ($opt['pfoot'])
-      $new[$j]['pfoot'] = TEPageFooter($pagename, $pn, $opt, $par);
+      $new[$j]['pfoot'] = TEPageFooter($pagename, $pn_original, $opt, $par);
       $new[$j]['name'] = $pn;
     }
   } //end of source pages processing
@@ -519,49 +521,41 @@ function TextExtract($pagename, $list, $opt = NULL)
 } //}}}
 
 // Meng. The text replace routine.
-function TEReplaceText($pagename, $page, &$par)
+function TEReplaceText($pagename, $page, $par)
 {
-  if (!$page) { return; }
+  // get text
+  $text = $page['text'];
 
-  // if this is a replace
-  if (isset($_REQUEST["replace"]))
+  if (isset($_REQUEST["q3"])) { $query = $_REQUEST["q3"]; }
+  else { $query = $par["pat"]; }
+  $replace = $_REQUEST["q2"];
+
+  // Perform regex replace. Regex search is performed line-by-line, i.e., equivalent to
+  // the multi-line mode. To algin with the search behavior, a multi-line mode modifier
+  // is also added here.
+  $count = 0;
+  $text = preg_replace("($query)".$par['qi'], $replace, $text, -1, $count);
+  if ($count > 0)
   {
-    // get text
-    $text = $page['text'];
+    $_REQUEST["replaceCount"] += $count;
 
-    if (isset($_REQUEST["q3"])) { $query = $_REQUEST["q3"]; }
-    else { $query = $par["pat"]; }
-    $replace = $_REQUEST["q2"];
-
-    // Perform regex replace. Regex search is performed line-by-line, i.e., equivalent to
-    // the multi-line mode. To algin with the search behavior, a multi-line mode modifier
-    // is also added here.
-    $count = 0;
-    $text = preg_replace("($query)".$par['qi'], $replace, $text, -1, $count);
-    if ($count > 0)
-    {
-      $_REQUEST["replaceCount"] += $count;
-
-      $new = $page;
+    $new = $page;
 
 /*
-      global $EditFields, $ChangeSummary;
-      foreach((array)$EditFields as $k)
-      if (isset( $_POST[$k] ))
-      {
-        $new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
-        if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
-      }
-
-      $new["csum:$Now"] = $new['csum'] = "[globalReplace] $ChangeSummary";
-*/
-
-      $new["text"] = $text;
-
-      UpdatePage($pagename, $page, $new);
+    global $EditFields, $ChangeSummary;
+    foreach((array)$EditFields as $k)
+    if (isset( $_POST[$k] ))
+    {
+      $new[$k]=str_replace("\r",'',stripmagic($_POST[$k]));
+      if ($Charset=='ISO-8859-1') $new[$k] = utf8_decode($new[$k]);
     }
 
-    return;
+    $new["csum:$Now"] = $new['csum'] = "[globalReplace] $ChangeSummary";
+*/
+
+    $new["text"] = $text;
+
+    UpdatePage($pagename, $page, $new);
   }
 }
 
@@ -712,6 +706,9 @@ function TETextRows($pagename, $source, $opt, &$par )
   if ($opt['pat']['-']!='')
   foreach ($opt['-'] as $pat)
   { if (preg_match("($pat)".$par['qi'], $text)) return; }
+
+  // This is the main line that performs regex search to see if the query
+  // appears in the page text
   //skip page if it has no match; all inclusive elements need to match (AND condition)
   foreach ($opt[''] as $pat)
   { if (!preg_match("($pat)".$par['qi'], $text)) return; }
@@ -789,9 +786,9 @@ function TETextRows($pagename, $source, $opt, &$par )
     break;
   }
 
-  TEReplaceText($source, $page, $par);
+  if (isset($_REQUEST["replace"])) { TEReplaceText($source, $page, $par); }
 
-  return $rows;
+  return [$rows, $page["name"]];
 } //}}}
 
 //cleanup of markup
@@ -1066,6 +1063,10 @@ function TEFooter($opt, $par)
 //make page header
 function TEPageHeader($pagename, $source, $opt, &$par)
 {
+  // Well, since I read the actual pagename from what's recorded in $page, pages that have
+  // not been edited for a long time might still have this draft thing
+  $source = preg_replace("/-draft/i", "", $source);
+
   $pnum = ($opt['pagenum']) ? ($par['pagenum']).". " : '';
   $out = "\n>>te-pageheader<<\n";
   if($opt['phead']=='link' )
@@ -1366,11 +1367,14 @@ function FPLTextExtract($pagename, &$matches, $opt)
     }
 
 //   if ($isListModified) { $list = array_values($list); }
+
   }
 
   // Else call the original built-in method
   else { $list = MakePageList($pagename, $opt, 0); }
 
+	rsort($list);
+	
   //extract page subset according to 'count=' parameter
   if (@$opt['count'] && !$opt['section'])
   TESliceList($list, $opt);
