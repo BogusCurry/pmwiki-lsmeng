@@ -108,6 +108,8 @@ define('PAGELIST_PRE' , 1);
 define('PAGELIST_ITEM', 2);
 define('PAGELIST_POST', 4);
 
+$isBacklinkSearch = isset($_REQUEST["q"]) && preg_match("/^link=[\w-]+\.[\w-]+$/", $_REQUEST["q"]);
+
 ## SearchBox generates the output of the (:searchbox:) markup.
 ## If $SearchBoxFmt is defined, that is used, otherwise a searchbox
 ## is generated.  Options include group=, size=, label=.
@@ -211,7 +213,7 @@ function FmtPageList($outfmt, $pagename, $opt)
 
 ## MakePageList generates a list of pages using the specifications given
 ## by $opt.
-function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
+function MakePageList($pagename, $opt, $retpages = 1)
 {
   global $MakePageListOpt, $PageListFilters, $PCache;
 
@@ -237,14 +239,6 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
     }
   }
 
-/*
-// If this is a backlink search, search under the same page group.
-// 5 = strlen("link=")
-  $searchText = $opt['q'];
-  if (substr($searchText,0,5) === "link=")
-  { $opt['group'] = substr($searchText,5,strpos($searchText,'.')-5); }
-*/
-
   StopWatch('MakePageList pre');
   SDVA($MakePageListOpt, array('list' => 'default'));
   $opt = array_merge((array)$MakePageListOpt, (array)$opt);
@@ -256,20 +250,20 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
   $itemfilters = array(); $postfilters = array();
   asort($PageListFilters);
   $opt['=phase'] = PAGELIST_PRE; $list=array(); $pn=NULL; $page=NULL;
-  global $isSearchE;
+  global $isSearchE, $isBacklinkSearch;
   foreach($PageListFilters as $fn => $v)
   {
-		// For text extract module
-		// These are not necessary for filtering pages as far as pageindex is concerned
-		if ($isSearchE === true && 
-		in_array($fn, [
-		"PageListCache",
-		"PageListProtect",
-		"PageListPasswords",
-		"PageListIf",
-		"PageListVariables",
-		"PageListSort"
-		])) { continue; }
+    // For text extract module or backlink search
+    // These are not necessary for filtering pages as far as pageindex is concerned
+    if (($isSearchE || $isBacklinkSearch) &&
+    in_array($fn, [
+    "PageListCache",
+    "PageListProtect",
+    "PageListPasswords",
+    "PageListIf",
+    "PageListVariables",
+    "PageListSort"
+    ])) { continue; }
 
     if ($v<0) continue;
     $ret = $fn($list, $opt, $pagename, $page);
@@ -279,8 +273,9 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
 
   StopWatch("MakePageList items count=".count($list).", filters=".implode(',',$itemfilters));
 
-  // Skip item filter in case of using text extract module; it's faster this way
-  if ($isSearchE !== true)
+  // Skip item filter in case of using text extract module or backlink search
+  // it's faster this way
+  if (!$isSearchE && !$isBacklinkSearch)
   {
     $opt['=phase'] = PAGELIST_ITEM;
     $matches = array(); $opt['=readc'] = 0;
@@ -298,16 +293,12 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
       $matches[] = $pn;
     }
     $list = $matches;
-  
-    // If there is only one match, and it's not the enhanced search page, go to that
-		// page directly.
-		if (count($matches) === 1) { Redirect($matches[0]); }
-		
-		StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
+
+    StopWatch("MakePageList post count=".count($list).", readc={$opt['=readc']}");
   }
-  
-  // Skip post filter in case of using text extract module
-  if ($isSearchE !== true)
+
+  // Skip post filter in case of using text extract module or backlink search
+  if (!$isSearchE && !$isBacklinkSearch)
   {
     $opt['=phase'] = PAGELIST_POST; $pn=NULL; $page=NULL;
     foreach((array)$postfilters as $fn)
@@ -319,9 +310,16 @@ function MakePageList($pagename, $opt, $retpages = 1, $recontructPageIndex = 0)
 
   StopWatch('MakePageList end');
 
-  // Meng. It's kind of a trick. If a special flag added by me is set, then update
-  // all the pages. It's for reconstructing the pageindex.
-  if ($recontructPageIndex == 1) { Meng_PageIndexUpdate($list); }
+/*
+// If this is a backlink search, search under the same page group.
+// 5 = strlen("link=")
+  $searchText = $opt['q'];
+  if (substr($searchText,0,5) === "link=")
+  { $opt['group'] = substr($searchText,5,strpos($searchText,'.')-5); }
+*/
+
+  // If there is only one result & it's backlink search, go to that page directly.
+  if ($isBacklinkSearch && sizeof($list) === 1) { Redirect(array_values($list)[0]); }
 
   return $list;
 }
@@ -484,7 +482,7 @@ function PageListTermsTargets(&$list, &$opt, $pn, &$page)
     {
       $link = MakePageName($pn, $opt['link']);
       $opt['=linkp'] = "/(^|,)$link(,|$)/i";
-      $indexterms[] = " $link ";
+      $indexterms[] = strtolower(" $link ");
     }
 
     if (@$opt['=cached']) return 0;
@@ -493,6 +491,7 @@ function PageListTermsTargets(&$list, &$opt, $pn, &$page)
       StopWatch("PageListTermsTargets begin count=".count($list));
       $xlist = PageIndexGrep($indexterms, true, array_map("strtolower", $list));
       $list = array_diff($list, $xlist);
+
       StopWatch("PageListTermsTargets end count=".count($list));
     }
 
@@ -884,6 +883,29 @@ function FPLExpandItemVars($item, $matches, $idx, $psvars)
   return $item;
 }
 
+// Find all the links from the given text, and return a string of the found links
+function PageIndexFindLink($text, $pagename)
+{
+  $group = substr($pagename, 0, strpos($pagename, "."));
+
+  // Links to other pages are identified by the form
+  // [[ group/page | description ]] or [[ group.page | description ]]
+  // group and description can be absent
+  // Note that we are interested in the main links only; therefore links with hash tag are
+  // ignored
+  preg_match_all("/\[\[\s*?([\w-]+?)([\/\.]([\w-]+?))?\s*?(\|[^\]]*?)?\]\]/", $text, $match);
+
+  $numLink = sizeof($match[0]);
+  $targets = array();
+  for ($i = 0; $i < $numLink; $i++)
+  {
+    if (empty($match[3][$i])) { $targets[] = $group.".".$match[1][$i]; }
+    else { $targets[] = $match[1][$i].".".$match[3][$i]; }
+  }
+
+  return str_replace("_", "", strtolower(join(' ', array_unique($targets))));
+}
+
 // Remove all tags from the given text, and return a string of extracted tags
 // The passed text will be modified directly
 function PageIndexExtractTag(&$text)
@@ -1011,7 +1033,9 @@ function Meng_PageIndexUpdate($pagelist = NULL, $dir = '')
 //     if ($page)
     if (file_exists("$WorkDir/$pn"))
     {
-      $targets = str_replace(',', ' ', @$page['targets']);
+      // Mend. Find all the links from the page text here instead of relying on the page
+      // attribute 'target'
+      $targets = PageIndexFindLink($page["text"], $page["name"]);
 
       // Mend. Add one more procedure to remove & extract all tags from the page text
       $tags = PageIndexExtractTag($page["text"]);
@@ -1095,8 +1119,6 @@ function PageIndexQueueUpdate($pagelist)
 ## (MakePageList above already knows how to deal with this.)
 function PageIndexGrep($terms, $invert = false, $list = null)
 {
-//   var_dump($list);
-
   global $pageindex, $PageIndexFile;
   if (!$PageIndexFile) return array();
 
@@ -1144,10 +1166,14 @@ function PageIndexGrep($terms, $invert = false, $list = null)
     // A flag signifying whether the user specifies a list of pages to search in
     $hasPageSpec = (empty($_REQUEST["name"]) && empty($_REQUEST["exName"])) ? false : true;
 
-    // A flag to tell whether this is a tag search instead of regular text search
-    $isTagSearch = !empty($_REQUEST["queryTagList"]);
-
-//  var_dump($tagList);die;
+    // Lines in pageindex are formatted as pagename:timeStamp: links :tags:words
+    // This is a backlink search
+    global $isBacklinkSearch;
+    if ($isBacklinkSearch) { $segmentIdx = 2; }
+    // This is a tag search
+    else if (!empty($_REQUEST["queryTagList"])) { $segmentIdx = 3; }
+    // This is a regular string search
+    else { $segmentIdx = 4; }
 
     // After a little test it turns out \r can't even be written or recorded on my
     // wiki page; the following preg_split is then functionally equivalent to a
@@ -1162,7 +1188,7 @@ function PageIndexGrep($terms, $invert = false, $list = null)
       $pagename = substr($line, 0, $i);
 
 // if (strtolower($pagename) == "main.testpage") { var_dump($line); }
-// if (strtolower($pagename) == "testgroup.page1") { var_dump($line); }
+// if (strtolower($pagename) == "3gppran1.homepage") { var_dump($line); }
 // if (strtolower($pagename) == "main.vocabulary2") { var_dump($line); }
 
       // Skip this line if a page list to search in has been specified, and the page is
@@ -1171,12 +1197,9 @@ function PageIndexGrep($terms, $invert = false, $list = null)
 
       $add = true;
 
-// var_dump($pagename);
-
       // Lines in pageindex are formatted as pagename:timeStamp: links :tags:words
       $segmentList = explode(":", $line);
-      if ($isTagSearch) { $line = $segmentList[3]; }
-      else { $line = $segmentList[4]; }
+      $line = $segmentList[$segmentIdx];
 
       // Meng. Change strpos to stripos to fix the bug for searching links
       foreach($terms as $t)
@@ -1207,8 +1230,6 @@ function PageIndexGrep($terms, $invert = false, $list = null)
     { filePutContentsWait($PageIndexFile, $wholePageText); }
   }
 /****************************************************************************************/
-
-// var_dump($pagelist);
 
   return $pagelist;
 }

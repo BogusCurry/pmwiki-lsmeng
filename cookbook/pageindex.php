@@ -40,8 +40,18 @@ function rebuildPageindexFile()
 {
   global $PageIndexFile;
   if (file_exists($PageIndexFile)) { unlink($PageIndexFile); }
-  $opt['action'] = 'search';
-  MakePageList("Main.Homepage", $opt, 0, 1);
+
+  // Get all the pages
+  $list = ListPages(null, 1);
+  $list = array_map("strtolower", $list);
+
+  // Skip pages specified in the exception list
+  global $pageindexExceptionList;
+  if (!empty($pageindexExceptionList))
+  { $list = array_diff($list, $pageindexExceptionList); }
+
+  Meng_PageIndexUpdate($list);
+
   global $sysLogFile;
   file_put_contents($sysLogFile, strftime('%Y%m%d_%H%M%S', time())." Pageindex rebuilt\n",  FILE_APPEND);
 }
@@ -106,8 +116,8 @@ function syncPageindex($flag = false)
   global $pageindexTimeDir;
   if ($cloudLastModTime - $localLastModTime > 10)
   {
-		// Update the local last modification timeStamp to signal that an update has been
-		// scheduled
+    // Update the local last modification timeStamp to signal that an update has been
+    // scheduled
     file_put_contents($localLastModFile, "");
     file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Syncing pageindex (cloud)\n", FILE_APPEND);
   }
@@ -146,7 +156,7 @@ function syncPageindex($flag = false)
   // procedure, we have to come up with a pagename that does not belong to the
   // "sensitive" pages which quickly get password locked. Use Site/Editform
   global $ScriptUrl;
-	$url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagelistStr";
+  $url = $ScriptUrl."/Site/Editform?updatePageIndex=$pagelistStr";
 
   // Update pageindex. Note that there is a 2048 char limit to the url length
   if (strlen($url) > 2000)
@@ -162,14 +172,14 @@ function syncPageindex($flag = false)
 // Detects async request for updating pageindex in the background
 function updatePageindex()
 {
-	if (!isset($_GET["updatePageIndex"])) { return; }
+  if (!isset($_GET["updatePageIndex"])) { return; }
   $pagelistStr = $_GET["updatePageIndex"];
 
   // The 1st case is explict update request from the client
   //     2nd case is due to page index sync process
   if ($pagelistStr === "1") { global $pagename; $pagelist = array($pagename); }
   else { $pagelist = explode(",", $pagelistStr); }
-  
+
   global $WorkDir, $pageindexTimeDir;
   foreach ($pagelist as $pagename)
   {
@@ -180,8 +190,8 @@ function updatePageindex()
       file_put_contents("$pageindexTimeDir/log.txt", strftime('%Y%m%d_%H%M%S', time())." Page deleted ".$pagename."\n", FILE_APPEND);
       continue;
     }
-    
-		// Double check if the page is indeed modified after the last pageindex update
+
+    // Double check if the page is indeed modified after the last pageindex update
     $pagemtime = @filemtime("$WorkDir/$pagename");
     if ($pagemtime > getPageindexUpdateTime($pagename))
     {
@@ -195,7 +205,7 @@ function updatePageindex()
       // 3rd input parameters are not used at all in PostRecentChanges().
       PostRecentChanges($pagename, NULL, NULL);
     }
-    
+
     // Its pageindex is already up to date, remove it from the list
     else
     {
